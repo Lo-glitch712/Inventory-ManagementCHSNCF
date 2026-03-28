@@ -42,12 +42,12 @@
     .return-modal-items ul li:last-child,
     .qr-items-summary ul li:last-child { border-bottom: none; }
     .items-group ul li::before         { content:"•"; color:var(--primary); font-weight:900; font-size:16px; line-height:1; }
-    .return-modal-items ul li::before  { content:"📦"; font-size:13px; }
-    .qr-items-summary ul li::before    { content:"✓"; color:var(--success); font-weight:700; }
+    .return-modal-items ul li::before  { content:""; font-size:13px; }
+    .qr-items-summary ul li::before    { content:""; color:var(--success); font-weight:700; }
 
     .borrow-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
 
-    /* ── Tap Item Selector ─────────────────────────────── */
+    /*  Tap Item Selector  */
     .tap-item {
       display: flex;
       align-items: center;
@@ -134,7 +134,7 @@
     }
     .return-modal-items p { font-size:11px; text-transform:uppercase; letter-spacing:0.6px; font-weight:700; color:var(--text-muted); margin-bottom:8px; }
 
-    /* ── Arrow Tab Navigation ─────────────────────────── */
+    /*  Arrow Tab Navigation  */
     .tab-nav {
       display: flex;
       align-items: center;
@@ -200,7 +200,7 @@
       transform: scale(1.25);
     }
 
-    /* ── Items pagination ─────────────────────────────── */
+    /*  Items pagination  */
     .items-page-nav {
       display: flex;
       align-items: center;
@@ -235,24 +235,24 @@
 </div>
 
 <div class="navbar">
-  <h1>📦 Borrower Dashboard</h1>
+  <h1> Borrower Dashboard</h1>
   <div class="navbar-right">
     <span>Welcome, <strong id="userName"></strong></span>
-    <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+    <button class="menu-toggle" onclick="toggleMenu()"></button>
   </div>
 </div>
 
 <div id="sideMenu" class="side-menu">
-  <button class="close-btn" onclick="toggleMenu()">✕</button>
+  <button class="close-btn" onclick="toggleMenu()"></button>
   <div class="side-menu-header">
     <strong id="sideUserName">User</strong>
     <p>Borrower</p>
   </div>
   <div class="menu-content">
-    <button onclick="openProfile()" class="menu-btn">👤 My Profile</button>
-    <button onclick="changePassword()" class="menu-btn">🔐 Change Password</button>
+    <button onclick="openProfile()" class="menu-btn"> My Profile</button>
+    <button onclick="changePassword()" class="menu-btn"> Change Password</button>
     <hr style="margin:10px 0;border:none;border-top:1px solid rgba(255,255,255,0.12);">
-    <button onclick="logout()" class="menu-btn danger">🚪 Logout</button>
+    <button onclick="logout()" class="menu-btn danger"> Logout</button>
   </div>
 </div>
 
@@ -260,8 +260,8 @@
 <div id="profileModal" class="modal" style="justify-content:center;align-items:center;padding:20px;">
   <div class="modal-content">
     <div class="modal-header">
-      <h3>👤 My Profile</h3>
-      <button class="close-btn" onclick="closeProfile()">✕</button>
+      <h3> My Profile</h3>
+      <button class="close-btn" onclick="closeProfile()"></button>
     </div>
     <div class="modal-body">
       <div class="form-group"><label>Full Name</label><input type="text" id="profileName" readonly style="background:#f4f7f6;color:#777;"></div>
@@ -270,7 +270,7 @@
       <div class="form-group"><label>Contact Number</label><input type="tel" id="profileContact"></div>
       <div class="form-group"><label>Department / Course</label><input type="text" id="profileDepartment"></div>
       <div class="form-group"><label>Year Level</label><input type="number" id="profileYear"></div>
-      <button onclick="saveProfile()">💾 Save Changes</button>
+      <button onclick="saveProfile()"> Save Changes</button>
     </div>
   </div>
 </div>
@@ -279,14 +279,14 @@
 <div id="passwordModal" class="modal" style="justify-content:center;align-items:center;padding:20px;">
   <div class="modal-content" style="max-width:400px;">
     <div class="modal-header">
-      <h3>🔐 Change Password</h3>
-      <button class="close-btn" onclick="closePassword()">✕</button>
+      <h3> Change Password</h3>
+      <button class="close-btn" onclick="closePassword()"></button>
     </div>
     <div class="modal-body">
       <div class="form-group"><label>Current Password</label><input type="password" id="currentPassword" placeholder="Enter current password"></div>
       <div class="form-group"><label>New Password</label><input type="password" id="newPassword" placeholder="At least 8 characters" minlength="8"></div>
       <div class="form-group"><label>Confirm New Password</label><input type="password" id="confirmPassword" placeholder="Repeat new password"></div>
-      <button onclick="updatePassword()">✓ Update Password</button>
+      <button onclick="updatePassword()"> Update Password</button>
     </div>
   </div>
 </div>
@@ -295,8 +295,8 @@
 <div id="returnModal" class="modal" style="justify-content:center;align-items:center;padding:20px;">
   <div class="modal-content" style="max-width:460px;">
     <div class="modal-header">
-      <h3>📥 Return QR Code</h3>
-      <button class="close-btn" onclick="closeReturnModal()">✕</button>
+      <h3> Return QR Code</h3>
+      <button class="close-btn" onclick="closeReturnModal()"></button>
     </div>
     <div class="modal-body" style="text-align:center;">
       <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px;">
@@ -308,7 +308,7 @@
       </div>
       <canvas id="returnQRcode" style="display:block;margin:0 auto;"></canvas>
       <p style="color:#bbb;font-size:12px;margin-top:12px;">Stock will be restored automatically after scanning</p>
-      <button onclick="saveReturnQR()" style="width:auto;padding:10px 24px;margin-top:12px;background:var(--primary);">💾 Save QR Image</button>
+      <button onclick="saveReturnQR()" style="width:auto;padding:10px 24px;margin-top:12px;background:var(--primary);"> Save QR Image</button>
     </div>
   </div>
 </div>
@@ -318,7 +318,7 @@
   <div class="tab-nav" id="tabNav">
     <button class="tab-arrow" id="tabPrev" onclick="navTab(-1)" disabled>&#8592;</button>
     <div class="tab-indicator-wrap">
-      <div class="tab-label" id="tabLabel">📦 Borrow Items</div>
+      <div class="tab-label" id="tabLabel"> Borrow Items</div>
       <div class="tab-dots" id="tabDots"></div>
     </div>
     <button class="tab-arrow" id="tabNext" onclick="navTab(1)">&#8594;</button>
@@ -327,11 +327,11 @@
   <!-- TAB: Borrow -->
   <div id="borrow-tab" class="tab-content active">
     <div class="card">
-      <h3>📋 Equipment Borrowing Form</h3>
+      <h3> Equipment Borrowing Form</h3>
 
       <!-- Borrower Info Section -->
       <div style="background:var(--surface-alt);border:1px solid var(--border);border-left:4px solid var(--primary);border-radius:10px;padding:16px 18px;margin-bottom:20px;">
-        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--primary);margin-bottom:14px;">👤 Borrower Information</div>
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--primary);margin-bottom:14px;"> Borrower Information</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;">
           <div class="form-group">
             <label>Borrower Name</label>
@@ -356,7 +356,7 @@
 
       <!-- Procedure Details Section -->
       <div style="background:var(--surface-alt);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:10px;padding:16px 18px;margin-bottom:20px;">
-        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--primary);margin-bottom:4px;">🔬 Procedure <span style="color:var(--danger);">*</span></div>
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--primary);margin-bottom:4px;"> Procedure <span style="color:var(--danger);">*</span></div>
         <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">Tap a procedure — recommended items will be auto-selected below.</div>
 
         <!-- Hidden input stores the selected procedure value -->
@@ -367,13 +367,17 @@
 
         <!-- Selected Procedure display (shown after selection) -->
         <div id="selectedProcedureDisplay" style="display:none;background:#f0faf6;border:1.5px solid var(--success);border-radius:8px;padding:10px 14px;margin-bottom:14px;align-items:center;gap:10px;">
-          <span style="font-size:18px;">&#x2705;</span>
+          <span style="font-size:18px;"></span>
           <span style="font-size:14px;font-weight:700;color:var(--primary);" id="selectedProcedureLabel"></span>
           <button onclick="clearSelectedProcedure()" style="margin-left:auto;width:auto;padding:4px 10px;font-size:12px;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:6px;margin-top:0;">Change</button>
         </div>
 
         <!-- Extra fields row -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 16px;">
+          <div class="form-group">
+            <label>Subject</label>
+            <input type="text" id="borrowSubject" placeholder="e.g., NCM 101">
+          </div>
           <div class="form-group">
             <label>Attested By</label>
             <select id="borrowAttestedBy">
@@ -393,7 +397,7 @@
       <!-- Procedure Kit Banner (shown when procedure auto-maps items) -->
       <div id="procedureKitBanner" style="display:none;background:linear-gradient(135deg,#e8f6f0,#f0faf6);border:1.5px solid var(--success);border-radius:10px;padding:14px 18px;margin-bottom:16px;">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-          <span style="font-size:20px;">🧰</span>
+          <span style="font-size:20px;"></span>
           <span style="font-weight:700;color:var(--success);font-size:14px;">Procedure Kit Auto-Selected</span>
           <button onclick="clearProcedureKit()" style="margin-left:auto;width:auto;padding:4px 12px;font-size:12px;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:6px;">Clear Kit</button>
         </div>
@@ -402,16 +406,16 @@
 
       <!-- Shelf / Location Filter -->
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
-        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--primary);">📦 Select Items to Borrow</div>
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--primary);"> Select Items to Borrow</div>
         <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
-          <span style="font-size:12px;color:var(--text-muted);font-weight:600;">📚 Shelf:</span>
+          <span style="font-size:12px;color:var(--text-muted);font-weight:600;"> Shelf:</span>
           <select id="shelfFilter" onchange="filterItems()" style="padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text-main);background:var(--surface);outline:none;cursor:pointer;">
             <option value="">All Shelves</option>
           </select>
         </div>
       </div>
       <div class="form-group">
-        <input id="searchItems" type="text" placeholder="🔍 Search by name..." oninput="filterItems()"
+        <input id="searchItems" type="text" placeholder=" Search by name..." oninput="filterItems()"
           style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text-main);background:var(--surface);outline:none;transition:border-color 0.2s;"
           onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
       </div>
@@ -425,14 +429,14 @@
       <!-- Return Date -->
       <div class="form-group" style="margin-top:20px;">
         <label style="font-size:13px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:10px;">
-          📅 Expected Return Date &amp; Time
+           Expected Return Date &amp; Time
         </label>
         <div style="position:relative;">
           <input type="datetime-local" id="returnDate" required
             style="width:100%;padding:14px 16px 14px 44px;border:2px solid var(--border);border-radius:12px;font-size:15px;font-family:'DM Sans',sans-serif;color:var(--text-main);background:var(--surface);outline:none;transition:border-color 0.2s,box-shadow 0.2s;box-sizing:border-box;appearance:none;-webkit-appearance:none;"
             onfocus="this.style.borderColor='var(--primary)';this.style.boxShadow='0 0 0 3px rgba(13,79,79,0.12)'"
             onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
-          <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;pointer-events:none;">🗓️</span>
+          <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;pointer-events:none;"></span>
         </div>
         <div id="returnDateQuick" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;"></div>
       </div>
@@ -446,7 +450,7 @@
         </label>
       </div>
 
-      <button onclick="generateQR()" style="margin-top:18px;">🔖 Generate Borrow QR Code</button>
+      <button onclick="generateQR()" style="margin-top:18px;"> Generate Borrow QR Code</button>
 
       <div id="qrResultBox" class="qr-result-box" style="display:none;">
         <p class="qr-title">Borrow QR Code</p>
@@ -458,7 +462,7 @@
         </div>
         <div id="qrFormSummary" style="background:var(--surface-alt);border-radius:8px;padding:12px 16px;margin:12px 0;text-align:left;font-size:13px;color:var(--text-muted);line-height:2;"></div>
         <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:8px;">
-          <button onclick="saveQRCode()" style="width:auto;padding:10px 22px;background:var(--success);margin-top:0;">💾 Save QR Image</button>
+          <button onclick="saveQRCode()" style="width:auto;padding:10px 22px;background:var(--success);margin-top:0;"> Save QR Image</button>
           <button onclick="resetBorrowForm()" style="width:auto;padding:10px 22px;background:var(--surface-alt);color:var(--text-main);border:1.5px solid var(--border);margin-top:0;">↩ New Borrow</button>
         </div>
       </div>
@@ -468,7 +472,7 @@
   <!-- TAB: My Borrows -->
   <div id="borrowed-tab" class="tab-content">
     <div class="card">
-      <h3>🔄 Currently Borrowed</h3>
+      <h3> Currently Borrowed</h3>
       <div id="borrowedItemsList"></div>
     </div>
   </div>
@@ -476,7 +480,7 @@
   <!-- TAB: History -->
   <div id="history-tab" class="tab-content">
     <div class="card">
-      <h3>📋 Borrow History</h3>
+      <h3> Borrow History</h3>
       <div id="historyList"></div>
     </div>
   </div>
@@ -489,7 +493,7 @@ let itemNameMap     = {};   // itemId → display name
 let itemTypeMap     = {};   // itemId → "Consumable" | "Non-Consumable"
 let itemLocationMap = {};   // itemId → shelf/location string
 
-// ── Auth ─────────────────────────────────────────────────
+//  Auth 
 // IMPORTANT: All localStorage keys are scoped per userID
 // so different borrower accounts never share data
 function getUserID()   { return localStorage.getItem("userID") || ""; }
@@ -508,7 +512,7 @@ function checkAuth() {
   });
 }
 
-// ── Side Menu ─────────────────────────────────────────────
+//  Side Menu 
 function toggleMenu() { document.getElementById("sideMenu").classList.toggle("active"); }
 document.addEventListener("click", e => {
   const menu = document.getElementById("sideMenu");
@@ -517,12 +521,12 @@ document.addEventListener("click", e => {
     menu.classList.remove("active");
 });
 
-// ── Tabs ──────────────────────────────────────────────────
-// ── Arrow Tab Navigation ─────────────────────────────────
+//  Tabs 
+//  Arrow Tab Navigation 
 const TAB_DEFS = [
-  { id: 'borrow-tab',   label: '📦 Borrow Items' },
-  { id: 'borrowed-tab', label: '🔄 My Borrows' },
-  { id: 'history-tab',  label: '📋 History' }
+  { id: 'borrow-tab',   label: ' Borrow Items' },
+  { id: 'borrowed-tab', label: ' My Borrows' },
+  { id: 'history-tab',  label: ' History' }
 ];
 let _currentTabIdx = 0;
 
@@ -570,7 +574,7 @@ function switchTab(tabName, btn) {
   if (idx >= 0) goToTab(idx);
 }
 
-// ── Profile ───────────────────────────────────────────────
+//  Profile 
 function openProfile() {
   document.getElementById("sideMenu").classList.remove("active");
   document.getElementById("profileModal").style.display = "flex";
@@ -608,14 +612,14 @@ function saveProfile() {
       // Update cached idNumber too
       const newId = document.getElementById("profileIdNumber") ? document.getElementById("profileIdNumber").value : "";
       if (newId) { localStorage.setItem("userIDNumber", newId); localStorage.setItem("borrowerIdNumber", newId); }
-      showNotification("✓ Profile updated!","success"); closeProfile();
+      showNotification(" Profile updated!","success"); closeProfile();
     }
     else showNotification("Failed to update profile","error");
   })
   .catch(()=>showNotification("Error saving profile","error"));
 }
 
-// ── Password ──────────────────────────────────────────────
+//  Password 
 function changePassword() {
   document.getElementById("sideMenu").classList.remove("active");
   document.getElementById("passwordModal").style.display = "flex";
@@ -634,13 +638,13 @@ function updatePassword() {
     currentPassword:document.getElementById("currentPassword").value, newPassword:np
   })})
   .then(r=>r.json()).then(data => {
-    if (data.status==="success") { showNotification("✓ Password changed!","success"); closePassword(); }
+    if (data.status==="success") { showNotification(" Password changed!","success"); closePassword(); }
     else showNotification(data.message||"Failed to change password","error");
   })
   .catch(()=>showNotification("Error changing password","error"));
 }
 
-// ── Load Items (paginated) ───────────────────────────────
+//  Load Items (paginated) 
 let _allItemRows = [];   // all inventory rows from server
 let _filteredItems = []; // after search/shelf filter
 let _itemPage = 1;
@@ -657,7 +661,7 @@ function loadItems() {
     _allItemRows    = [];
 
     if (!data || data.length <= 1) {
-      document.getElementById("itemsList").innerHTML = "<div class='empty-state'><div class='icon'>📭</div>No items available</div>";
+      document.getElementById("itemsList").innerHTML = "<div class='empty-state'><div class='icon'></div>No items available</div>";
       document.getElementById("itemsPageNav").style.display = "none";
       return;
     }
@@ -691,7 +695,7 @@ function renderItemsPage() {
   const total     = _filteredItems.length;
 
   if (total === 0) {
-    container.innerHTML = "<div class='empty-state'><div class='icon'>🔍</div>No matching items</div>";
+    container.innerHTML = "<div class='empty-state'><div class='icon'></div>No matching items</div>";
     nav.style.display = "none"; return;
   }
 
@@ -707,7 +711,7 @@ function renderItemsPage() {
       ? `<span style="font-size:11px;background:#e8f0ff;color:#2d4fa0;padding:2px 8px;border-radius:10px;font-weight:600;">Consumable</span>`
       : `<span style="font-size:11px;background:#f0faf6;color:#1a5a3e;padding:2px 8px;border-radius:10px;font-weight:600;">Non-Consumable</span>`;
     const locPill = loc
-      ? `<span style="font-size:11px;background:#f5f0e8;color:#7a5c1e;padding:2px 8px;border-radius:10px;font-weight:600;">📚 ${loc}</span>`
+      ? `<span style="font-size:11px;background:#f5f0e8;color:#7a5c1e;padding:2px 8px;border-radius:10px;font-weight:600;"> ${loc}</span>`
       : "";
     const isSelected = selectedItems.find(i => i.id === itemId);
     const el = document.createElement("div");
@@ -727,7 +731,7 @@ function renderItemsPage() {
         <span class="qty-num" id="qtynum_${itemId}">${isSelected ? isSelected.qty : 1}</span>
         <button class="qty-btn" onclick="event.stopPropagation();changeQty('${itemId}',1,'${stock}')">+</button>
       </div>
-      <div class="tap-check" id="chk_${itemId}" style="display:${isSelected ? "flex" : "none"};">✓</div>`;
+      <div class="tap-check" id="chk_${itemId}" style="display:${isSelected ? "flex" : "none"};"></div>`;
     container.appendChild(el);
   });
 
@@ -785,19 +789,19 @@ function filterItems() {
   renderItemsPage();
 }
 
-// ── The 8 Procedures (always shown as cards) ─────────────
+//  The 8 Procedures (always shown as cards) 
 const PROCEDURE_LIST = [
-  { name: "Hand Washing",          icon: "🧼", color: "#e8f4ff", border: "#90c8f0" },
-  { name: "Wound Care",            icon: "🩹", color: "#fff4e8", border: "#f0b87a" },
-  { name: "Internal Examination",  icon: "🔍", color: "#f4e8ff", border: "#c890f0" },
-  { name: "Female Catheterization",icon: "💧", color: "#e8fff4", border: "#70d4a0" },
-  { name: "Leopold's Maneuver",    icon: "🤰", color: "#fff8e8", border: "#f0d070" },
-  { name: "Perianal Flushing",     icon: "♻️", color: "#e8f8ff", border: "#70c8e8" },
-  { name: "Newborn Care",          icon: "👶", color: "#fff0f4", border: "#f090b0" },
-  { name: "Intrapartum Care",      icon: "🏥", color: "#f0fff0", border: "#70d070" }
+  { name: "Hand Washing",          icon: "", color: "#e8f4ff", border: "#90c8f0" },
+  { name: "Wound Care",            icon: "", color: "#fff4e8", border: "#f0b87a" },
+  { name: "Internal Examination",  icon: "", color: "#f4e8ff", border: "#c890f0" },
+  { name: "Female Catheterization",icon: "", color: "#e8fff4", border: "#70d4a0" },
+  { name: "Leopold's Maneuver",    icon: "", color: "#fff8e8", border: "#f0d070" },
+  { name: "Perianal Flushing",     icon: "", color: "#e8f8ff", border: "#70c8e8" },
+  { name: "Newborn Care",          icon: "", color: "#fff0f4", border: "#f090b0" },
+  { name: "Intrapartum Care",      icon: "", color: "#f0fff0", border: "#70d070" }
 ];
 
-// ── Procedure → Item keyword mapping ────────────────────
+//  Procedure → Item keyword mapping 
 const PROCEDURE_ITEMS = {
   "Hand Washing": [
     "soap","alcohol","hand sanitizer","basin","towel","gloves","apron","wash","handwash"
@@ -825,7 +829,7 @@ const PROCEDURE_ITEMS = {
   ]
 };
 
-// ── Build procedure cards on load ────────────────────────
+//  Build procedure cards on load 
 function buildProcedureCards() {
   const container = document.getElementById("procedureCards");
   if (!container) return;
@@ -927,7 +931,7 @@ function autoSelectProcedureItems(proc) {
   if (matched > 0) {
     banner.style.display = "block";
     document.getElementById("kitProcedureName").textContent = proc;
-    showNotification(`✓ ${matched} item(s) suggested for ${proc}`, "success");
+    showNotification(` ${matched} item(s) suggested for ${proc}`, "success");
   } else {
     banner.style.display = "none";
     showNotification(`No matching items in inventory for "${proc}" — select manually`, "info");
@@ -942,11 +946,11 @@ function clearProcedureKit(showMsg = true) {
   if (showMsg) showNotification("Kit cleared", "info");
 }
 
-// ── Legacy stub — no longer used but kept for safety ─────
+//  Legacy stub — no longer used but kept for safety 
 function updateProcedures() {}
 function onProcedureChange() {}
 
-// ── Shelf / Location Filter Population ───────────────────
+//  Shelf / Location Filter Population 
 function populateShelfFilter(data) {
   const sel = document.getElementById("shelfFilter");
   if (!sel) return;
@@ -962,7 +966,7 @@ function populateShelfFilter(data) {
   });
 }
 
-// ── Init borrow form fields ───────────────────────────────
+//  Init borrow form fields 
 function initBorrowForm() {
   const nameEl = document.getElementById("borrowerNameDisplay");
   const dateEl = document.getElementById("borrowerDate");
@@ -979,7 +983,7 @@ function initBorrowForm() {
   buildProcedureCards();
 }
 
-// ── Generate QR ───────────────────────────────────────────
+//  Generate QR 
 function generateQR() {
   // Form field validation
   const idNumber  = document.getElementById("borrowerIdNumber").value.trim();
@@ -1055,19 +1059,19 @@ function generateQR() {
   const summaryEl = document.getElementById("qrFormSummary");
   if (summaryEl) {
     summaryEl.innerHTML = [
-      course    ? `<div>📚 <strong>Course:</strong> ${course}</div>` : '',
-      idNumber  ? `<div>🪪 <strong>ID:</strong> ${idNumber}</div>` : '',
-      subject   ? `<div>📖 <strong>Subject:</strong> ${subject}</div>` : '',
-      procedure ? `<div>🔬 <strong>Procedure:</strong> ${procedure}</div>` : '',
-      attestedBy? `<div>✍️ <strong>Attested by:</strong> ${attestedBy}</div>` : '',
-      notes     ? `<div>📝 <strong>Notes:</strong> ${notes}</div>` : ''
+      course    ? `<div> <strong>Course:</strong> ${course}</div>` : '',
+      idNumber  ? `<div> <strong>ID:</strong> ${idNumber}</div>` : '',
+      subject   ? `<div> <strong>Subject:</strong> ${subject}</div>` : '',
+      procedure ? `<div> <strong>Procedure:</strong> ${procedure}</div>` : '',
+      attestedBy? `<div> <strong>Attested by:</strong> ${attestedBy}</div>` : '',
+      notes     ? `<div> <strong>Notes:</strong> ${notes}</div>` : ''
     ].filter(Boolean).join("");
   }
 
   document.getElementById("qrResultBox").style.display = "block";
   document.getElementById("qrResultBox").scrollIntoView({ behavior:"smooth", block:"nearest" });
 
-  showNotification("✓ QR Code generated! Show it to the instructor.","success");
+  showNotification(" QR Code generated! Show it to the instructor.","success");
 }
 
 function saveQRCode() {
@@ -1084,6 +1088,7 @@ function resetBorrowForm() {
   document.getElementById("qrResultBox").style.display = "none";
   document.getElementById("borrowProcedure").value  = "";
   clearSelectedProcedure();
+  document.getElementById("borrowSubject").value    = "";
   document.getElementById("borrowAttestedBy").value = "";
   document.getElementById("borrowNotes").value      = "";
   document.getElementById("borrowConfirm").checked  = false;
@@ -1101,7 +1106,7 @@ function resetBorrowForm() {
   });
 }
 
-// ── localStorage (per-user scoped) ───────────────────────
+//  localStorage (per-user scoped) 
 function saveBorrowToStorage(record) {
   const existing = JSON.parse(localStorage.getItem(storageKey())||"[]");
   record.localId = Date.now();
@@ -1113,7 +1118,7 @@ function getLocalBorrows() {
   return JSON.parse(localStorage.getItem(storageKey())||"[]");
 }
 
-// ── My Borrows ────────────────────────────────────────────
+//  My Borrows 
 function loadBorrowedItems() {
   // Fetch server-side status to cross-reference
   fetch(API, { method:"POST", body: new URLSearchParams({ action:"getBorrowedItems", student:getUserID() }) })
@@ -1189,7 +1194,7 @@ function renderBorrowedItems(serverData) {
   }
 
   if (!hasAny)
-    container.innerHTML = "<div class='empty-state'><div class='icon'>📭</div>No items currently borrowed</div>";
+    container.innerHTML = "<div class='empty-state'><div class='icon'></div>No items currently borrowed</div>";
 }
 
 function buildBorrowCard({ itemNames, itemTypes, returnDate, isOverdue, qrPayload }) {
@@ -1235,9 +1240,9 @@ function buildBorrowCard({ itemNames, itemTypes, returnDate, isOverdue, qrPayloa
   const returnBtn = hasReturnables
     ? `<button onclick="showReturnQRById('${cardId}')"
         style="width:auto;padding:10px 20px;background:var(--primary);margin-top:0;font-size:13px;">
-        📥 Return Item${returnableNames.length>1?'s':''}
+         Return Item${returnableNames.length>1?'s':''}
       </button>`
-    : `<div style="font-size:13px;color:var(--text-muted);font-style:italic;">✓ All consumable items — no return needed</div>`;
+    : `<div style="font-size:13px;color:var(--text-muted);font-style:italic;"> All consumable items — no return needed</div>`;
 
   // extract procedure/course/id from parsed QR payload
   const cardProc   = (parsedPayload && parsedPayload.procedure) ? parsedPayload.procedure : "";
@@ -1246,18 +1251,18 @@ function buildBorrowCard({ itemNames, itemTypes, returnDate, isOverdue, qrPayloa
 
   const procBadge = cardProc ? `
     <div style="display:inline-flex;align-items:center;gap:6px;background:#f0faf6;border:1px solid #b0dcc8;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px;">
-      🔬 ${cardProc}
+       ${cardProc}
     </div>` : "";
 
   const cardMeta = [
-    cardIdNum  ? `<p><strong>🪪 ID:</strong> ${cardIdNum}</p>`     : "",
-    cardCourse ? `<p><strong>📚 Course:</strong> ${cardCourse}</p>` : ""
+    cardIdNum  ? `<p><strong> ID:</strong> ${cardIdNum}</p>`     : "",
+    cardCourse ? `<p><strong> Course:</strong> ${cardCourse}</p>` : ""
   ].filter(Boolean).join("");
 
   return `
     <div class="borrow-card ${isOverdue?'overdue':''}">
       ${procBadge}
-      <div class="borrow-card-title">${isOverdue?'⚠️ OVERDUE — ':''}${titleText}</div>
+      <div class="borrow-card-title">${isOverdue?' OVERDUE — ':''}${titleText}</div>
       <div class="borrow-card-meta">
         ${cardMeta}
         <p><strong>Return by:</strong> ${returnDate.toLocaleString()}</p>
@@ -1268,7 +1273,7 @@ function buildBorrowCard({ itemNames, itemTypes, returnDate, isOverdue, qrPayloa
     </div>`;
 }
 
-// ── Return QR Modal ───────────────────────────────────────
+//  Return QR Modal 
 function closeReturnModal() { document.getElementById("returnModal").style.display="none"; }
 
 function showReturnQRById(cardId) {
@@ -1313,7 +1318,7 @@ function saveReturnQR() {
   a.click();
 }
 
-// ── History ───────────────────────────────────────────────
+//  History 
 function loadBorrowHistory() {
   const container = document.getElementById("historyList");
   container.innerHTML = "<div class='empty-state'><div class='icon'>⏳</div>Loading history...</div>";
@@ -1327,7 +1332,7 @@ function loadBorrowHistory() {
     container.innerHTML = "";
 
     if (!data || data.length === 0 || data.error) {
-      container.innerHTML = "<div class='empty-state'><div class='icon'>📋</div>No borrow history yet</div>";
+      container.innerHTML = "<div class='empty-state'><div class='icon'></div>No borrow history yet</div>";
       return;
     }
 
@@ -1360,7 +1365,7 @@ function loadBorrowHistory() {
       const recIdNum   = record.length > 10 ? (record[10] || "") : "";
 
       const badge = status === "Returned"
-        ? `<span class="status-badge status-returned">✓ Returned</span>`
+        ? `<span class="status-badge status-returned"> Returned</span>`
         : `<span class="status-badge status-borrowed">Borrowed</span>`;
 
       const groupHTML = !single ? `
@@ -1371,7 +1376,7 @@ function loadBorrowHistory() {
 
       const procBadge = recProc ? `
         <div style="display:inline-flex;align-items:center;gap:6px;background:#f0faf6;border:1px solid #b0dcc8;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px;">
-          🔬 ${recProc}
+           ${recProc}
         </div>` : "";
 
       const metaExtra = [
@@ -1398,16 +1403,16 @@ function loadBorrowHistory() {
     });
 
     if (container.innerHTML === "") {
-      container.innerHTML = "<div class='empty-state'><div class='icon'>📋</div>No history yet</div>";
+      container.innerHTML = "<div class='empty-state'><div class='icon'></div>No history yet</div>";
     }
   })
   .catch(err => {
     console.error("History error:", err);
-    container.innerHTML = "<div class='empty-state' style='color:var(--danger);'>❌ Failed to load history. Please try again.</div>";
+    container.innerHTML = "<div class='empty-state' style='color:var(--danger);'> Failed to load history. Please try again.</div>";
   });
 }
 
-// ── Resolve item IDs → names ──────────────────────────────
+//  Resolve item IDs → names 
 function resolveItemNames(rawItems) {
   if (!rawItems) return ["Unknown item"];
   const parts = String(rawItems).split(",").map(s => s.trim()).filter(Boolean);
@@ -1426,7 +1431,7 @@ function resolveItemNames(rawItems) {
   });
 }
 
-// ── Overdue check ─────────────────────────────────────────
+//  Overdue check 
 function checkOverdueItems() {
   fetch(API, { method:"POST", body: new URLSearchParams({ action:"getOverdueItems", student:getUserID() }) })
   .then(r=>r.json())
@@ -1436,13 +1441,13 @@ function checkOverdueItems() {
         const name = resolveItemNames(String(i.itemName||i.itemId||""))[0];
         return `${name} (${i.daysOverdue}d)`;
       }).join(", ");
-      showNotification(`⚠️ Overdue: ${list}`,"error");
+      showNotification(` Overdue: ${list}`,"error");
     }
   })
   .catch(()=>{});
 }
 
-// ── Init ─────────────────────────────────────────────────
+//  Init 
 checkAuth();
 loadItems();
 checkOverdueItems();
@@ -1450,7 +1455,7 @@ initBorrowForm();
 initTabNav();
 setInterval(checkOverdueItems, 5*60*1000);
 
-// ── Quick Return Date Buttons ─────────────────────────────
+//  Quick Return Date Buttons 
 function initQuickDates() {
   const container = document.getElementById("returnDateQuick");
   if (!container) return;

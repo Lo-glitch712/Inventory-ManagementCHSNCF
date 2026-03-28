@@ -14,7 +14,7 @@
 </div>
 
 <div class="navbar">
-  <h1>📷 QR Code Scanner</h1>
+  <h1> QR Code Scanner</h1>
   <div class="navbar-right">
     <a href="dashboard_admin.html" style="padding:8px 16px;background:var(--primary);color:white;border-radius:8px;font-weight:600;text-decoration:none;font-size:14px;">← Back</a>
   </div>
@@ -22,7 +22,7 @@
 
 <div class="scanner-wrapper">
   <div class="card" style="margin-top:20px;">
-    <h3>📷 Scan Borrower QR Code</h3>
+    <h3> Scan Borrower QR Code</h3>
 
     <div class="hint-box">
       <strong>How it works:</strong><br>
@@ -81,7 +81,7 @@ function onScanSuccess(decodedText) {
 }
 
 function checkAndProcess(qrData) {
-  showResult("info", "🔍 Checking status...", qrData);
+  showResult("info", " Checking status...", qrData);
 
   fetch(API, {
     method: "POST",
@@ -114,7 +114,7 @@ function checkAndProcess(qrData) {
 function processBorrow(data) {
   const itemDisplay = data.itemNames || data.items;
   showResult("borrow", `
-    <div class="borrow-header">📤 Processing Borrow...</div>
+    <div class="borrow-header"> Processing Borrow...</div>
     <div class="borrow-info">
       <p><strong>Borrower:</strong> ${data.studentName}</p>
       <p><strong>Items:</strong> ${itemDisplay}</p>
@@ -142,14 +142,14 @@ function processBorrow(data) {
   .then(response => {
     if (response.status === "success") {
       showResult("success", `
-        <div class="borrow-header">✅ Borrow Confirmed!</div>
+        <div class="borrow-header"> Borrow Confirmed!</div>
         <div class="borrow-info">
           <p><strong>Borrower:</strong> ${data.studentName}</p>
           <p><strong>Items:</strong> ${itemDisplay}</p>
           <p><strong>Return by:</strong> ${new Date(data.returnDate).toLocaleString()}</p>
         </div>
         <div style="margin-top:12px;padding:12px;background:#d4f3e8;border-radius:8px;color:#1a6e4a;font-weight:600;">
-          ✓ Stock has been deducted
+           Stock has been deducted
         </div>
       `);
       resetScanner(3500);
@@ -171,7 +171,7 @@ function processBorrow(data) {
 function processReturn(data) {
   const itemDisplay = data.itemNames || data.items;
   showResult("return", `
-    <div class="borrow-header">📥 Processing Return...</div>
+    <div class="borrow-header"> Processing Return...</div>
     <div class="borrow-info">
       <p><strong>Borrower:</strong> ${data.studentName}</p>
       <p><strong>Items:</strong> ${itemDisplay}</p>
@@ -191,13 +191,13 @@ function processReturn(data) {
   .then(response => {
     if (response.status === "success") {
       showResult("success", `
-        <div class="borrow-header">✅ Return Confirmed!</div>
+        <div class="borrow-header"> Return Confirmed!</div>
         <div class="borrow-info">
           <p><strong>Borrower:</strong> ${data.studentName}</p>
           <p><strong>Items:</strong> ${itemDisplay}</p>
         </div>
         <div style="margin-top:12px;padding:12px;background:#d4f3e8;border-radius:8px;color:#1a6e4a;font-weight:600;">
-          ✓ Stock has been restored
+           Stock has been restored
         </div>
       `);
       resetScanner(3500);
@@ -216,7 +216,7 @@ function processReturn(data) {
   });
 }
 
-// ── Display helpers ───────────────────────────────────────
+//  Display helpers 
 const borderColors = {
   info:    'var(--primary)',
   borrow:  '#3b82f6',
@@ -250,7 +250,7 @@ function onScanError(error) {
   }
 }
 
-// ── Init Scanner — back/rear camera only ─────────────────
+//  Init Scanner — back/rear camera only 
 async function initScanner() {
   try {
     // Get list of video devices and pick the back/rear camera

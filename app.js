@@ -1,6 +1,6 @@
 const API = "https://script.google.com/macros/s/AKfycbzQjOBqzKFjDkOi_AQkB2sTxMV4f0kxlujtR8U5fzFXrO_jMhw5yla__iBbGgiBN6h1/exec";
 
-// ── Notifications ─────────────────────────────────────────
+//  Notifications 
 function showNotification(message, type = 'info') {
   const n = document.createElement('div');
   n.className = `notification notification-${type}`;
@@ -13,7 +13,7 @@ function showNotification(message, type = 'info') {
   }, 3500);
 }
 
-// ── Loading State ─────────────────────────────────────────
+//  Loading State 
 function setLoading(button, isLoading) {
   if (isLoading) {
     button.disabled = true;
@@ -27,7 +27,7 @@ function setLoading(button, isLoading) {
   }
 }
 
-// ── Register (Borrower only) ──────────────────────────────
+//  Register (Borrower only) 
 function register() {
   const button = event.target;
 
@@ -83,7 +83,7 @@ function register() {
   });
 }
 
-// ── Login ─────────────────────────────────────────────────
+//  Login 
 function login() {
   const button = event.target;
 
@@ -124,7 +124,7 @@ function login() {
   });
 }
 
-// ── Logout ────────────────────────────────────────────────
+//  Logout 
 function logout() {
   const userID   = localStorage.getItem('userID')    || '';
   const userName = localStorage.getItem('userName')  || '';

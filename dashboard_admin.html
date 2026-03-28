@@ -57,7 +57,7 @@
       border-radius: 6px !important;
     }
 
-    /* ── Arrow Tab Navigation ─────────────────────────── */
+    /*  Arrow Tab Navigation  */
     .tab-nav {
       display: flex; align-items: center;
       margin-bottom: 20px; background: var(--surface);
@@ -88,12 +88,12 @@
     }
     .tab-dot.active { background: var(--primary); transform: scale(1.3); }
 
-    /* ── Stock unit row ────────────────────────────────── */
+    /*  Stock unit row  */
     .stock-unit-row { display: flex; gap: 10px; align-items: flex-end; }
     .stock-unit-row .stock-input { flex: 1; }
     .stock-unit-row select.unit-sel { flex: 0 0 100px; }
 
-    /* ── Procedure tags ────────────────────────────────── */
+    /*  Procedure tags  */
     .proc-tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 8px; }
     .proc-tag {
       padding: 5px 13px; border-radius: 20px;
@@ -105,7 +105,7 @@
     .proc-tag:hover  { border-color: var(--primary); color: var(--primary); background: #edf5f3; }
     .proc-tag.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-    /* ── Suggested items hint ──────────────────────────── */
+    /*  Suggested items hint  */
     #suggestedItems {
       display: none; margin-top: 14px; padding: 14px 16px;
       background: #eaf4f0; border: 1px solid #b0d9cb;
@@ -121,7 +121,7 @@
       color: var(--primary); margin: 3px 3px 3px 0;
     }
 
-    /* ── Inventory pagination ──────────────────────────── */
+    /*  Inventory pagination  */
     .pagination {
       display: flex; align-items: center; justify-content: center;
       gap: 6px; margin-top: 18px; flex-wrap: wrap;
@@ -138,7 +138,7 @@
     .pg-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .pg-info { font-size: 13px; color: var(--text-muted); font-weight: 500; }
 
-    /* ── Add item grid ─────────────────────────────────── */
+    /*  Add item grid  */
     .add-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
     @media (max-width: 520px) { .add-grid { grid-template-columns: 1fr; } }
   </style>
@@ -151,25 +151,25 @@
 </div>
 
 <div class="navbar">
-  <h1>🛡️ Admin Dashboard</h1>
+  <h1> Admin Dashboard</h1>
   <div class="navbar-right">
     <span>Welcome, <strong id="userName"></strong> <span id="roleTag"></span></span>
-    <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+    <button class="menu-toggle" onclick="toggleMenu()"></button>
   </div>
 </div>
 
 <!-- Side Menu -->
 <div id="sideMenu" class="side-menu">
-  <button class="close-btn" onclick="toggleMenu()">✕</button>
+  <button class="close-btn" onclick="toggleMenu()"></button>
   <div class="side-menu-header">
     <strong id="sideUserName">User</strong>
     <p id="sideUserRole">Role</p>
   </div>
   <div class="menu-content">
-    <button onclick="openProfile()" class="menu-btn">👤 My Profile</button>
-    <button onclick="changePassword()" class="menu-btn">🔐 Change Password</button>
+    <button onclick="openProfile()" class="menu-btn"> My Profile</button>
+    <button onclick="changePassword()" class="menu-btn"> Change Password</button>
     <hr style="margin:10px 0;border:none;border-top:1px solid rgba(255,255,255,0.12);">
-    <button onclick="logout()" class="menu-btn danger">🚪 Logout</button>
+    <button onclick="logout()" class="menu-btn danger"> Logout</button>
   </div>
 </div>
 
@@ -177,15 +177,15 @@
 <div id="profileModal" class="modal">
   <div class="modal-content">
     <div class="modal-header">
-      <h3>👤 My Profile</h3>
-      <button class="close-btn" onclick="closeProfile()">✕</button>
+      <h3> My Profile</h3>
+      <button class="close-btn" onclick="closeProfile()"></button>
     </div>
     <div class="modal-body">
       <div class="form-group"><label>Full Name</label><input type="text" id="profileName" readonly style="background:#f4f7f6;color:#777;"></div>
       <div class="form-group"><label>Email</label><input type="email" id="profileEmail"></div>
       <div class="form-group"><label>Contact Number</label><input type="tel" id="profileContact"></div>
       <div class="form-group"><label>Department</label><input type="text" id="profileDepartment"></div>
-      <button onclick="saveProfile()">💾 Save Changes</button>
+      <button onclick="saveProfile()"> Save Changes</button>
     </div>
   </div>
 </div>
@@ -194,14 +194,14 @@
 <div id="passwordModal" class="modal">
   <div class="modal-content" style="max-width:400px;">
     <div class="modal-header">
-      <h3>🔐 Change Password</h3>
-      <button class="close-btn" onclick="closePassword()">✕</button>
+      <h3> Change Password</h3>
+      <button class="close-btn" onclick="closePassword()"></button>
     </div>
     <div class="modal-body">
       <div class="form-group"><label>Current Password</label><input type="password" id="currentPassword" placeholder="Enter current password"></div>
       <div class="form-group"><label>New Password</label><input type="password" id="newPassword" placeholder="At least 8 characters" minlength="8"></div>
       <div class="form-group"><label>Confirm New Password</label><input type="password" id="confirmPassword" placeholder="Repeat new password"></div>
-      <button onclick="updatePassword()">✓ Update Password</button>
+      <button onclick="updatePassword()"> Update Password</button>
     </div>
   </div>
 </div>
@@ -210,8 +210,8 @@
 <div id="editModal" class="modal">
   <div class="modal-content" style="max-width:500px;">
     <div class="modal-header">
-      <h3>✏️ Edit Item</h3>
-      <button class="close-btn" onclick="closeEditModal()">✕</button>
+      <h3> Edit Item</h3>
+      <button class="close-btn" onclick="closeEditModal()"></button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="editRowIndex">
@@ -230,7 +230,7 @@
         <div class="form-group"><label>Storage Location</label><input id="editLocation" type="text"></div>
       </div>
       <div style="display:flex;gap:10px;margin-top:8px;">
-        <button onclick="saveEditItem()" style="flex:1;">💾 Save Changes</button>
+        <button onclick="saveEditItem()" style="flex:1;"> Save Changes</button>
         <button onclick="closeEditModal()" style="flex:1;background:var(--surface-alt);color:var(--text-main);border:1.5px solid var(--border);margin-top:0;">Cancel</button>
       </div>
     </div>
@@ -242,7 +242,7 @@
   <div class="modal-content" style="max-width:540px;">
     <div class="modal-header">
       <h3 id="detailModalTitle">Borrower Details</h3>
-      <button class="close-btn" onclick="closeDetailModal()">✕</button>
+      <button class="close-btn" onclick="closeDetailModal()"></button>
     </div>
     <div class="modal-body" id="detailModalBody"></div>
   </div>
@@ -253,7 +253,7 @@
   <div class="tab-nav" id="tabNav">
     <button class="tab-arrow" id="tabPrev" onclick="navTab(-1)" disabled>&#8592;</button>
     <div class="tab-indicator-wrap">
-      <div class="tab-label" id="tabLabel">📦 Inventory</div>
+      <div class="tab-label" id="tabLabel"> Inventory</div>
       <div class="tab-dots" id="tabDots"></div>
     </div>
     <button class="tab-arrow" id="tabNext" onclick="navTab(1)">&#8594;</button>
@@ -265,7 +265,7 @@
   <!-- TAB: By Shelf -->
   <div id="shelf-tab" class="tab-content">
     <div class="card">
-      <h3>🗄️ Inventory by Shelf / Location</h3>
+      <h3> Inventory by Shelf / Location</h3>
       <p style="color:var(--text-muted);font-size:14px;margin-bottom:18px;">Items grouped by their storage location.</p>
       <div id="shelfGrid"></div>
     </div>
@@ -274,10 +274,10 @@
   <!-- TAB: Add Stock -->
   <div id="addstock-tab" class="tab-content">
     <div class="card">
-      <h3>➕ Add Stock to Existing Items</h3>
+      <h3> Add Stock to Existing Items</h3>
       <p style="color:var(--text-muted);font-size:14px;margin-bottom:18px;">Enter the quantity to add to each item's current stock.</p>
       <div class="form-group" style="margin-bottom:16px;">
-        <input id="addStockSearch" type="text" placeholder="🔍 Search items..."
+        <input id="addStockSearch" type="text" placeholder=" Search items..."
           oninput="filterAddStock()"
           style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text-main);background:var(--surface);outline:none;transition:border-color 0.2s;"
           onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
@@ -289,14 +289,14 @@
   <!-- TAB: Stock Alerts -->
   <div id="alerts-tab" class="tab-content">
     <div class="card">
-      <h3>🔔 Stock Alerts</h3>
+      <h3> Stock Alerts</h3>
       <p style="color:var(--text-muted);font-size:14px;margin-bottom:18px;">Items that are out of stock or running low (≤ 5).</p>
       <div id="alertsList"></div>
     </div>
   </div>
   <div id="inventory-tab" class="tab-content active">
     <div class="card">
-      <h3>➕ Add New Item</h3>
+      <h3> Add New Item</h3>
       <div class="add-grid">
         <div class="form-group"><label>Item Name</label><input id="item" type="text" placeholder="e.g., Stethoscope"></div>
         <div class="form-group"><label>Size / Variant</label><input id="size" type="text" placeholder="e.g., Large, Adult"></div>
@@ -328,16 +328,16 @@
         <div class="proc-tags" id="addProcTags"></div>
       </div>
       <div id="suggestedItems">
-        <div class="sugg-title">💡 Common items for this procedure</div>
+        <div class="sugg-title"> Common items for this procedure</div>
         <div id="suggChips"></div>
       </div>
-      <button onclick="addItem()" style="margin-top:16px;">➕ Add Item</button>
+      <button onclick="addItem()" style="margin-top:16px;"> Add Item</button>
     </div>
 
     <div class="card">
-      <h3>📋 Inventory List</h3>
+      <h3> Inventory List</h3>
       <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;flex-wrap:wrap;">
-        <input id="inventorySearch" type="text" placeholder="🔍 Search items by name, code, or location..."
+        <input id="inventorySearch" type="text" placeholder=" Search items by name, code, or location..."
           oninput="searchAndPage()"
           style="flex:1;min-width:180px;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text-main);background:var(--surface);outline:none;transition:border-color 0.2s;"
           onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
@@ -353,13 +353,13 @@
   <!-- TAB: Borrows -->
   <div id="borrowed-tab" class="tab-content">
     <div class="card">
-      <h3>🔄 Borrow Tracking</h3>
+      <h3> Borrow Tracking</h3>
       <div id="warningContainer"></div>
       <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
         <button class="filter-btn active" onclick="setFilter('all',this)">All Borrowers</button>
-        <button class="filter-btn" onclick="setFilter('borrowed',this)">📤 Active</button>
-        <button class="filter-btn" onclick="setFilter('returned',this)">✅ Returned</button>
-        <button class="filter-btn" onclick="setFilter('overdue',this)">⚠️ Overdue</button>
+        <button class="filter-btn" onclick="setFilter('borrowed',this)"> Active</button>
+        <button class="filter-btn" onclick="setFilter('returned',this)"> Returned</button>
+        <button class="filter-btn" onclick="setFilter('overdue',this)"> Overdue</button>
       </div>
       <div id="borrowerGrid"></div>
     </div>
@@ -368,14 +368,14 @@
   <!-- TAB: Scanner -->
   <div id="scanner-tab" class="tab-content">
     <div class="card">
-      <h3>📱 QR Code Scanner</h3>
+      <h3> QR Code Scanner</h3>
       <div class="hint-box">
         <strong>How scanning works:</strong><br>
         • <strong>First scan:</strong> Confirms borrow — stock is deducted<br>
         • <strong>Second scan (same QR):</strong> Confirms return — stock is restored
       </div>
       <p style="color:var(--text-muted);font-size:14px;margin-bottom:18px;">Open the scanner in a full-screen view for best camera performance.</p>
-      <a href="scanner.html" style="display:inline-block;padding:12px 28px;background:var(--primary);color:white;border-radius:8px;font-weight:600;text-decoration:none;font-size:15px;transition:all 0.2s;">📷 Open Scanner</a>
+      <a href="scanner.html" style="display:inline-block;padding:12px 28px;background:var(--primary);color:white;border-radius:8px;font-weight:600;text-decoration:none;font-size:15px;transition:all 0.2s;"> Open Scanner</a>
     </div>
   </div>
 </div>
@@ -386,7 +386,7 @@ let currentData      = [];
 let allBorrowRecords = [];
 let currentFilter    = 'all';
 
-// ── Auth ──────────────────────────────────────────────────
+//  Auth 
 function checkAuth() {
   const id   = localStorage.getItem("userID");
   const name = localStorage.getItem("userName");
@@ -403,7 +403,7 @@ function checkAuth() {
   tag.textContent = role || "";
 }
 
-// ── Side Menu ─────────────────────────────────────────────
+//  Side Menu 
 function toggleMenu() { document.getElementById("sideMenu").classList.toggle("active"); }
 document.addEventListener("click", e => {
   const menu = document.getElementById("sideMenu");
@@ -412,20 +412,20 @@ document.addEventListener("click", e => {
     menu.classList.remove("active");
 });
 
-// ── Procedure data ───────────────────────────────────────
+//  Procedure data 
 const PROCEDURES = [
-  { id:'handwash',    label:'🧼 Hand Washing' },
-  { id:'wound',       label:'🩹 Wound Care' },
-  { id:'ie',          label:'🔍 Internal Examination' },
-  { id:'catheter',    label:'💧 Female Catheterization' },
-  { id:'leopold',     label:'🤰 Leopold\'s Maneuver' },
-  { id:'perianal',    label:'♻️ Perianal Flushing' },
-  { id:'newborn',     label:'👶 Newborn Care' },
-  { id:'intrapartum', label:'🏥 Intrapartum Care' },
-  { id:'vitals',      label:'🫀 Vital Signs' },
-  { id:'injection',   label:'💉 Injection / IV' },
-  { id:'ngt',         label:'🍽️ NGT Insertion' },
-  { id:'cpr',         label:'🫁 CPR / BLS' },
+  { id:'handwash',    label:' Hand Washing' },
+  { id:'wound',       label:' Wound Care' },
+  { id:'ie',          label:' Internal Examination' },
+  { id:'catheter',    label:' Female Catheterization' },
+  { id:'leopold',     label:' Leopold\'s Maneuver' },
+  { id:'perianal',    label:' Perianal Flushing' },
+  { id:'newborn',     label:' Newborn Care' },
+  { id:'intrapartum', label:' Intrapartum Care' },
+  { id:'vitals',      label:' Vital Signs' },
+  { id:'injection',   label:' Injection / IV' },
+  { id:'ngt',         label:' NGT Insertion' },
+  { id:'cpr',         label:' CPR / BLS' },
 ];
 const PROC_ITEMS = {
   handwash:    ['soap','alcohol','hand sanitizer','basin','towel','gloves','apron'],
@@ -469,17 +469,17 @@ function updateSuggestions() {
     (PROC_ITEMS[pid] || []).forEach(it => { if (!seen.has(it)) { seen.add(it); allItems.push(it); }});
   });
   box.style.display = 'block';
-  chips.innerHTML = allItems.map(it => `<span class="sugg-chip">📦 ${it}</span>`).join('');
+  chips.innerHTML = allItems.map(it => `<span class="sugg-chip"> ${it}</span>`).join('');
 }
 
-// ── Arrow Tab Navigation ─────────────────────────────────
+//  Arrow Tab Navigation 
 const ADMIN_TABS = [
-  { id: 'inventory-tab', label: '📦 Inventory' },
-  { id: 'shelf-tab',     label: '🗄️ By Shelf' },
-  { id: 'addstock-tab',  label: '➕ Add Stock' },
-  { id: 'alerts-tab',    label: '🔔 Alerts' },
-  { id: 'borrowed-tab',  label: '🔄 Borrows' },
-  { id: 'scanner-tab',   label: '📱 Scanner' }
+  { id: 'inventory-tab', label: ' Inventory' },
+  { id: 'shelf-tab',     label: ' By Shelf' },
+  { id: 'addstock-tab',  label: ' Add Stock' },
+  { id: 'alerts-tab',    label: ' Alerts' },
+  { id: 'borrowed-tab',  label: ' Borrows' },
+  { id: 'scanner-tab',   label: ' Scanner' }
 ];
 let _adminTabIdx = 0;
 
@@ -533,8 +533,8 @@ function updateAdminTabNav() {
   // Show counts in label
   const ab = document.getElementById('alertsCount');
   const bb = document.getElementById('borrowedCount');
-  if (_adminTabIdx === 3 && ab && ab.textContent) label.textContent = '🔔 Alerts (' + ab.textContent + ')';
-  if (_adminTabIdx === 4 && bb && bb.textContent) label.textContent = '🔄 Borrows (' + bb.textContent + ')';
+  if (_adminTabIdx === 3 && ab && ab.textContent) label.textContent = ' Alerts (' + ab.textContent + ')';
+  if (_adminTabIdx === 4 && bb && bb.textContent) label.textContent = ' Borrows (' + bb.textContent + ')';
 }
 
 // backward compat
@@ -543,11 +543,11 @@ function switchTab(tabName, btn) {
   if (idx >= 0) goToAdminTab(idx);
 }
 
-// ── Shelf View ────────────────────────────────────────────
+//  Shelf View 
 function renderShelfView() {
   const grid = document.getElementById("shelfGrid");
   if (!currentData || currentData.length <= 1) {
-    grid.innerHTML = "<div class='empty-state'><div class='icon'>📭</div>No inventory items yet</div>";
+    grid.innerHTML = "<div class='empty-state'><div class='icon'></div>No inventory items yet</div>";
     return;
   }
   // Group by location (col 6)
@@ -570,7 +570,7 @@ function renderShelfView() {
     card.style.cssText = 'background:var(--surface);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;';
     card.innerHTML = `
       <div style="background:var(--primary);color:white;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-weight:700;font-size:14px;">📍 ${loc}</span>
+        <span style="font-weight:700;font-size:14px;"> ${loc}</span>
         <span style="background:rgba(255,255,255,0.2);font-size:12px;font-weight:700;padding:2px 10px;border-radius:20px;">${itemCount} item${itemCount>1?'s':''}</span>
       </div>
       <div style="padding:12px 16px;">
@@ -593,11 +593,11 @@ function renderShelfView() {
   grid.appendChild(wrapper);
 }
 
-// ── Add Stock ─────────────────────────────────────────────
+//  Add Stock 
 function renderAddStock() {
   const grid = document.getElementById("addStockGrid");
   if (!currentData || currentData.length <= 1) {
-    grid.innerHTML = "<div class='empty-state'><div class='icon'>📭</div>No inventory items yet</div>";
+    grid.innerHTML = "<div class='empty-state'><div class='icon'></div>No inventory items yet</div>";
     return;
   }
   grid.innerHTML = "";
@@ -618,7 +618,7 @@ function renderAddStock() {
     card.style.cssText = 'background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:16px;transition:box-shadow 0.2s;';
     card.innerHTML = `
       <div style="font-weight:700;font-size:15px;color:var(--primary);margin-bottom:4px;">${name}<em style="font-weight:400;font-size:13px;color:var(--text-muted);">${size}</em></div>
-      <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">📍 ${loc}</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;"> ${loc}</div>
       <div style="font-size:13px;font-weight:600;color:var(--text-main);margin-bottom:14px;">Current: <span style="color:${stock<=5?'var(--danger)':'var(--success)'};">${stock}</span></div>
       <div style="display:flex;gap:8px;align-items:center;">
         <input type="number" min="1" placeholder="Qty" id="addqty_${idx}"
@@ -653,7 +653,7 @@ function addStockToItem(rowIndex, inputEl) {
   .then(r=>r.json())
   .then(data => {
     if (data.status === "success") {
-      showNotification(`✓ Added ${qty} to stock. New total: ${newStock}`,"success");
+      showNotification(` Added ${qty} to stock. New total: ${newStock}`,"success");
       inputEl.value = "";
       loadItems(); // Refresh inventory data
       setTimeout(() => renderAddStock(), 600);
@@ -664,11 +664,11 @@ function addStockToItem(rowIndex, inputEl) {
   .catch(() => showNotification("Error updating stock","error"));
 }
 
-// ── Stock Alerts ──────────────────────────────────────────
+//  Stock Alerts 
 function renderAlerts() {
   const container = document.getElementById("alertsList");
   if (!currentData || currentData.length <= 1) {
-    container.innerHTML = "<div class='empty-state'><div class='icon'>✅</div>No inventory data</div>";
+    container.innerHTML = "<div class='empty-state'><div class='icon'></div>No inventory data</div>";
     return;
   }
 
@@ -689,14 +689,14 @@ function renderAlerts() {
   if (typeof updateAdminTabNav === 'function') updateAdminTabNav();
 
   if (outOfStock.length === 0 && lowStock.length === 0) {
-    container.innerHTML = "<div class='empty-state'><div class='icon'>✅</div>All items have sufficient stock</div>";
+    container.innerHTML = "<div class='empty-state'><div class='icon'></div>All items have sufficient stock</div>";
     return;
   }
 
   let html = "";
 
   if (outOfStock.length > 0) {
-    html += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--danger);margin-bottom:12px;">🚫 Out of Stock (${outOfStock.length})</div>`;
+    html += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--danger);margin-bottom:12px;"> Out of Stock (${outOfStock.length})</div>`;
     outOfStock.forEach(({ row }) => {
       html += alertCard(row, "out");
     });
@@ -704,7 +704,7 @@ function renderAlerts() {
   }
 
   if (lowStock.length > 0) {
-    html += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--warning);margin-bottom:12px;">⚠️ Low Stock (${lowStock.length})</div>`;
+    html += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--warning);margin-bottom:12px;"> Low Stock (${lowStock.length})</div>`;
     lowStock.forEach(({ row }) => {
       html += alertCard(row, "low");
     });
@@ -718,19 +718,19 @@ function alertCard(row, type) {
   const isOut    = type === "out";
   const bg       = isOut ? '#fff5f5' : '#fffbea';
   const border   = isOut ? 'var(--danger)' : 'var(--warning)';
-  const label    = isOut ? '🚫 Out of Stock' : `⚠️ Low — only ${stock} left`;
+  const label    = isOut ? ' Out of Stock' : ` Low — only ${stock} left`;
   const labelClr = isOut ? 'var(--danger)' : '#8a6400';
   return `
     <div style="background:${bg};border:1px solid ${border};border-left:4px solid ${border};border-radius:10px;padding:14px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:12px;">
       <div>
         <div style="font-weight:700;font-size:14px;color:var(--primary);">${row[1]||'—'}${row[2]?' <em style="font-weight:400;font-size:13px;color:var(--text-muted);">— '+row[2]+'</em>':''}</div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">📍 ${row[6]||'—'} &nbsp;|&nbsp; ${row[5]||'—'}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;"> ${row[6]||'—'} &nbsp;|&nbsp; ${row[5]||'—'}</div>
       </div>
       <span style="font-size:12px;font-weight:700;color:${labelClr};white-space:nowrap;">${label}</span>
     </div>`;
 }
 
-// ── Profile ───────────────────────────────────────────────
+//  Profile 
 function openProfile() {
   document.getElementById("sideMenu").classList.remove("active");
   document.getElementById("profileModal").style.display = "flex";
@@ -753,12 +753,12 @@ function saveProfile() {
     department:document.getElementById("profileDepartment").value
   })})
   .then(r=>r.json()).then(data => {
-    if (data.status==="success") { showNotification("✓ Profile updated!","success"); closeProfile(); }
+    if (data.status==="success") { showNotification(" Profile updated!","success"); closeProfile(); }
     else showNotification("Failed to update profile","error");
   });
 }
 
-// ── Password ──────────────────────────────────────────────
+//  Password 
 function changePassword() {
   document.getElementById("sideMenu").classList.remove("active");
   document.getElementById("passwordModal").style.display = "flex";
@@ -777,7 +777,7 @@ function updatePassword() {
     currentPassword:document.getElementById("currentPassword").value, newPassword:np
   })})
   .then(r=>r.json()).then(data => {
-    if (data.status==="success") { showNotification("✓ Password changed!","success"); closePassword(); }
+    if (data.status==="success") { showNotification(" Password changed!","success"); closePassword(); }
     else showNotification(data.message||"Failed to change password","error");
   });
 }
@@ -790,7 +790,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// ── Inventory search + pagination ─────────────────────────
+//  Inventory search + pagination 
 let _filteredInvRows = [];
 let _invPage = 1;
 const INV_PER_PAGE = 10;
@@ -843,7 +843,7 @@ function renderInvPage() {
       : typeVal==='Non-Consumable' ? '<span class="type-pill type-nonconsumable">Non-Consumable</span>'
       : `<span style="color:var(--text-muted);font-size:13px;">${typeVal||'—'}</span>`;
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td style="font-weight:600;">${row[1]||'—'}</td><td>${row[2]||'—'}</td><td><code style="font-size:12px;background:#f4f7f6;padding:2px 6px;border-radius:4px;">${row[3]||'—'}</code></td><td style="font-weight:700;color:${stock===0?'var(--danger)':stock<=3?'var(--warning)':'var(--text-main)'}">${stock} <span style="font-size:11px;font-weight:400;color:var(--text-muted);">${unit}</span></td><td>${stockBadge}</td><td>${typePill}</td><td>${row[6]||'—'}</td><td>${procHTML}</td><td style="white-space:nowrap;"><button class="tbl-btn btn-success" onclick="openEditModal(${realIdx})" style="background:var(--primary);">✏️ Edit</button><button class="tbl-btn btn-danger" onclick="deleteItem(${realIdx})">🗑 Delete</button></td>`;
+    tr.innerHTML = `<td style="font-weight:600;">${row[1]||'—'}</td><td>${row[2]||'—'}</td><td><code style="font-size:12px;background:#f4f7f6;padding:2px 6px;border-radius:4px;">${row[3]||'—'}</code></td><td style="font-weight:700;color:${stock===0?'var(--danger)':stock<=3?'var(--warning)':'var(--text-main)'}">${stock} <span style="font-size:11px;font-weight:400;color:var(--text-muted);">${unit}</span></td><td>${stockBadge}</td><td>${typePill}</td><td>${row[6]||'—'}</td><td>${procHTML}</td><td style="white-space:nowrap;"><button class="tbl-btn btn-success" onclick="openEditModal(${realIdx})" style="background:var(--primary);"> Edit</button><button class="tbl-btn btn-danger" onclick="deleteItem(${realIdx})"> Delete</button></td>`;
     tbody.appendChild(tr);
   });
   // Pagination
@@ -860,7 +860,7 @@ function renderInvPage() {
   pg.appendChild(next);
 }
 
-// ── Inventory load ────────────────────────────────────────
+//  Inventory load 
 function loadItems() {
   fetch(API, { method:"POST", body: new URLSearchParams({ action:"getItems" }) })
   .then(r=>r.json())
@@ -874,7 +874,7 @@ function loadItems() {
   .catch(() => showNotification("Failed to load inventory","error"));
 }
 
-// ── Edit Item Modal ───────────────────────────────────────
+//  Edit Item Modal 
 function openEditModal(index) {
   const row = currentData[index];
   if (!row) return;
@@ -930,7 +930,7 @@ function saveEditItem() {
     setLoading(btn, false);
     const allOk = results.every(r => r.status === "success");
     if (allOk) {
-      showNotification("✓ Item updated!","success");
+      showNotification(" Item updated!","success");
       closeEditModal();
       loadItems();
     } else {
@@ -984,7 +984,7 @@ function addItem() {
   .then(data => {
     setLoading(btn, false);
     if (data.status==="success") {
-      showNotification("✓ Item added!","success");
+      showNotification(" Item added!","success");
       ["item","size","code","stock","location"].forEach(id => document.getElementById(id).value = "");
       document.getElementById("type").value = "";
       document.getElementById("stockUnit").value = "pcs";
@@ -997,7 +997,7 @@ function addItem() {
   .catch(() => { setLoading(btn, false); showNotification("Error adding item","error"); });
 }
 
-// ── Borrow Tracking ───────────────────────────────────────
+//  Borrow Tracking 
 function setFilter(filter, btn) {
   currentFilter = filter;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -1022,7 +1022,7 @@ function renderBorrowerGrid() {
   grid.innerHTML = "";
 
   if (allBorrowRecords.length === 0) {
-    grid.innerHTML = "<div class='empty-state'><div class='icon'>📭</div>No borrow records found</div>";
+    grid.innerHTML = "<div class='empty-state'><div class='icon'></div>No borrow records found</div>";
     return;
   }
 
@@ -1048,7 +1048,7 @@ function renderBorrowerGrid() {
   });
 
   if (totalOverdue > 0)
-    warningContainer.innerHTML = `<div class="warning">⚠️ <strong>${totalOverdue} overdue item(s)!</strong> Please follow up with borrowers.</div>`;
+    warningContainer.innerHTML = `<div class="warning"> <strong>${totalOverdue} overdue item(s)!</strong> Please follow up with borrowers.</div>`;
 
   const totalActive = Object.values(borrowerMap).reduce((s,b)=>s+b.activeCount+b.overdueCount,0);
   const badge = document.getElementById('borrowedCount');
@@ -1064,7 +1064,7 @@ function renderBorrowerGrid() {
   });
 
   if (entries.length === 0) {
-    grid.innerHTML = "<div class='empty-state'><div class='icon'>🔍</div>No borrowers match this filter</div>";
+    grid.innerHTML = "<div class='empty-state'><div class='icon'></div>No borrowers match this filter</div>";
     return;
   }
 
@@ -1084,12 +1084,12 @@ function renderBorrowerGrid() {
     let statusColor='var(--text-muted)', statusLabel=`${b.returnedCount} returned`, borderColor='var(--border)', bgColor='var(--surface)', pill='';
     if (hasOverdue) {
       statusColor='var(--danger)'; statusLabel=`${b.overdueCount} OVERDUE`; borderColor='var(--danger)'; bgColor='#fff5f5';
-      pill=`<span style="background:#fde8e8;color:var(--danger);font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;">⚠️ OVERDUE</span>`;
+      pill=`<span style="background:#fde8e8;color:var(--danger);font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;"> OVERDUE</span>`;
     } else if (hasActive) {
       statusColor='var(--success)'; statusLabel=`${b.activeCount} active borrow${b.activeCount>1?'s':''}`; borderColor='var(--primary)'; bgColor='#f0faf6';
       pill=`<span style="background:#d4f3e8;color:var(--success);font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;">Active</span>`;
     } else {
-      pill=`<span style="background:#e8f4ff;color:#1a5fa0;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;">✓ All Returned</span>`;
+      pill=`<span style="background:#e8f4ff;color:#1a5fa0;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;"> All Returned</span>`;
     }
 
     // Build a preview of items from the most recent record
@@ -1102,10 +1102,10 @@ function renderBorrowerGrid() {
     const card = document.createElement('div');
     card.style.cssText = `background:${bgColor};border:1.5px solid ${borderColor};border-radius:12px;padding:16px 18px;cursor:pointer;transition:all 0.2s ease;`;
     card.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;"><div style="font-size:28px;line-height:1;">👤</div>${pill}</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;"><div style="font-size:28px;line-height:1;"></div>${pill}</div>
       <div style="font-weight:700;font-size:15px;color:var(--primary);margin-bottom:4px;">${b.studentName}</div>
       <div style="font-size:12px;color:${statusColor};font-weight:600;">${statusLabel}</div>
-      ${previewText ? `<div style="font-size:12px;color:var(--text-muted);margin-top:5px;font-style:italic;">📦 ${previewText}</div>` : ''}
+      ${previewText ? `<div style="font-size:12px;color:var(--text-muted);margin-top:5px;font-style:italic;"> ${previewText}</div>` : ''}
       <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${totalItems} total record${totalItems>1?'s':''}</div>
       <div style="margin-top:12px;font-size:12px;color:var(--primary-light);font-weight:600;">Tap to view details →</div>`;
     card.onmouseover = () => { card.style.transform='translateY(-3px)'; card.style.boxShadow='0 8px 24px rgba(13,79,79,0.12)'; };
@@ -1117,7 +1117,7 @@ function renderBorrowerGrid() {
   grid.appendChild(wrapper);
 }
 
-// ── Resolve item IDs to names from inventory ─────────────
+//  Resolve item IDs to names from inventory 
 function resolveAdminItemNames(rawItems) {
   if (!rawItems) return ["Unknown item"];
   return String(rawItems).split(",").map(entry => {
@@ -1139,14 +1139,14 @@ function resolveAdminItemNames(rawItems) {
 }
 
 function openDetailModal(borrower) {
-  document.getElementById("detailModalTitle").textContent = `👤 ${borrower.studentName}`;
+  document.getElementById("detailModalTitle").textContent = ` ${borrower.studentName}`;
   const body = document.getElementById("detailModalBody");
 
   const active   = borrower.records.filter(r => r[6] === "Borrowed");
   const returned = borrower.records.filter(r => r[6] === "Returned");
   let html = "";
 
-  // ── Borrower summary header ──────────────────────────────
+  //  Borrower summary header 
   // Try to extract idNumber/course/procedure from latest record's QR metadata
   // These are stored in borrow records if the new QR format was used
   const latestRecord = [...borrower.records].reverse()[0];
@@ -1165,23 +1165,23 @@ function openDetailModal(borrower) {
   } catch(e) {}
 
   const infoRows = [
-    idNum     ? `<div>🪪 <strong>ID Number:</strong> ${idNum}</div>`         : '',
-    course    ? `<div>📚 <strong>Course/Section:</strong> ${course}</div>`   : '',
-    subject   ? `<div>📖 <strong>Subject:</strong> ${subject}</div>`         : '',
-    procedure ? `<div>🔬 <strong>Procedure:</strong> ${procedure}</div>`     : '',
+    idNum     ? `<div> <strong>ID Number:</strong> ${idNum}</div>`         : '',
+    course    ? `<div> <strong>Course/Section:</strong> ${course}</div>`   : '',
+    subject   ? `<div> <strong>Subject:</strong> ${subject}</div>`         : '',
+    procedure ? `<div> <strong>Procedure:</strong> ${procedure}</div>`     : '',
   ].filter(Boolean).join("");
 
   if (infoRows) {
     html += `
       <div style="background:var(--surface-alt);border:1px solid var(--border);border-left:4px solid var(--primary);border-radius:10px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:var(--text-muted);line-height:2.1;">
-        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--primary);margin-bottom:8px;">🗂️ Borrower Info</div>
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--primary);margin-bottom:8px;"> Borrower Info</div>
         ${infoRows}
       </div>`;
   }
 
-  // ── Active / Overdue borrows ──────────────────────────
+  //  Active / Overdue borrows 
   if (active.length > 0) {
-    html += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--text-muted);margin-bottom:10px;">📤 Currently Borrowed</div>`;
+    html += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--text-muted);margin-bottom:10px;"> Currently Borrowed</div>`;
     active.forEach(r => {
       const returnDate = new Date(r[5]);
       const isOverdue  = returnDate < new Date();
@@ -1194,52 +1194,52 @@ function openDetailModal(borrower) {
 
       html += `
         <div style="background:${isOverdue?'#fff5f5':'#f0faf6'};border:1px solid ${isOverdue?'#f5c6c6':'#b8e8d4'};border-left:4px solid ${isOverdue?'var(--danger)':'var(--success)'};border-radius:10px;padding:14px 16px;margin-bottom:10px;">
-          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;font-weight:600;">📋 Borrowed Items</div>
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;font-weight:600;"> Borrowed Items</div>
           <ul style="list-style:none;padding:0;margin:0 0 10px 0;">
-            ${itemNames.map(n=>`<li style="font-size:14px;font-weight:600;color:var(--primary);padding:3px 0;border-bottom:1px solid rgba(0,0,0,0.06);">📦 ${n}</li>`).join("")}
+            ${itemNames.map(n=>`<li style="font-size:14px;font-weight:600;color:var(--primary);padding:3px 0;border-bottom:1px solid rgba(0,0,0,0.06);"> ${n}</li>`).join("")}
           </ul>
           <div style="font-size:12px;color:var(--text-muted);line-height:2.1;">
-            ${rId     ? `<div>🪪 <strong>ID:</strong> ${rId}</div>` : ''}
-            ${rCourse ? `<div>📚 <strong>Course:</strong> ${rCourse}</div>` : ''}
-            ${rProc   ? `<div>🔬 <strong>Procedure:</strong> ${rProc}</div>` : ''}
-            <div>📅 <strong>Borrowed:</strong> ${new Date(r[4]).toLocaleString()}</div>
+            ${rId     ? `<div> <strong>ID:</strong> ${rId}</div>` : ''}
+            ${rCourse ? `<div> <strong>Course:</strong> ${rCourse}</div>` : ''}
+            ${rProc   ? `<div> <strong>Procedure:</strong> ${rProc}</div>` : ''}
+            <div> <strong>Borrowed:</strong> ${new Date(r[4]).toLocaleString()}</div>
             <div>⏰ <strong>Return by:</strong> <span style="color:${isOverdue?'var(--danger)':'inherit'};font-weight:${isOverdue?'700':'400'};">${returnDate.toLocaleString()}</span></div>
-            ${isOverdue?`<div style="color:var(--danger);font-weight:700;">⚠️ ${daysOver} day${daysOver>1?'s':''} overdue!</div>`:''}
-            ${r[8]?`<div>👤 <strong>Lent by:</strong> ${r[8]}</div>`:''}
+            ${isOverdue?`<div style="color:var(--danger);font-weight:700;"> ${daysOver} day${daysOver>1?'s':''} overdue!</div>`:''}
+            ${r[8]?`<div> <strong>Lent by:</strong> ${r[8]}</div>`:''}
           </div>
-          <span class="status-badge ${isOverdue?'status-overdue':'status-borrowed'}" style="margin-top:8px;">${isOverdue?'⚠️ Overdue':'Borrowed'}</span>
+          <span class="status-badge ${isOverdue?'status-overdue':'status-borrowed'}" style="margin-top:8px;">${isOverdue?' Overdue':'Borrowed'}</span>
         </div>`;
     });
   }
 
-  // ── Returned borrows ──────────────────────────────────
+  //  Returned borrows 
   if (returned.length > 0) {
     if (active.length > 0) html += `<hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">`;
-    html += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--text-muted);margin-bottom:10px;">✅ Returned Items</div>`;
+    html += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--text-muted);margin-bottom:10px;"> Returned Items</div>`;
     returned.forEach(r => {
       const itemNames = resolveAdminItemNames(r[3]);
       let rProc = "", rCourse = "", rId = "";
       if (r.length > 10) { rId = r[10]||""; rCourse = r[11]||""; rProc = r[13]||""; }
       html += `
         <div style="background:#f4f7f6;border:1px solid var(--border);border-left:4px solid var(--success);border-radius:10px;padding:14px 16px;margin-bottom:10px;">
-          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;font-weight:600;">📋 Items Returned</div>
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;font-weight:600;"> Items Returned</div>
           <ul style="list-style:none;padding:0;margin:0 0 10px 0;">
-            ${itemNames.map(n=>`<li style="font-size:14px;font-weight:600;color:var(--primary);padding:3px 0;border-bottom:1px solid rgba(0,0,0,0.06);">📦 ${n}</li>`).join("")}
+            ${itemNames.map(n=>`<li style="font-size:14px;font-weight:600;color:var(--primary);padding:3px 0;border-bottom:1px solid rgba(0,0,0,0.06);"> ${n}</li>`).join("")}
           </ul>
           <div style="font-size:12px;color:var(--text-muted);line-height:2.1;">
-            ${rId     ? `<div>🪪 <strong>ID:</strong> ${rId}</div>` : ''}
-            ${rCourse ? `<div>📚 <strong>Course:</strong> ${rCourse}</div>` : ''}
-            ${rProc   ? `<div>🔬 <strong>Procedure:</strong> ${rProc}</div>` : ''}
-            <div>📅 <strong>Borrowed:</strong> ${new Date(r[4]).toLocaleString()}</div>
-            <div>📅 <strong>Due date:</strong> ${new Date(r[5]).toLocaleString()}</div>
-            ${r[8]?`<div>👤 <strong>Lent by:</strong> ${r[8]}</div>`:''}
+            ${rId     ? `<div> <strong>ID:</strong> ${rId}</div>` : ''}
+            ${rCourse ? `<div> <strong>Course:</strong> ${rCourse}</div>` : ''}
+            ${rProc   ? `<div> <strong>Procedure:</strong> ${rProc}</div>` : ''}
+            <div> <strong>Borrowed:</strong> ${new Date(r[4]).toLocaleString()}</div>
+            <div> <strong>Due date:</strong> ${new Date(r[5]).toLocaleString()}</div>
+            ${r[8]?`<div> <strong>Lent by:</strong> ${r[8]}</div>`:''}
           </div>
-          <span class="status-badge status-returned" style="margin-top:8px;">✓ Returned</span>
+          <span class="status-badge status-returned" style="margin-top:8px;"> Returned</span>
         </div>`;
     });
   }
 
-  if (!html) html = "<div class='empty-state'><div class='icon'>📭</div>No records found</div>";
+  if (!html) html = "<div class='empty-state'><div class='icon'></div>No records found</div>";
   body.innerHTML = html;
   document.getElementById("borrowerDetailModal").style.display = "flex";
 }
