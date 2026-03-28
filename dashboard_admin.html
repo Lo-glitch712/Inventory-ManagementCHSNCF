@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — CHS VITAL System</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .modal { justify-content: center; align-items: center; padding: 20px; }
+
+    .filter-btn {
+      padding: 7px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      background: var(--surface);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: 'DM Sans', sans-serif;
+      margin-top: 0;
+      width: auto;
+    }
+    .filter-btn:hover  { border-color: var(--primary); color: var(--primary); transform: none; box-shadow: none; }
+    .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+    /* Stock badge */
+    .stock-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .stock-ok  { background: #d4f3e8; color: #1a6e4a; }
+    .stock-low { background: #fff3cd; color: #8a6400; }
+    .stock-out { background: #fde8e8; color: var(--danger); }
+
+    /* Type pill */
+    .type-pill {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .type-consumable     { background: #e8f0ff; color: #2d4fa0; }
+    .type-nonconsumable  { background: #f0faf6; color: #1a5a3e; }
+
+    /* Action buttons in table */
+    .tbl-btn {
+      padding: 5px 12px !important;
+      font-size: 12px !important;
+      width: auto !important;
+      margin: 2px !important;
+      border-radius: 6px !important;
+    }
+
+    /* ── Arrow Tab Navigation ─────────────────────────── */
+    .tab-nav {
+      display: flex; align-items: center;
+      margin-bottom: 20px; background: var(--surface);
+      border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden;
+    }
+    .tab-arrow {
+      flex: 0 0 48px; height: 52px; background: transparent; border: none;
+      font-size: 20px; font-weight: 700; color: var(--primary); cursor: pointer;
+      transition: background 0.2s; margin: 0; border-radius: 0;
+      display: flex; align-items: center; justify-content: center; width: 48px;
+    }
+    .tab-arrow:hover:not(:disabled) { background: var(--surface-alt); transform: none; box-shadow: none; }
+    .tab-arrow:disabled { opacity: 0.25; cursor: not-allowed; }
+    .tab-indicator-wrap {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 10px 8px 8px;
+      border-left: 1px solid var(--border); border-right: 1px solid var(--border); min-width: 0;
+    }
+    .tab-label {
+      font-size: 14px; font-weight: 700; color: var(--primary);
+      font-family: 'DM Sans', sans-serif; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+    }
+    .tab-dots { display: flex; gap: 6px; margin-top: 5px; }
+    .tab-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: var(--border);
+      transition: all 0.25s; cursor: pointer;
+    }
+    .tab-dot.active { background: var(--primary); transform: scale(1.3); }
+
+    /* ── Stock unit row ────────────────────────────────── */
+    .stock-unit-row { display: flex; gap: 10px; align-items: flex-end; }
+    .stock-unit-row .stock-input { flex: 1; }
+    .stock-unit-row select.unit-sel { flex: 0 0 100px; }
+
+    /* ── Procedure tags ────────────────────────────────── */
+    .proc-tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 8px; }
+    .proc-tag {
+      padding: 5px 13px; border-radius: 20px;
+      background: var(--surface-alt); border: 1.5px solid var(--border);
+      font-size: 12px; font-weight: 600; color: var(--text-muted);
+      cursor: pointer; transition: all 0.18s; user-select: none;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .proc-tag:hover  { border-color: var(--primary); color: var(--primary); background: #edf5f3; }
+    .proc-tag.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+    /* ── Suggested items hint ──────────────────────────── */
+    #suggestedItems {
+      display: none; margin-top: 14px; padding: 14px 16px;
+      background: #eaf4f0; border: 1px solid #b0d9cb;
+      border-left: 4px solid var(--primary); border-radius: var(--radius);
+    }
+    #suggestedItems .sugg-title {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.7px; color: var(--primary); margin-bottom: 8px;
+    }
+    .sugg-chip {
+      display: inline-block; background: white; border: 1px solid #b0d9cb;
+      border-radius: 6px; padding: 4px 10px; font-size: 12px; font-weight: 600;
+      color: var(--primary); margin: 3px 3px 3px 0;
+    }
+
+    /* ── Inventory pagination ──────────────────────────── */
+    .pagination {
+      display: flex; align-items: center; justify-content: center;
+      gap: 6px; margin-top: 18px; flex-wrap: wrap;
+    }
+    .pg-btn {
+      padding: 7px 14px; font-size: 13px; font-weight: 600;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      background: var(--surface); color: var(--text-muted);
+      cursor: pointer; transition: all 0.2s; font-family: 'DM Sans', sans-serif;
+      width: auto; margin: 0;
+    }
+    .pg-btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); transform: none; box-shadow: none; }
+    .pg-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+    .pg-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .pg-info { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+
+    /* ── Add item grid ─────────────────────────────────── */
+    .add-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+    @media (max-width: 520px) { .add-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body class="dashboard-body">
+
+<div class="page-header">
+  <h1 class="header-title">CHS PROJECT VITAL SYSTEM</h1>
+  <p class="header-subtitle">VIRTUAL • INVENTORY • TRACKING • LOGGING</p>
+</div>
+
+<div class="navbar">
+  <h1>🛡️ Admin Dashboard</h1>
+  <div class="navbar-right">
+    <span>Welcome, <strong id="userName"></strong> <span id="roleTag"></span></span>
+    <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+  </div>
+</div>
+
+<!-- Side Menu -->
+<div id="sideMenu" class="side-menu">
+  <button class="close-btn" onclick="toggleMenu()">✕</button>
+  <div class="side-menu-header">
+    <strong id="sideUserName">User</strong>
+    <p id="sideUserRole">Role</p>
+  </div>
+  <div class="menu-content">
+    <button onclick="openProfile()" class="menu-btn">👤 My Profile</button>
+    <button onclick="changePassword()" class="menu-btn">🔐 Change Password</button>
+    <hr style="margin:10px 0;border:none;border-top:1px solid rgba(255,255,255,0.12);">
+    <button onclick="logout()" class="menu-btn danger">🚪 Logout</button>
+  </div>
+</div>
+
+<!-- Profile Modal -->
+<div id="profileModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>👤 My Profile</h3>
+      <button class="close-btn" onclick="closeProfile()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>Full Name</label><input type="text" id="profileName" readonly style="background:#f4f7f6;color:#777;"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="profileEmail"></div>
+      <div class="form-group"><label>Contact Number</label><input type="tel" id="profileContact"></div>
+      <div class="form-group"><label>Department</label><input type="text" id="profileDepartment"></div>
+      <button onclick="saveProfile()">💾 Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Password Modal -->
+<div id="passwordModal" class="modal">
+  <div class="modal-content" style="max-width:400px;">
+    <div class="modal-header">
+      <h3>🔐 Change Password</h3>
+      <button class="close-btn" onclick="closePassword()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>Current Password</label><input type="password" id="currentPassword" placeholder="Enter current password"></div>
+      <div class="form-group"><label>New Password</label><input type="password" id="newPassword" placeholder="At least 8 characters" minlength="8"></div>
+      <div class="form-group"><label>Confirm New Password</label><input type="password" id="confirmPassword" placeholder="Repeat new password"></div>
+      <button onclick="updatePassword()">✓ Update Password</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Item Modal -->
+<div id="editModal" class="modal">
+  <div class="modal-content" style="max-width:500px;">
+    <div class="modal-header">
+      <h3>✏️ Edit Item</h3>
+      <button class="close-btn" onclick="closeEditModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editRowIndex">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;">
+        <div class="form-group"><label>Item Name</label><input id="editItem" type="text"></div>
+        <div class="form-group"><label>Size / Variant</label><input id="editSize" type="text"></div>
+        <div class="form-group"><label>Item Code</label><input id="editCode" type="text"></div>
+        <div class="form-group"><label>Stock Quantity</label><input id="editStock" type="number" min="0"></div>
+        <div class="form-group">
+          <label>Item Type</label>
+          <select id="editType">
+            <option value="Consumable">Consumable</option>
+            <option value="Non-Consumable">Non-Consumable</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Storage Location</label><input id="editLocation" type="text"></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:8px;">
+        <button onclick="saveEditItem()" style="flex:1;">💾 Save Changes</button>
+        <button onclick="closeEditModal()" style="flex:1;background:var(--surface-alt);color:var(--text-main);border:1.5px solid var(--border);margin-top:0;">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Borrower Detail Modal -->
+<div id="borrowerDetailModal" class="modal">
+  <div class="modal-content" style="max-width:540px;">
+    <div class="modal-header">
+      <h3 id="detailModalTitle">Borrower Details</h3>
+      <button class="close-btn" onclick="closeDetailModal()">✕</button>
+    </div>
+    <div class="modal-body" id="detailModalBody"></div>
+  </div>
+</div>
+
+<!-- Dashboard Content -->
+<div class="dashboard-main">
+  <div class="tab-nav" id="tabNav">
+    <button class="tab-arrow" id="tabPrev" onclick="navTab(-1)" disabled>&#8592;</button>
+    <div class="tab-indicator-wrap">
+      <div class="tab-label" id="tabLabel">📦 Inventory</div>
+      <div class="tab-dots" id="tabDots"></div>
+    </div>
+    <button class="tab-arrow" id="tabNext" onclick="navTab(1)">&#8594;</button>
+  </div>
+  <!-- Hidden badges still updated by JS, read by updateAdminBadges() -->
+  <span id="alertsCount"  style="display:none;"></span>
+  <span id="borrowedCount" style="display:none;"></span>
+
+  <!-- TAB: By Shelf -->
+  <div id="shelf-tab" class="tab-content">
+    <div class="card">
+      <h3>🗄️ Inventory by Shelf / Location</h3>
+      <p style="color:var(--text-muted);font-size:14px;margin-bottom:18px;">Items grouped by their storage location.</p>
+      <div id="shelfGrid"></div>
+    </div>
+  </div>
+
+  <!-- TAB: Add Stock -->
+  <div id="addstock-tab" class="tab-content">
+    <div class="card">
+      <h3>➕ Add Stock to Existing Items</h3>
+      <p style="color:var(--text-muted);font-size:14px;margin-bottom:18px;">Enter the quantity to add to each item's current stock.</p>
+      <div class="form-group" style="margin-bottom:16px;">
+        <input id="addStockSearch" type="text" placeholder="🔍 Search items..."
+          oninput="filterAddStock()"
+          style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text-main);background:var(--surface);outline:none;transition:border-color 0.2s;"
+          onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div id="addStockGrid"></div>
+    </div>
+  </div>
+
+  <!-- TAB: Stock Alerts -->
+  <div id="alerts-tab" class="tab-content">
+    <div class="card">
+      <h3>🔔 Stock Alerts</h3>
+      <p style="color:var(--text-muted);font-size:14px;margin-bottom:18px;">Items that are out of stock or running low (≤ 5).</p>
+      <div id="alertsList"></div>
+    </div>
+  </div>
+  <div id="inventory-tab" class="tab-content active">
+    <div class="card">
+      <h3>➕ Add New Item</h3>
+      <div class="add-grid">
+        <div class="form-group"><label>Item Name</label><input id="item" type="text" placeholder="e.g., Stethoscope"></div>
+        <div class="form-group"><label>Size / Variant</label><input id="size" type="text" placeholder="e.g., Large, Adult"></div>
+        <div class="form-group"><label>Item Code</label><input id="code" type="text" placeholder="e.g., STH-001"></div>
+        <div class="form-group">
+          <label>Stock Quantity &amp; Unit</label>
+          <div class="stock-unit-row">
+            <input id="stock" type="number" placeholder="0" min="0" class="stock-input">
+            <select id="stockUnit" class="unit-sel">
+              <option value="pcs">pcs</option><option value="boxes">boxes</option>
+              <option value="sets">sets</option><option value="rolls">rolls</option>
+              <option value="pairs">pairs</option><option value="bottles">bottles</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Item Type</label>
+          <select id="type">
+            <option value="">— Select type —</option>
+            <option value="Consumable">Consumable</option>
+            <option value="Non-Consumable">Non-Consumable</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Storage Location</label><input id="location" type="text" placeholder="e.g., Cabinet A1"></div>
+      </div>
+      <!-- Procedure picker -->
+      <div class="form-group" style="margin-top:8px;">
+        <label>Used in Procedures <span style="font-weight:400;color:var(--text-muted);font-size:12px;">(select all that apply)</span></label>
+        <div class="proc-tags" id="addProcTags"></div>
+      </div>
+      <div id="suggestedItems">
+        <div class="sugg-title">💡 Common items for this procedure</div>
+        <div id="suggChips"></div>
+      </div>
+      <button onclick="addItem()" style="margin-top:16px;">➕ Add Item</button>
+    </div>
+
+    <div class="card">
+      <h3>📋 Inventory List</h3>
+      <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;flex-wrap:wrap;">
+        <input id="inventorySearch" type="text" placeholder="🔍 Search items by name, code, or location..."
+          oninput="searchAndPage()"
+          style="flex:1;min-width:180px;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text-main);background:var(--surface);outline:none;transition:border-color 0.2s;"
+          onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+        <span id="invTotalCount" style="font-size:13px;color:var(--text-muted);white-space:nowrap;"></span>
+      </div>
+      <div class="table-wrapper">
+        <table id="inventoryTable"></table>
+      </div>
+      <div class="pagination" id="invPagination"></div>
+    </div>
+  </div>
+
+  <!-- TAB: Borrows -->
+  <div id="borrowed-tab" class="tab-content">
+    <div class="card">
+      <h3>🔄 Borrow Tracking</h3>
+      <div id="warningContainer"></div>
+      <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
+        <button class="filter-btn active" onclick="setFilter('all',this)">All Borrowers</button>
+        <button class="filter-btn" onclick="setFilter('borrowed',this)">📤 Active</button>
+        <button class="filter-btn" onclick="setFilter('returned',this)">✅ Returned</button>
+        <button class="filter-btn" onclick="setFilter('overdue',this)">⚠️ Overdue</button>
+      </div>
+      <div id="borrowerGrid"></div>
+    </div>
+  </div>
+
+  <!-- TAB: Scanner -->
+  <div id="scanner-tab" class="tab-content">
+    <div class="card">
+      <h3>📱 QR Code Scanner</h3>
+      <div class="hint-box">
+        <strong>How scanning works:</strong><br>
+        • <strong>First scan:</strong> Confirms borrow — stock is deducted<br>
+        • <strong>Second scan (same QR):</strong> Confirms return — stock is restored
+      </div>
+      <p style="color:var(--text-muted);font-size:14px;margin-bottom:18px;">Open the scanner in a full-screen view for best camera performance.</p>
+      <a href="scanner.html" style="display:inline-block;padding:12px 28px;background:var(--primary);color:white;border-radius:8px;font-weight:600;text-decoration:none;font-size:15px;transition:all 0.2s;">📷 Open Scanner</a>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+let currentData      = [];
+let allBorrowRecords = [];
+let currentFilter    = 'all';
+
+// ── Auth ──────────────────────────────────────────────────
+function checkAuth() {
+  const id   = localStorage.getItem("userID");
+  const name = localStorage.getItem("userName");
+  const role = localStorage.getItem("userRole");
+  if (!id) { window.location = "login.html"; return; }
+
+  document.getElementById("userName").textContent     = name || "User";
+  document.getElementById("sideUserName").textContent = name || "User";
+  document.getElementById("sideUserRole").textContent = role || "";
+
+  const roleColors = { "Clinical Instructor":"role-admin", "Student Assistant":"role-sa" };
+  const tag = document.getElementById("roleTag");
+  tag.className = "role-badge " + (roleColors[role] || "role-admin");
+  tag.textContent = role || "";
+}
+
+// ── Side Menu ─────────────────────────────────────────────
+function toggleMenu() { document.getElementById("sideMenu").classList.toggle("active"); }
+document.addEventListener("click", e => {
+  const menu = document.getElementById("sideMenu");
+  const tog  = document.querySelector(".menu-toggle");
+  if (menu && !menu.contains(e.target) && tog && !tog.contains(e.target))
+    menu.classList.remove("active");
+});
+
+// ── Procedure data ───────────────────────────────────────
+const PROCEDURES = [
+  { id:'handwash',    label:'🧼 Hand Washing' },
+  { id:'wound',       label:'🩹 Wound Care' },
+  { id:'ie',          label:'🔍 Internal Examination' },
+  { id:'catheter',    label:'💧 Female Catheterization' },
+  { id:'leopold',     label:'🤰 Leopold\'s Maneuver' },
+  { id:'perianal',    label:'♻️ Perianal Flushing' },
+  { id:'newborn',     label:'👶 Newborn Care' },
+  { id:'intrapartum', label:'🏥 Intrapartum Care' },
+  { id:'vitals',      label:'🫀 Vital Signs' },
+  { id:'injection',   label:'💉 Injection / IV' },
+  { id:'ngt',         label:'🍽️ NGT Insertion' },
+  { id:'cpr',         label:'🫁 CPR / BLS' },
+];
+const PROC_ITEMS = {
+  handwash:    ['soap','alcohol','hand sanitizer','basin','towel','gloves','apron'],
+  wound:       ['gauze','bandage','dressing','iodine','antiseptic','forceps','scissors','tape','saline','cotton','syringe','gloves','basin'],
+  ie:          ['gloves','sterile gloves','lubricant','jelly','speculum','drape','basin','pad','underpad'],
+  catheter:    ['catheter','foley','urine bag','drainage bag','lubricant','jelly','sterile gloves','antiseptic','cotton','syringe','saline','basin','tape','drape'],
+  leopold:     ['stethoscope','doppler','fetoscope','measuring tape','tape measure','lubricant','jelly','gloves','drape'],
+  perianal:    ['basin','soap','cotton','gauze','gloves','towel','pad','underpad','forceps','antiseptic'],
+  newborn:     ['bulb syringe','suction','cord clamp','vitamin k','erythromycin','eye ointment','scale','blanket','towel','gloves','basin','thermometer','stethoscope','tape','measuring tape'],
+  intrapartum: ['gloves','sterile gloves','scissors','clamp','cord clamp','basin','drape','suture','needle','syringe','iv','catheter','stethoscope','doppler','pad','underpad','gauze','cotton','antiseptic'],
+  vitals:      ['stethoscope','bp apparatus','thermometer','pulse oximeter','watch','penlight'],
+  injection:   ['syringe','needle','alcohol swab','tourniquet','iv catheter','tape','gloves','cotton'],
+  ngt:         ['ngt tube','syringe','tape','lubricant','tongue depressor','penlight','gloves','basin'],
+  cpr:         ['bvm','ambu bag','face shield','gloves','aed','suction catheter'],
+};
+let selectedAddProcs = new Set();
+
+function buildProcTags(containerId, selectedSet, onChangeCb) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  PROCEDURES.forEach(proc => {
+    const tag = document.createElement('span');
+    tag.className = 'proc-tag' + (selectedSet.has(proc.id) ? ' active' : '');
+    tag.textContent = proc.label;
+    tag.onclick = () => {
+      if (selectedSet.has(proc.id)) { selectedSet.delete(proc.id); tag.classList.remove('active'); }
+      else { selectedSet.add(proc.id); tag.classList.add('active'); }
+      if (onChangeCb) onChangeCb();
+    };
+    container.appendChild(tag);
+  });
+}
+
+function updateSuggestions() {
+  const box = document.getElementById('suggestedItems');
+  const chips = document.getElementById('suggChips');
+  if (selectedAddProcs.size === 0) { box.style.display = 'none'; return; }
+  const seen = new Set(), allItems = [];
+  selectedAddProcs.forEach(pid => {
+    (PROC_ITEMS[pid] || []).forEach(it => { if (!seen.has(it)) { seen.add(it); allItems.push(it); }});
+  });
+  box.style.display = 'block';
+  chips.innerHTML = allItems.map(it => `<span class="sugg-chip">📦 ${it}</span>`).join('');
+}
+
+// ── Arrow Tab Navigation ─────────────────────────────────
+const ADMIN_TABS = [
+  { id: 'inventory-tab', label: '📦 Inventory' },
+  { id: 'shelf-tab',     label: '🗄️ By Shelf' },
+  { id: 'addstock-tab',  label: '➕ Add Stock' },
+  { id: 'alerts-tab',    label: '🔔 Alerts' },
+  { id: 'borrowed-tab',  label: '🔄 Borrows' },
+  { id: 'scanner-tab',   label: '📱 Scanner' }
+];
+let _adminTabIdx = 0;
+
+function initAdminTabNav() {
+  const dots = document.getElementById('tabDots');
+  if (!dots) return;
+  dots.innerHTML = '';
+  ADMIN_TABS.forEach((t, i) => {
+    const d = document.createElement('span');
+    d.className = 'tab-dot' + (i === 0 ? ' active' : '');
+    d.id = 'admindot_' + i;
+    d.title = t.label.replace(/^\S+\s/, '');
+    d.onclick = () => goToAdminTab(i);
+    dots.appendChild(d);
+  });
+  updateAdminTabNav();
+  // Init procedure tags
+  buildProcTags('addProcTags', selectedAddProcs, updateSuggestions);
+  // Init modals backdrop close
+  ['profileModal','passwordModal','editModal','borrowerDetailModal'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('click', e => { if (e.target === el) el.style.display = 'none'; });
+  });
+}
+
+function navTab(dir) { goToAdminTab(_adminTabIdx + dir); }
+
+function goToAdminTab(idx) {
+  _adminTabIdx = Math.max(0, Math.min(ADMIN_TABS.length - 1, idx));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById(ADMIN_TABS[_adminTabIdx].id).classList.add('active');
+  updateAdminTabNav();
+  const tabId = ADMIN_TABS[_adminTabIdx].id;
+  if (tabId === 'borrowed-tab')  loadBorrowedItemsTracking();
+  if (tabId === 'shelf-tab')     renderShelfView();
+  if (tabId === 'addstock-tab')  renderAddStock();
+  if (tabId === 'alerts-tab')    renderAlerts();
+}
+
+function updateAdminTabNav() {
+  const label = document.getElementById('tabLabel');
+  const prev  = document.getElementById('tabPrev');
+  const next  = document.getElementById('tabNext');
+  if (label) label.textContent = ADMIN_TABS[_adminTabIdx].label;
+  if (prev)  prev.disabled  = _adminTabIdx === 0;
+  if (next)  next.disabled  = _adminTabIdx === ADMIN_TABS.length - 1;
+  ADMIN_TABS.forEach((_, i) => {
+    const d = document.getElementById('admindot_' + i);
+    if (d) d.className = 'tab-dot' + (i === _adminTabIdx ? ' active' : '');
+  });
+  // Show counts in label
+  const ab = document.getElementById('alertsCount');
+  const bb = document.getElementById('borrowedCount');
+  if (_adminTabIdx === 3 && ab && ab.textContent) label.textContent = '🔔 Alerts (' + ab.textContent + ')';
+  if (_adminTabIdx === 4 && bb && bb.textContent) label.textContent = '🔄 Borrows (' + bb.textContent + ')';
+}
+
+// backward compat
+function switchTab(tabName, btn) {
+  const idx = ADMIN_TABS.findIndex(t => t.id === tabName);
+  if (idx >= 0) goToAdminTab(idx);
+}
+
+// ── Shelf View ────────────────────────────────────────────
+function renderShelfView() {
+  const grid = document.getElementById("shelfGrid");
+  if (!currentData || currentData.length <= 1) {
+    grid.innerHTML = "<div class='empty-state'><div class='icon'>📭</div>No inventory items yet</div>";
+    return;
+  }
+  // Group by location (col 6)
+  const shelves = {};
+  for (let i = 1; i < currentData.length; i++) {
+    const row      = currentData[i];
+    const location = (row[6] || "Unassigned").trim();
+    if (!shelves[location]) shelves[location] = [];
+    shelves[location].push(row);
+  }
+  const sorted = Object.keys(shelves).sort();
+  grid.innerHTML = "";
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;';
+
+  sorted.forEach(loc => {
+    const items = shelves[loc];
+    const itemCount = items.length;
+    const card = document.createElement('div');
+    card.style.cssText = 'background:var(--surface);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;';
+    card.innerHTML = `
+      <div style="background:var(--primary);color:white;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-weight:700;font-size:14px;">📍 ${loc}</span>
+        <span style="background:rgba(255,255,255,0.2);font-size:12px;font-weight:700;padding:2px 10px;border-radius:20px;">${itemCount} item${itemCount>1?'s':''}</span>
+      </div>
+      <div style="padding:12px 16px;">
+        ${items.map(row => {
+          const stock = parseInt(row[4]) || 0;
+          const type  = row[5] || "";
+          let stockColor = stock === 0 ? 'var(--danger)' : stock <= 5 ? 'var(--warning)' : 'var(--success)';
+          return `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+              <div>
+                <div style="font-weight:600;font-size:14px;color:var(--primary);">${row[1]||'—'}${row[2]?' <em style="font-weight:400;font-size:12px;color:var(--text-muted);">— '+row[2]+'</em>':''}</div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${type}</div>
+              </div>
+              <div style="text-align:right;font-weight:700;font-size:14px;color:${stockColor};">${stock} <span style="font-size:11px;font-weight:400;color:var(--text-muted);">in stock</span></div>
+            </div>`;
+        }).join("")}
+      </div>`;
+    wrapper.appendChild(card);
+  });
+  grid.appendChild(wrapper);
+}
+
+// ── Add Stock ─────────────────────────────────────────────
+function renderAddStock() {
+  const grid = document.getElementById("addStockGrid");
+  if (!currentData || currentData.length <= 1) {
+    grid.innerHTML = "<div class='empty-state'><div class='icon'>📭</div>No inventory items yet</div>";
+    return;
+  }
+  grid.innerHTML = "";
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;';
+
+  for (let i = 1; i < currentData.length; i++) {
+    const row   = currentData[i];
+    const idx   = i;
+    const stock = parseInt(row[4]) || 0;
+    const name  = row[1] || "—";
+    const size  = row[2] ? ` — ${row[2]}` : "";
+    const loc   = row[6] || "—";
+
+    const card = document.createElement('div');
+    card.className = 'addstock-card';
+    card.dataset.search = (name + size + loc).toLowerCase();
+    card.style.cssText = 'background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:16px;transition:box-shadow 0.2s;';
+    card.innerHTML = `
+      <div style="font-weight:700;font-size:15px;color:var(--primary);margin-bottom:4px;">${name}<em style="font-weight:400;font-size:13px;color:var(--text-muted);">${size}</em></div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">📍 ${loc}</div>
+      <div style="font-size:13px;font-weight:600;color:var(--text-main);margin-bottom:14px;">Current: <span style="color:${stock<=5?'var(--danger)':'var(--success)'};">${stock}</span></div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="number" min="1" placeholder="Qty" id="addqty_${idx}"
+          style="flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;"
+          onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"
+          onkeydown="if(event.key==='Enter') addStockToItem(${idx}, this)">
+        <button onclick="addStockToItem(${idx}, document.getElementById('addqty_${idx}'))"
+          style="padding:9px 18px;background:var(--primary);color:white;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;width:auto;margin:0;">
+          Add
+        </button>
+      </div>`;
+    wrapper.appendChild(card);
+  }
+  grid.appendChild(wrapper);
+}
+
+function filterAddStock() {
+  const q = document.getElementById("addStockSearch").value.toLowerCase();
+  document.querySelectorAll(".addstock-card").forEach(c => {
+    c.style.display = c.dataset.search.includes(q) ? "" : "none";
+  });
+}
+
+function addStockToItem(rowIndex, inputEl) {
+  const qty = parseInt(inputEl.value);
+  if (!qty || qty < 1) { showNotification("Please enter a valid quantity","error"); return; }
+
+  const currentStock = parseInt(currentData[rowIndex][4]) || 0;
+  const newStock     = currentStock + qty;
+
+  fetch(API, { method:"POST", body: new URLSearchParams({ action:"updateItem", row:rowIndex, col:4, value:newStock }) })
+  .then(r=>r.json())
+  .then(data => {
+    if (data.status === "success") {
+      showNotification(`✓ Added ${qty} to stock. New total: ${newStock}`,"success");
+      inputEl.value = "";
+      loadItems(); // Refresh inventory data
+      setTimeout(() => renderAddStock(), 600);
+    } else {
+      showNotification("Failed to update stock","error");
+    }
+  })
+  .catch(() => showNotification("Error updating stock","error"));
+}
+
+// ── Stock Alerts ──────────────────────────────────────────
+function renderAlerts() {
+  const container = document.getElementById("alertsList");
+  if (!currentData || currentData.length <= 1) {
+    container.innerHTML = "<div class='empty-state'><div class='icon'>✅</div>No inventory data</div>";
+    return;
+  }
+
+  const outOfStock = [];
+  const lowStock   = [];
+  for (let i = 1; i < currentData.length; i++) {
+    const row   = currentData[i];
+    const stock = parseInt(row[4]) || 0;
+    if (stock === 0)       outOfStock.push({ row, idx: i });
+    else if (stock <= 5)   lowStock.push({ row, idx: i });
+  }
+
+  // Update badge
+  const total = outOfStock.length + lowStock.length;
+  const badge = document.getElementById("alertsCount");
+  if (total > 0) { badge.textContent = total; badge.style.display = "inline-block"; }
+  else badge.style.display = "none";
+  if (typeof updateAdminTabNav === 'function') updateAdminTabNav();
+
+  if (outOfStock.length === 0 && lowStock.length === 0) {
+    container.innerHTML = "<div class='empty-state'><div class='icon'>✅</div>All items have sufficient stock</div>";
+    return;
+  }
+
+  let html = "";
+
+  if (outOfStock.length > 0) {
+    html += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--danger);margin-bottom:12px;">🚫 Out of Stock (${outOfStock.length})</div>`;
+    outOfStock.forEach(({ row }) => {
+      html += alertCard(row, "out");
+    });
+    if (lowStock.length > 0) html += `<hr style="border:none;border-top:1px solid var(--border);margin:18px 0;">`;
+  }
+
+  if (lowStock.length > 0) {
+    html += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--warning);margin-bottom:12px;">⚠️ Low Stock (${lowStock.length})</div>`;
+    lowStock.forEach(({ row }) => {
+      html += alertCard(row, "low");
+    });
+  }
+
+  container.innerHTML = html;
+}
+
+function alertCard(row, type) {
+  const stock    = parseInt(row[4]) || 0;
+  const isOut    = type === "out";
+  const bg       = isOut ? '#fff5f5' : '#fffbea';
+  const border   = isOut ? 'var(--danger)' : 'var(--warning)';
+  const label    = isOut ? '🚫 Out of Stock' : `⚠️ Low — only ${stock} left`;
+  const labelClr = isOut ? 'var(--danger)' : '#8a6400';
+  return `
+    <div style="background:${bg};border:1px solid ${border};border-left:4px solid ${border};border-radius:10px;padding:14px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:12px;">
+      <div>
+        <div style="font-weight:700;font-size:14px;color:var(--primary);">${row[1]||'—'}${row[2]?' <em style="font-weight:400;font-size:13px;color:var(--text-muted);">— '+row[2]+'</em>':''}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">📍 ${row[6]||'—'} &nbsp;|&nbsp; ${row[5]||'—'}</div>
+      </div>
+      <span style="font-size:12px;font-weight:700;color:${labelClr};white-space:nowrap;">${label}</span>
+    </div>`;
+}
+
+// ── Profile ───────────────────────────────────────────────
+function openProfile() {
+  document.getElementById("sideMenu").classList.remove("active");
+  document.getElementById("profileModal").style.display = "flex";
+  fetch(API, { method:"POST", body: new URLSearchParams({ action:"getUserProfile", userID:localStorage.getItem("userID") }) })
+  .then(r=>r.json()).then(data => {
+    if (data.status === "success") {
+      document.getElementById("profileName").value       = data.name       || "";
+      document.getElementById("profileEmail").value      = data.email      || "";
+      document.getElementById("profileContact").value    = data.contact    || "";
+      document.getElementById("profileDepartment").value = data.department || "";
+    }
+  });
+}
+function closeProfile() { document.getElementById("profileModal").style.display = "none"; }
+function saveProfile() {
+  fetch(API, { method:"POST", body: new URLSearchParams({
+    action:"updateUserProfile", userID:localStorage.getItem("userID"),
+    email:document.getElementById("profileEmail").value,
+    contact:document.getElementById("profileContact").value,
+    department:document.getElementById("profileDepartment").value
+  })})
+  .then(r=>r.json()).then(data => {
+    if (data.status==="success") { showNotification("✓ Profile updated!","success"); closeProfile(); }
+    else showNotification("Failed to update profile","error");
+  });
+}
+
+// ── Password ──────────────────────────────────────────────
+function changePassword() {
+  document.getElementById("sideMenu").classList.remove("active");
+  document.getElementById("passwordModal").style.display = "flex";
+}
+function closePassword() {
+  document.getElementById("passwordModal").style.display = "none";
+  ["currentPassword","newPassword","confirmPassword"].forEach(id => document.getElementById(id).value = "");
+}
+function updatePassword() {
+  const np = document.getElementById("newPassword").value;
+  const cp = document.getElementById("confirmPassword").value;
+  if (np !== cp)    { showNotification("Passwords do not match","error"); return; }
+  if (np.length < 8){ showNotification("Password must be at least 8 characters","error"); return; }
+  fetch(API, { method:"POST", body: new URLSearchParams({
+    action:"changePassword", userID:localStorage.getItem("userID"),
+    currentPassword:document.getElementById("currentPassword").value, newPassword:np
+  })})
+  .then(r=>r.json()).then(data => {
+    if (data.status==="success") { showNotification("✓ Password changed!","success"); closePassword(); }
+    else showNotification(data.message||"Failed to change password","error");
+  });
+}
+
+// Modal backdrop close
+document.addEventListener("DOMContentLoaded", () => {
+  ["profileModal","passwordModal","editModal","borrowerDetailModal"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("click", e => { if (e.target === el) el.style.display = "none"; });
+  });
+});
+
+// ── Inventory search + pagination ─────────────────────────
+let _filteredInvRows = [];
+let _invPage = 1;
+const INV_PER_PAGE = 10;
+
+function searchAndPage() { _invPage = 1; applyInvFilter(); }
+
+function applyInvFilter() {
+  const q = (document.getElementById('inventorySearch')?.value || '').toLowerCase().trim();
+  _filteredInvRows = currentData.length <= 1 ? [] : currentData.slice(1).filter(row =>
+    [row[1],row[2],row[3],row[6]].some(v => (v||'').toString().toLowerCase().includes(q))
+  );
+  renderInvPage();
+}
+
+// legacy alias
+function filterInventoryTable() { applyInvFilter(); }
+
+function renderInvPage() {
+  const table = document.getElementById('inventoryTable');
+  const total = _filteredInvRows.length;
+  const countEl = document.getElementById('invTotalCount');
+  if (countEl) countEl.textContent = total ? total + ' item' + (total !== 1 ? 's' : '') : '';
+  if (total === 0) {
+    table.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#999;padding:30px;">No items found.</td></tr>';
+    document.getElementById('invPagination').innerHTML = '';
+    return;
+  }
+  const totalPages = Math.ceil(total / INV_PER_PAGE);
+  _invPage = Math.min(_invPage, totalPages);
+  const start = (_invPage - 1) * INV_PER_PAGE;
+  const end   = Math.min(start + INV_PER_PAGE, total);
+  const pageRows = _filteredInvRows.slice(start, end);
+
+  table.innerHTML = '<thead><tr><th>Item</th><th>Size</th><th>Code</th><th>Stock</th><th>Status</th><th>Type</th><th>Location</th><th>Procedures</th><th>Actions</th></tr></thead><tbody></tbody>';
+  const tbody = table.querySelector('tbody');
+  pageRows.forEach(row => {
+    const realIdx = currentData.indexOf(row);
+    const stock = parseInt(row[4]) || 0;
+    const unit  = row[7] || 'pcs';
+    // Procedures badges (col 8)
+    const procIds = row[8] ? String(row[8]).split(',').map(p=>p.trim()).filter(Boolean) : [];
+    const procHTML = procIds.length
+      ? procIds.map(pid => { const p = PROCEDURES.find(x=>x.id===pid); return p ? `<span style="display:inline-block;background:#e8f4ff;color:#1a5fa0;border-radius:20px;padding:1px 7px;font-size:11px;font-weight:600;margin:1px;">${p.label.split(' ').slice(1).join(' ')}</span>` : ''; }).join('')
+      : '<span style="color:var(--text-muted);font-size:12px;">—</span>';
+    const stockBadge = stock===0 ? '<span class="stock-badge stock-out">Out of Stock</span>'
+      : stock<=3 ? `<span class="stock-badge stock-low">Low (${stock})</span>`
+      : `<span class="stock-badge stock-ok">In Stock (${stock})</span>`;
+    const typeVal = (row[5]||'').trim();
+    const typePill = typeVal==='Consumable' ? '<span class="type-pill type-consumable">Consumable</span>'
+      : typeVal==='Non-Consumable' ? '<span class="type-pill type-nonconsumable">Non-Consumable</span>'
+      : `<span style="color:var(--text-muted);font-size:13px;">${typeVal||'—'}</span>`;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td style="font-weight:600;">${row[1]||'—'}</td><td>${row[2]||'—'}</td><td><code style="font-size:12px;background:#f4f7f6;padding:2px 6px;border-radius:4px;">${row[3]||'—'}</code></td><td style="font-weight:700;color:${stock===0?'var(--danger)':stock<=3?'var(--warning)':'var(--text-main)'}">${stock} <span style="font-size:11px;font-weight:400;color:var(--text-muted);">${unit}</span></td><td>${stockBadge}</td><td>${typePill}</td><td>${row[6]||'—'}</td><td>${procHTML}</td><td style="white-space:nowrap;"><button class="tbl-btn btn-success" onclick="openEditModal(${realIdx})" style="background:var(--primary);">✏️ Edit</button><button class="tbl-btn btn-danger" onclick="deleteItem(${realIdx})">🗑 Delete</button></td>`;
+    tbody.appendChild(tr);
+  });
+  // Pagination
+  const pg = document.getElementById('invPagination'); pg.innerHTML = '';
+  if (totalPages <= 1) return;
+  const prev = document.createElement('button'); prev.className='pg-btn'; prev.textContent='← Prev'; prev.disabled=_invPage===1;
+  prev.onclick=()=>{_invPage--;renderInvPage();};
+  pg.appendChild(prev);
+  const ps=Math.max(1,Math.min(_invPage-2,totalPages-4)), pe=Math.min(totalPages,ps+4);
+  for(let p=ps;p<=pe;p++){const b=document.createElement('button');b.className='pg-btn'+(p===_invPage?' active':'');b.textContent=p;b.onclick=(()=>{const pp=p;return()=>{_invPage=pp;renderInvPage();};})();pg.appendChild(b);}
+  const info=document.createElement('span');info.className='pg-info';info.textContent=`${start+1}–${end} of ${total}`;pg.appendChild(info);
+  const next=document.createElement('button');next.className='pg-btn';next.textContent='Next →';next.disabled=_invPage===totalPages;
+  next.onclick=()=>{_invPage++;renderInvPage();};
+  pg.appendChild(next);
+}
+
+// ── Inventory load ────────────────────────────────────────
+function loadItems() {
+  fetch(API, { method:"POST", body: new URLSearchParams({ action:"getItems" }) })
+  .then(r=>r.json())
+  .then(data => {
+    currentData = data;
+    _filteredInvRows = data && data.length > 1 ? data.slice(1) : [];
+    _invPage = 1;
+    renderInvPage();
+    renderAlerts();
+  })
+  .catch(() => showNotification("Failed to load inventory","error"));
+}
+
+// ── Edit Item Modal ───────────────────────────────────────
+function openEditModal(index) {
+  const row = currentData[index];
+  if (!row) return;
+
+  document.getElementById("editRowIndex").value  = index;
+  document.getElementById("editItem").value      = row[1] || "";
+  document.getElementById("editSize").value      = row[2] || "";
+  document.getElementById("editCode").value      = row[3] || "";
+  document.getElementById("editStock").value     = row[4] || "";
+  document.getElementById("editType").value      = row[5] || "Consumable";
+  document.getElementById("editLocation").value  = row[6] || "";
+
+  document.getElementById("editModal").style.display = "flex";
+}
+
+function closeEditModal() {
+  document.getElementById("editModal").style.display = "none";
+}
+
+function saveEditItem() {
+  const index    = document.getElementById("editRowIndex").value;
+  const item     = document.getElementById("editItem").value.trim();
+  const size     = document.getElementById("editSize").value.trim();
+  const code     = document.getElementById("editCode").value.trim();
+  const stock    = document.getElementById("editStock").value.trim();
+  const type     = document.getElementById("editType").value;
+  const location = document.getElementById("editLocation").value.trim();
+
+  if (!item)     { showNotification("Item name is required","error"); return; }
+  if (!code)     { showNotification("Item code is required","error"); return; }
+  if (stock==="") { showNotification("Stock quantity is required","error"); return; }
+  if (!type)     { showNotification("Please select item type","error"); return; }
+  if (!location) { showNotification("Storage location is required","error"); return; }
+
+  const btn = event.target;
+  setLoading(btn, true);
+
+  // Update each field
+  const updates = [
+    { col: 1, val: item },
+    { col: 2, val: size },
+    { col: 3, val: code },
+    { col: 4, val: stock },
+    { col: 5, val: type },
+    { col: 6, val: location }
+  ];
+
+  Promise.all(updates.map(u =>
+    fetch(API, { method:"POST", body: new URLSearchParams({ action:"updateItem", row:index, col:u.col, value:u.val }) })
+    .then(r=>r.json())
+  ))
+  .then(results => {
+    setLoading(btn, false);
+    const allOk = results.every(r => r.status === "success");
+    if (allOk) {
+      showNotification("✓ Item updated!","success");
+      closeEditModal();
+      loadItems();
+    } else {
+      showNotification("Some fields failed to update","error");
+      loadItems();
+    }
+  })
+  .catch(() => {
+    setLoading(btn, false);
+    showNotification("Error updating item","error");
+  });
+}
+
+function deleteItem(index) {
+  const row = currentData[index];
+  const name = row ? row[1] : "this item";
+  if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+  fetch(API, { method:"POST", body: new URLSearchParams({ action:"deleteItem", row:index }) })
+  .then(r=>r.json())
+  .then(data => {
+    if (data.status==="success") { showNotification("Item deleted","success"); loadItems(); }
+    else showNotification("Failed to delete item","error");
+  });
+}
+
+function addItem() {
+  const item     = document.getElementById("item").value.trim();
+  const size     = document.getElementById("size").value.trim();
+  const code     = document.getElementById("code").value.trim();
+  const stock    = document.getElementById("stock").value.trim();
+  const unit     = document.getElementById("stockUnit").value || "pcs";
+  const type     = document.getElementById("type").value;
+  const location = document.getElementById("location").value.trim();
+  const procs    = Array.from(selectedAddProcs).join(",");
+
+  if (!item)     { showNotification("Please enter item name","error"); return; }
+  if (!code)     { showNotification("Please enter item code","error"); return; }
+  if (!stock)    { showNotification("Please enter stock quantity","error"); return; }
+  if (isNaN(stock)||parseInt(stock)<0) { showNotification("Stock must be a valid number","error"); return; }
+  if (!type)     { showNotification("Please select item type","error"); return; }
+  if (!location) { showNotification("Please enter storage location","error"); return; }
+
+  const btn = event.target;
+  setLoading(btn, true);
+
+  fetch(API, { method:"POST", body: new URLSearchParams({
+    action:"addItem", item, size, code, stock, unit, type, location,
+    procedures: procs, owner: localStorage.getItem("userID")
+  })})
+  .then(r=>r.json())
+  .then(data => {
+    setLoading(btn, false);
+    if (data.status==="success") {
+      showNotification("✓ Item added!","success");
+      ["item","size","code","stock","location"].forEach(id => document.getElementById(id).value = "");
+      document.getElementById("type").value = "";
+      document.getElementById("stockUnit").value = "pcs";
+      selectedAddProcs.clear();
+      buildProcTags('addProcTags', selectedAddProcs, updateSuggestions);
+      updateSuggestions();
+      loadItems();
+    } else showNotification(data.message||"Failed to add item","error");
+  })
+  .catch(() => { setLoading(btn, false); showNotification("Error adding item","error"); });
+}
+
+// ── Borrow Tracking ───────────────────────────────────────
+function setFilter(filter, btn) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderBorrowerGrid();
+}
+
+function loadBorrowedItemsTracking() {
+  fetch(API, { method:"POST", body: new URLSearchParams({ action:"getAllBorrows" }) })
+  .then(r=>r.json())
+  .then(data => {
+    allBorrowRecords = (!data || data.error) ? [] : data;
+    renderBorrowerGrid();
+  })
+  .catch(() => showNotification("Failed to load borrow records","error"));
+}
+
+function renderBorrowerGrid() {
+  const grid             = document.getElementById("borrowerGrid");
+  const warningContainer = document.getElementById("warningContainer");
+  warningContainer.innerHTML = "";
+  grid.innerHTML = "";
+
+  if (allBorrowRecords.length === 0) {
+    grid.innerHTML = "<div class='empty-state'><div class='icon'>📭</div>No borrow records found</div>";
+    return;
+  }
+
+  const borrowerMap = {};
+  let totalOverdue  = 0;
+
+  allBorrowRecords.forEach(record => {
+    const studentId   = record[1];
+    const studentName = record[2] || "Unknown";
+    const status      = record[6];
+    const returnDate  = new Date(record[5]);
+    const isOverdue   = returnDate < new Date() && status === "Borrowed";
+    if (isOverdue) totalOverdue++;
+
+    const key = studentId + "||" + studentName;
+    if (!borrowerMap[key]) {
+      borrowerMap[key] = { studentId, studentName, records:[], activeCount:0, overdueCount:0, returnedCount:0 };
+    }
+    borrowerMap[key].records.push(record);
+    if (status==="Borrowed" && !isOverdue) borrowerMap[key].activeCount++;
+    if (isOverdue)                         borrowerMap[key].overdueCount++;
+    if (status==="Returned")               borrowerMap[key].returnedCount++;
+  });
+
+  if (totalOverdue > 0)
+    warningContainer.innerHTML = `<div class="warning">⚠️ <strong>${totalOverdue} overdue item(s)!</strong> Please follow up with borrowers.</div>`;
+
+  const totalActive = Object.values(borrowerMap).reduce((s,b)=>s+b.activeCount+b.overdueCount,0);
+  const badge = document.getElementById('borrowedCount');
+  if (totalActive > 0) { badge.textContent = totalActive; badge.style.display='inline-block'; }
+  else badge.style.display='none';
+  if (typeof updateAdminTabNav === 'function') updateAdminTabNav();
+
+  const entries = Object.values(borrowerMap).filter(b => {
+    if (currentFilter==='borrowed') return b.activeCount > 0 || b.overdueCount > 0;
+    if (currentFilter==='returned') return b.returnedCount > 0 && b.activeCount === 0 && b.overdueCount === 0;
+    if (currentFilter==='overdue')  return b.overdueCount > 0;
+    return true; // 'all'
+  });
+
+  if (entries.length === 0) {
+    grid.innerHTML = "<div class='empty-state'><div class='icon'>🔍</div>No borrowers match this filter</div>";
+    return;
+  }
+
+  entries.sort((a,b) => {
+    const sa = a.overdueCount>0?2:a.activeCount>0?1:0;
+    const sb = b.overdueCount>0?2:b.activeCount>0?1:0;
+    return sb-sa;
+  });
+
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;';
+
+  entries.forEach(b => {
+    const hasOverdue = b.overdueCount > 0;
+    const hasActive  = b.activeCount  > 0;
+    const totalItems = b.activeCount + b.overdueCount + b.returnedCount;
+    let statusColor='var(--text-muted)', statusLabel=`${b.returnedCount} returned`, borderColor='var(--border)', bgColor='var(--surface)', pill='';
+    if (hasOverdue) {
+      statusColor='var(--danger)'; statusLabel=`${b.overdueCount} OVERDUE`; borderColor='var(--danger)'; bgColor='#fff5f5';
+      pill=`<span style="background:#fde8e8;color:var(--danger);font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;">⚠️ OVERDUE</span>`;
+    } else if (hasActive) {
+      statusColor='var(--success)'; statusLabel=`${b.activeCount} active borrow${b.activeCount>1?'s':''}`; borderColor='var(--primary)'; bgColor='#f0faf6';
+      pill=`<span style="background:#d4f3e8;color:var(--success);font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;">Active</span>`;
+    } else {
+      pill=`<span style="background:#e8f4ff;color:#1a5fa0;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;">✓ All Returned</span>`;
+    }
+
+    // Build a preview of items from the most recent record
+    const previewRecord = b.records.find(r => r[6]==="Borrowed") || b.records[b.records.length-1];
+    const previewNames  = previewRecord ? resolveAdminItemNames(previewRecord[3]) : [];
+    const previewText   = previewNames.length > 0
+      ? (previewNames.length <= 2 ? previewNames.join(", ") : `${previewNames[0]} +${previewNames.length-1} more`)
+      : "";
+
+    const card = document.createElement('div');
+    card.style.cssText = `background:${bgColor};border:1.5px solid ${borderColor};border-radius:12px;padding:16px 18px;cursor:pointer;transition:all 0.2s ease;`;
+    card.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;"><div style="font-size:28px;line-height:1;">👤</div>${pill}</div>
+      <div style="font-weight:700;font-size:15px;color:var(--primary);margin-bottom:4px;">${b.studentName}</div>
+      <div style="font-size:12px;color:${statusColor};font-weight:600;">${statusLabel}</div>
+      ${previewText ? `<div style="font-size:12px;color:var(--text-muted);margin-top:5px;font-style:italic;">📦 ${previewText}</div>` : ''}
+      <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${totalItems} total record${totalItems>1?'s':''}</div>
+      <div style="margin-top:12px;font-size:12px;color:var(--primary-light);font-weight:600;">Tap to view details →</div>`;
+    card.onmouseover = () => { card.style.transform='translateY(-3px)'; card.style.boxShadow='0 8px 24px rgba(13,79,79,0.12)'; };
+    card.onmouseout  = () => { card.style.transform=''; card.style.boxShadow=''; };
+    card.onclick = () => openDetailModal(b);
+    wrapper.appendChild(card);
+  });
+
+  grid.appendChild(wrapper);
+}
+
+// ── Resolve item IDs to names from inventory ─────────────
+function resolveAdminItemNames(rawItems) {
+  if (!rawItems) return ["Unknown item"];
+  return String(rawItems).split(",").map(entry => {
+    const id  = entry.split(":")[0].trim();
+    const qty = parseInt(entry.split(":")[1]) || 1;
+    // Look up in currentData (inventory)
+    let name = null;
+    for (let i = 1; i < currentData.length; i++) {
+      if (String(currentData[i][0]) === id) {
+        const n = currentData[i][1] || "";
+        const s = currentData[i][2] || "";
+        name = s ? `${n} (${s})` : n;
+        break;
+      }
+    }
+    if (!name) name = "Item #" + id;
+    return qty > 1 ? `${name} ×${qty}` : name;
+  });
+}
+
+function openDetailModal(borrower) {
+  document.getElementById("detailModalTitle").textContent = `👤 ${borrower.studentName}`;
+  const body = document.getElementById("detailModalBody");
+
+  const active   = borrower.records.filter(r => r[6] === "Borrowed");
+  const returned = borrower.records.filter(r => r[6] === "Returned");
+  let html = "";
+
+  // ── Borrower summary header ──────────────────────────────
+  // Try to extract idNumber/course/procedure from latest record's QR metadata
+  // These are stored in borrow records if the new QR format was used
+  const latestRecord = [...borrower.records].reverse()[0];
+  let idNum = "", course = "", procedure = "", subject = "";
+  try {
+    // Attempt to parse stored QR payload if present (col index varies)
+    // Fields may be embedded directly in newer records
+    // We surface what we can find
+    const rec = latestRecord;
+    if (rec && rec.length > 10) {
+      idNum     = rec[10] || "";
+      course    = rec[11] || "";
+      subject   = rec[12] || "";
+      procedure = rec[13] || "";
+    }
+  } catch(e) {}
+
+  const infoRows = [
+    idNum     ? `<div>🪪 <strong>ID Number:</strong> ${idNum}</div>`         : '',
+    course    ? `<div>📚 <strong>Course/Section:</strong> ${course}</div>`   : '',
+    subject   ? `<div>📖 <strong>Subject:</strong> ${subject}</div>`         : '',
+    procedure ? `<div>🔬 <strong>Procedure:</strong> ${procedure}</div>`     : '',
+  ].filter(Boolean).join("");
+
+  if (infoRows) {
+    html += `
+      <div style="background:var(--surface-alt);border:1px solid var(--border);border-left:4px solid var(--primary);border-radius:10px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:var(--text-muted);line-height:2.1;">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--primary);margin-bottom:8px;">🗂️ Borrower Info</div>
+        ${infoRows}
+      </div>`;
+  }
+
+  // ── Active / Overdue borrows ──────────────────────────
+  if (active.length > 0) {
+    html += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--text-muted);margin-bottom:10px;">📤 Currently Borrowed</div>`;
+    active.forEach(r => {
+      const returnDate = new Date(r[5]);
+      const isOverdue  = returnDate < new Date();
+      const daysOver   = isOverdue ? Math.floor((new Date() - returnDate) / 86400000) : 0;
+      const itemNames  = resolveAdminItemNames(r[3]);
+
+      // Try to get per-record metadata
+      let rProc = "", rCourse = "", rId = "";
+      if (r.length > 10) { rId = r[10]||""; rCourse = r[11]||""; rProc = r[13]||""; }
+
+      html += `
+        <div style="background:${isOverdue?'#fff5f5':'#f0faf6'};border:1px solid ${isOverdue?'#f5c6c6':'#b8e8d4'};border-left:4px solid ${isOverdue?'var(--danger)':'var(--success)'};border-radius:10px;padding:14px 16px;margin-bottom:10px;">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;font-weight:600;">📋 Borrowed Items</div>
+          <ul style="list-style:none;padding:0;margin:0 0 10px 0;">
+            ${itemNames.map(n=>`<li style="font-size:14px;font-weight:600;color:var(--primary);padding:3px 0;border-bottom:1px solid rgba(0,0,0,0.06);">📦 ${n}</li>`).join("")}
+          </ul>
+          <div style="font-size:12px;color:var(--text-muted);line-height:2.1;">
+            ${rId     ? `<div>🪪 <strong>ID:</strong> ${rId}</div>` : ''}
+            ${rCourse ? `<div>📚 <strong>Course:</strong> ${rCourse}</div>` : ''}
+            ${rProc   ? `<div>🔬 <strong>Procedure:</strong> ${rProc}</div>` : ''}
+            <div>📅 <strong>Borrowed:</strong> ${new Date(r[4]).toLocaleString()}</div>
+            <div>⏰ <strong>Return by:</strong> <span style="color:${isOverdue?'var(--danger)':'inherit'};font-weight:${isOverdue?'700':'400'};">${returnDate.toLocaleString()}</span></div>
+            ${isOverdue?`<div style="color:var(--danger);font-weight:700;">⚠️ ${daysOver} day${daysOver>1?'s':''} overdue!</div>`:''}
+            ${r[8]?`<div>👤 <strong>Lent by:</strong> ${r[8]}</div>`:''}
+          </div>
+          <span class="status-badge ${isOverdue?'status-overdue':'status-borrowed'}" style="margin-top:8px;">${isOverdue?'⚠️ Overdue':'Borrowed'}</span>
+        </div>`;
+    });
+  }
+
+  // ── Returned borrows ──────────────────────────────────
+  if (returned.length > 0) {
+    if (active.length > 0) html += `<hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">`;
+    html += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--text-muted);margin-bottom:10px;">✅ Returned Items</div>`;
+    returned.forEach(r => {
+      const itemNames = resolveAdminItemNames(r[3]);
+      let rProc = "", rCourse = "", rId = "";
+      if (r.length > 10) { rId = r[10]||""; rCourse = r[11]||""; rProc = r[13]||""; }
+      html += `
+        <div style="background:#f4f7f6;border:1px solid var(--border);border-left:4px solid var(--success);border-radius:10px;padding:14px 16px;margin-bottom:10px;">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;font-weight:600;">📋 Items Returned</div>
+          <ul style="list-style:none;padding:0;margin:0 0 10px 0;">
+            ${itemNames.map(n=>`<li style="font-size:14px;font-weight:600;color:var(--primary);padding:3px 0;border-bottom:1px solid rgba(0,0,0,0.06);">📦 ${n}</li>`).join("")}
+          </ul>
+          <div style="font-size:12px;color:var(--text-muted);line-height:2.1;">
+            ${rId     ? `<div>🪪 <strong>ID:</strong> ${rId}</div>` : ''}
+            ${rCourse ? `<div>📚 <strong>Course:</strong> ${rCourse}</div>` : ''}
+            ${rProc   ? `<div>🔬 <strong>Procedure:</strong> ${rProc}</div>` : ''}
+            <div>📅 <strong>Borrowed:</strong> ${new Date(r[4]).toLocaleString()}</div>
+            <div>📅 <strong>Due date:</strong> ${new Date(r[5]).toLocaleString()}</div>
+            ${r[8]?`<div>👤 <strong>Lent by:</strong> ${r[8]}</div>`:''}
+          </div>
+          <span class="status-badge status-returned" style="margin-top:8px;">✓ Returned</span>
+        </div>`;
+    });
+  }
+
+  if (!html) html = "<div class='empty-state'><div class='icon'>📭</div>No records found</div>";
+  body.innerHTML = html;
+  document.getElementById("borrowerDetailModal").style.display = "flex";
+}
+
+function closeDetailModal() { document.getElementById("borrowerDetailModal").style.display = "none"; }
+
+checkAuth();
+loadItems();
+initAdminTabNav();
+setTimeout(renderAlerts, 1200);
+</script>
+
+</body>
+</html>

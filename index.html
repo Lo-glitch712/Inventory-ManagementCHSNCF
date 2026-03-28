@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CHS VITAL System</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { padding: 0; background: linear-gradient(145deg, #082e2e 0%, #0d4f4f 50%, #1a7070 100%); min-height: 100vh; }
+
+    .landing-header {
+      text-align: center;
+      padding: 70px 24px 50px;
+      position: relative;
+    }
+
+    .landing-header::after {
+      content: '';
+      display: block;
+      width: 80px;
+      height: 3px;
+      background: var(--accent);
+      margin: 24px auto 0;
+      border-radius: 2px;
+    }
+
+    .landing-header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 52px;
+      font-weight: 900;
+      color: var(--accent);
+      letter-spacing: 2px;
+      text-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      margin-bottom: 10px;
+    }
+
+    .landing-header .sub {
+      font-size: 13px;
+      color: rgba(232,201,122,0.7);
+      letter-spacing: 6px;
+      font-weight: 500;
+      margin-bottom: 0;
+      text-shadow: none;
+    }
+
+    .landing-header .tagline {
+      font-size: 18px;
+      color: rgba(255,255,255,0.8);
+      margin-top: 18px;
+      font-weight: 400;
+      text-shadow: none;
+    }
+
+    .cta-row {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 40px;
+    }
+
+    .cta-btn {
+      padding: 14px 44px;
+      font-size: 16px;
+      font-weight: 700;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      min-width: 180px;
+      text-align: center;
+      transition: all 0.3s ease;
+      font-family: 'DM Sans', sans-serif;
+      letter-spacing: 0.3px;
+    }
+
+    .cta-primary {
+      background: var(--accent);
+      color: var(--primary-dark);
+    }
+
+    .cta-primary:hover {
+      background: var(--accent-light);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 28px rgba(201,168,76,0.35);
+      text-decoration: none;
+    }
+
+    .cta-secondary {
+      background: rgba(255,255,255,0.12);
+      color: white;
+      border: 2px solid rgba(255,255,255,0.35);
+    }
+
+    .cta-secondary:hover {
+      background: rgba(255,255,255,0.2);
+      transform: translateY(-3px);
+      text-decoration: none;
+      color: white;
+    }
+
+    .divider-line {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.12);
+      max-width: 800px;
+      margin: 50px auto;
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .feature-card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      backdrop-filter: blur(8px);
+      padding: 28px 24px;
+      border-radius: 14px;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .feature-card:hover {
+      background: rgba(255,255,255,0.1);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.2);
+    }
+
+    .feature-icon { font-size: 40px; margin-bottom: 14px; }
+
+    .feature-card h3 { color: var(--accent); font-size: 18px; margin-bottom: 10px; text-shadow: none; }
+    .feature-card p  { color: rgba(255,255,255,0.72); font-size: 14px; line-height: 1.7; }
+
+    .roles-section {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 24px 60px;
+    }
+
+    .roles-title {
+      text-align: center;
+      color: var(--accent);
+      font-family: 'Playfair Display', serif;
+      font-size: 28px;
+      margin-bottom: 28px;
+      text-shadow: none;
+    }
+
+    .roles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+    }
+
+    .role-card {
+      background: rgba(255,255,255,0.95);
+      padding: 24px;
+      border-radius: 14px;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.15);
+    }
+
+    .role-card h3 { color: var(--primary); font-size: 18px; margin-bottom: 14px; text-shadow: none; }
+    .role-card ul { list-style: none; padding: 0; }
+    .role-card li {
+      padding: 7px 0;
+      border-bottom: 1px solid #e8f0ee;
+      font-size: 14px;
+      color: #4a6060;
+    }
+    .role-card li:last-child { border-bottom: none; }
+    .role-card li::before { content: "✓ "; color: var(--success); font-weight: 700; margin-right: 6px; }
+
+    footer {
+      background: rgba(0,0,0,0.3);
+      color: rgba(255,255,255,0.5);
+      text-align: center;
+      padding: 24px;
+      font-size: 13px;
+    }
+
+    @media (max-width: 600px) {
+      .landing-header h1 { font-size: 34px; }
+      .landing-header .tagline { font-size: 15px; }
+      .cta-row { flex-direction: column; align-items: center; }
+      .cta-btn { width: 100%; max-width: 300px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="landing-header">
+  <p class="sub">VIRTUAL • INVENTORY • TRACKING • LOGGING</p>
+  <h1>CHS PROJECT VITAL</h1>
+  <p class="tagline">Streamlined medical equipment management for clinical training</p>
+
+  <div class="cta-row">
+    <a href="login.html"    class="cta-btn cta-primary">Sign In</a>
+    <a href="register.html" class="cta-btn cta-secondary">Create Account</a>
+  </div>
+</div>
+
+<hr class="divider-line">
+
+<div class="features">
+  <div class="feature-card">
+    <div class="feature-icon">📦</div>
+    <h3>Smart Inventory</h3>
+    <p>Track all medical equipment with real-time stock levels and storage locations</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">📱</div>
+    <h3>QR Code System</h3>
+    <p>Fast borrow and return processing using QR codes — no paperwork needed</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">🔐</div>
+    <h3>Role-Based Access</h3>
+    <p>Separate dashboards for Admins (CI & SA) and Borrowers with appropriate permissions</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">📊</div>
+    <h3>Borrow Tracking</h3>
+    <p>Monitor all active borrows, overdue items, and complete return history</p>
+  </div>
+</div>
+
+<hr class="divider-line">
+
+<div class="roles-section">
+  <h2 class="roles-title">Account Roles</h2>
+  <div class="roles-grid">
+    <div class="role-card">
+      <h3>🛡️ Clinical Instructor</h3>
+      <ul>
+        <li>Add and manage inventory</li>
+        <li>Edit or delete items</li>
+        <li>Monitor all borrows</li>
+        <li>Scan QR codes at counter</li>
+        <li>View overdue alerts</li>
+      </ul>
+    </div>
+    <div class="role-card">
+      <h3>🎓 Student Assistant</h3>
+      <ul>
+        <li>Add and manage inventory</li>
+        <li>Edit or delete items</li>
+        <li>Monitor all borrows</li>
+        <li>Scan QR codes at counter</li>
+        <li>View overdue alerts</li>
+      </ul>
+    </div>
+    <div class="role-card">
+      <h3>📦 Borrower (Student)</h3>
+      <ul>
+        <li>Browse available equipment</li>
+        <li>Generate borrow QR codes</li>
+        <li>Track current borrows</li>
+        <li>View borrow history</li>
+        <li>Receive overdue alerts</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<footer>
+  &copy; 2025 CHS Project VITAL System &nbsp;|&nbsp; Designed for Clinical Training Excellence
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

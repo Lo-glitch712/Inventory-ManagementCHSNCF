@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Scanner — CHS VITAL System</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dashboard-body">
+
+<div class="page-header">
+  <h1 class="header-title">CHS PROJECT VITAL SYSTEM</h1>
+  <p class="header-subtitle">VIRTUAL • INVENTORY • TRACKING • LOGGING</p>
+</div>
+
+<div class="navbar">
+  <h1>📷 QR Code Scanner</h1>
+  <div class="navbar-right">
+    <a href="dashboard_admin.html" style="padding:8px 16px;background:var(--primary);color:white;border-radius:8px;font-weight:600;text-decoration:none;font-size:14px;">← Back</a>
+  </div>
+</div>
+
+<div class="scanner-wrapper">
+  <div class="card" style="margin-top:20px;">
+    <h3>📷 Scan Borrower QR Code</h3>
+
+    <div class="hint-box">
+      <strong>How it works:</strong><br>
+      • <strong>First scan (Borrow):</strong> Registers the borrow — stock is deducted<br>
+      • <strong>Second scan (Return):</strong> Registers the return — stock is restored<br><br>
+      <strong>Note:</strong> The system automatically detects whether it is a borrow or return based on current status in the database.
+    </div>
+
+    <p style="color:var(--text-muted);font-size:14px;margin-bottom:16px;">
+      Position the QR code within the camera frame below.
+    </p>
+
+    <div id="reader" style="width:100%;max-width:500px;margin:0 auto;"></div>
+
+    <!-- Result display -->
+    <div id="result" style="margin-top:20px;"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script src="app.js"></script>
+<script>
+let scanner      = null;
+let isProcessing = false;
+
+// Helper: pause/resume work differently with Html5Qrcode vs Html5QrcodeScanner
+function resumeScanner() {
+  if (!scanner) return;
+  try { scanner.resume(); } catch(e) {}
+}
+
+function onScanSuccess(decodedText) {
+  if (isProcessing) return;
+  isProcessing = true;
+
+  let data;
+  try {
+    data = JSON.parse(decodedText);
+  } catch(e) {
+    showNotification("Invalid QR code format","error");
+    isProcessing = false;
+    resumeScanner();
+    return;
+  }
+
+  // Validate required fields
+  if (!data.student || !data.items) {
+    showNotification("QR code is missing required data","error");
+    isProcessing = false;
+    resumeScanner();
+    return;
+  }
+
+  // Check borrow status from the server FIRST, then decide borrow or return
+  checkAndProcess(data);
+}
+
+function checkAndProcess(qrData) {
+  showResult("info", "🔍 Checking status...", qrData);
+
+  fetch(API, {
+    method: "POST",
+    body: new URLSearchParams({
+      action:  "checkBorrowStatus",
+      student: qrData.student,
+      items:   qrData.items
+    })
+  })
+  .then(r => r.json())
+  .then(response => {
+    // Server returns { status: "Borrowed" } if items are currently borrowed by this student
+    // Otherwise returns anything else (Not Found, Returned, error, etc.)
+    if (response.status === "Borrowed") {
+      // Items are currently borrowed → this scan is a RETURN
+      processReturn(qrData);
+    } else {
+      // Items are NOT currently borrowed → this scan is a BORROW
+      processBorrow(qrData);
+    }
+  })
+  .catch(err => {
+    showNotification("Error checking status: " + err.message, "error");
+    clearResult();
+    isProcessing = false;
+    resumeScanner();
+  });
+}
+
+function processBorrow(data) {
+  const itemDisplay = data.itemNames || data.items;
+  showResult("borrow", `
+    <div class="borrow-header">📤 Processing Borrow...</div>
+    <div class="borrow-info">
+      <p><strong>Borrower:</strong> ${data.studentName}</p>
+      <p><strong>Items:</strong> ${itemDisplay}</p>
+      <p><strong>Return by:</strong> ${new Date(data.returnDate).toLocaleString()}</p>
+    </div>
+  `);
+
+  fetch(API, {
+    method: "POST",
+    body: new URLSearchParams({
+      action:      "borrow",
+      student:     data.student,
+      studentName: data.studentName,
+      items:       data.items,
+      returnDate:  data.returnDate,
+      lentBy:      localStorage.getItem("userID")   || "",
+      lentByName:  localStorage.getItem("userName") || "",
+      idNumber:    data.idNumber   || "",
+      course:      data.course     || "",
+      subject:     data.subject    || "",
+      procedure:   data.procedure  || ""
+    })
+  })
+  .then(r => r.json())
+  .then(response => {
+    if (response.status === "success") {
+      showResult("success", `
+        <div class="borrow-header">✅ Borrow Confirmed!</div>
+        <div class="borrow-info">
+          <p><strong>Borrower:</strong> ${data.studentName}</p>
+          <p><strong>Items:</strong> ${itemDisplay}</p>
+          <p><strong>Return by:</strong> ${new Date(data.returnDate).toLocaleString()}</p>
+        </div>
+        <div style="margin-top:12px;padding:12px;background:#d4f3e8;border-radius:8px;color:#1a6e4a;font-weight:600;">
+          ✓ Stock has been deducted
+        </div>
+      `);
+      resetScanner(3500);
+    } else {
+      showNotification(response.message || "Borrow failed","error");
+      clearResult();
+      isProcessing = false;
+      resumeScanner();
+    }
+  })
+  .catch(err => {
+    showNotification("Error processing borrow: " + err.message,"error");
+    clearResult();
+    isProcessing = false;
+    resumeScanner();
+  });
+}
+
+function processReturn(data) {
+  const itemDisplay = data.itemNames || data.items;
+  showResult("return", `
+    <div class="borrow-header">📥 Processing Return...</div>
+    <div class="borrow-info">
+      <p><strong>Borrower:</strong> ${data.studentName}</p>
+      <p><strong>Items:</strong> ${itemDisplay}</p>
+    </div>
+  `);
+
+  fetch(API, {
+    method: "POST",
+    body: new URLSearchParams({
+      action:      "returnItem",
+      student:     data.student,
+      studentName: data.studentName,
+      items:       data.items
+    })
+  })
+  .then(r => r.json())
+  .then(response => {
+    if (response.status === "success") {
+      showResult("success", `
+        <div class="borrow-header">✅ Return Confirmed!</div>
+        <div class="borrow-info">
+          <p><strong>Borrower:</strong> ${data.studentName}</p>
+          <p><strong>Items:</strong> ${itemDisplay}</p>
+        </div>
+        <div style="margin-top:12px;padding:12px;background:#d4f3e8;border-radius:8px;color:#1a6e4a;font-weight:600;">
+          ✓ Stock has been restored
+        </div>
+      `);
+      resetScanner(3500);
+    } else {
+      showNotification(response.message || "Return failed","error");
+      clearResult();
+      isProcessing = false;
+      resumeScanner();
+    }
+  })
+  .catch(err => {
+    showNotification("Error processing return: " + err.message,"error");
+    clearResult();
+    isProcessing = false;
+    resumeScanner();
+  });
+}
+
+// ── Display helpers ───────────────────────────────────────
+const borderColors = {
+  info:    'var(--primary)',
+  borrow:  '#3b82f6',
+  return:  'var(--accent)',
+  success: 'var(--success)'
+};
+
+function showResult(type, html) {
+  document.getElementById("result").innerHTML = `
+    <div class="borrow-record" style="border-left-color:${borderColors[type]||'var(--primary)'};">
+      ${html}
+    </div>`;
+}
+
+function clearResult() {
+  document.getElementById("result").innerHTML = "";
+}
+
+function resetScanner(delay) {
+  setTimeout(() => {
+    isProcessing = false;
+    clearResult();
+    resumeScanner();
+  }, delay || 3500);
+}
+
+function onScanError(error) {
+  // Only alert for permission denial — ignore normal "no QR found" errors
+  if (error && error.name === "NotAllowedError") {
+    showNotification("Camera permission denied. Please allow camera access.","error");
+  }
+}
+
+// ── Init Scanner — back/rear camera only ─────────────────
+async function initScanner() {
+  try {
+    // Get list of video devices and pick the back/rear camera
+    const devices = await Html5Qrcode.getCameras();
+    if (!devices || devices.length === 0) {
+      throw new Error("No camera devices found");
+    }
+
+    // Prefer any camera labeled "back", "rear", or "environment"
+    // On most phones the last camera in the list is also the rear camera
+    let cameraId = null;
+    for (const d of devices) {
+      const label = (d.label || "").toLowerCase();
+      if (label.includes("back") || label.includes("rear") || label.includes("environment")) {
+        cameraId = d.id;
+        break;
+      }
+    }
+    // Fallback: use last device (usually rear on mobile)
+    if (!cameraId) cameraId = devices[devices.length - 1].id;
+
+    scanner = new Html5Qrcode("reader");
+    scanner.start(
+      cameraId,
+      { fps: 10, qrbox: { width: 250, height: 250 }, disableFlip: false },
+      onScanSuccess,
+      onScanError
+    );
+  } catch (e) {
+    // Final fallback: use facingMode environment (standard constraint)
+    try {
+      scanner = new Html5Qrcode("reader");
+      scanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 250, height: 250 }, disableFlip: false },
+        onScanSuccess,
+        onScanError
+      );
+    } catch (e2) {
+      document.getElementById("reader").innerHTML = `
+        <div class="warning">
+          <strong>Camera Error:</strong> Unable to initialize back camera.<br>
+          • Allow camera permission in browser settings<br>
+          • Use HTTPS or localhost<br>
+          • Ensure no other app is using the camera
+        </div>`;
+    }
+  }
+}
+
+initScanner();
+
+// Auth guard
+if (!localStorage.getItem("userID")) window.location = "login.html";
+</script>
+
+</body>
+</html>

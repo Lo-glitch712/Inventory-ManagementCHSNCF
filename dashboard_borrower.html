@@ -1,0 +1,1500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Borrower Dashboard — CHS VITAL System</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <style>
+    .borrow-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--primary);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      margin-bottom: 14px;
+    }
+    .borrow-card.overdue { border-left-color: var(--danger); background: #fff8f8; }
+    .borrow-card-title   { font-weight: 700; color: var(--primary); font-size: 15px; margin-bottom: 6px; }
+    .borrow-card.overdue .borrow-card-title { color: var(--danger); }
+    .borrow-card-meta    { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; line-height: 1.7; }
+
+    .items-group {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+    }
+    .items-group-label {
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.7px;
+      font-weight: 700; color: var(--text-muted); margin-bottom: 8px;
+    }
+    .items-group ul, .return-modal-items ul, .qr-items-summary ul {
+      list-style: none; padding: 0; margin: 0;
+    }
+    .items-group ul li, .return-modal-items ul li, .qr-items-summary ul li {
+      font-size: 14px; color: var(--text-main); padding: 4px 0;
+      border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px;
+    }
+    .items-group ul li:last-child,
+    .return-modal-items ul li:last-child,
+    .qr-items-summary ul li:last-child { border-bottom: none; }
+    .items-group ul li::before         { content:"•"; color:var(--primary); font-weight:900; font-size:16px; line-height:1; }
+    .return-modal-items ul li::before  { content:"📦"; font-size:13px; }
+    .qr-items-summary ul li::before    { content:"✓"; color:var(--success); font-weight:700; }
+
+    .borrow-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+
+    /* ── Tap Item Selector ─────────────────────────────── */
+    .tap-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      cursor: pointer;
+      transition: all 0.18s ease;
+      margin-bottom: 8px;
+      user-select: none;
+    }
+    .tap-item:hover:not(.tap-item-disabled) {
+      border-color: var(--primary);
+      background: #f0faf6;
+    }
+    .tap-item-selected {
+      border-color: var(--primary) !important;
+      background: #e8f6f0 !important;
+      box-shadow: 0 2px 12px rgba(13,79,79,0.10);
+    }
+    .tap-item-disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .tap-check {
+      width: 26px; height: 26px;
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+      display: none !important; /* hidden — selection shown by card background only */
+    }
+    .tap-qty-box {
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .qty-btn {
+      width: 30px !important; height: 30px !important;
+      border-radius: 50% !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      font-size: 18px !important;
+      font-weight: 700 !important;
+      background: var(--primary) !important;
+      color: white !important;
+      border: none !important;
+      cursor: pointer;
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      min-width: unset !important;
+    }
+    .qty-btn:hover { background: var(--primary-dark) !important; }
+    .qty-num {
+      min-width: 26px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--primary);
+    }
+
+    .qr-result-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 24px; margin-top: 20px; text-align: center;
+    }
+    .qr-result-box .qr-title  { font-family:'Playfair Display',serif; font-size:18px; color:var(--primary); margin-bottom:4px; }
+    .qr-result-box .qr-subtitle { font-size:13px; color:var(--text-muted); margin-bottom:16px; }
+
+    .qr-items-summary {
+      background: var(--surface-alt); border-radius:8px; padding:12px 16px; margin:12px 0 16px; text-align:left;
+    }
+    .qr-items-summary p { font-size:11px; text-transform:uppercase; letter-spacing:0.6px; font-weight:700; color:var(--text-muted); margin-bottom:8px; }
+
+    .return-modal-items {
+      background: var(--surface-alt); border-radius:8px; padding:12px 16px; margin:12px 0 16px; text-align:left;
+    }
+    .return-modal-items p { font-size:11px; text-transform:uppercase; letter-spacing:0.6px; font-weight:700; color:var(--text-muted); margin-bottom:8px; }
+
+    /* ── Arrow Tab Navigation ─────────────────────────── */
+    .tab-nav {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-bottom: 6px;
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .tab-arrow {
+      flex: 0 0 48px;
+      height: 52px;
+      background: transparent;
+      border: none;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--primary);
+      cursor: pointer;
+      transition: all 0.2s;
+      margin: 0;
+      border-radius: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+    }
+    .tab-arrow:hover:not(:disabled) {
+      background: var(--surface-alt);
+      transform: none;
+      box-shadow: none;
+    }
+    .tab-arrow:disabled { opacity: 0.25; cursor: not-allowed; }
+    .tab-indicator-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 8px 8px;
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+    }
+    .tab-label {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--primary);
+      font-family: 'DM Sans', sans-serif;
+    }
+    .tab-dots {
+      display: flex;
+      gap: 6px;
+      margin-top: 5px;
+    }
+    .tab-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--border);
+      transition: all 0.25s;
+    }
+    .tab-dot.active {
+      background: var(--primary);
+      transform: scale(1.25);
+    }
+
+    /* ── Items pagination ─────────────────────────────── */
+    .items-page-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 10px;
+      gap: 8px;
+    }
+    .items-page-btn {
+      padding: 7px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--primary);
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'DM Sans', sans-serif;
+      width: auto;
+      margin: 0;
+    }
+    .items-page-btn:hover:not(:disabled) { background: var(--primary); color: white; border-color: var(--primary); transform: none; box-shadow: none; }
+    .items-page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .items-page-info { font-size: 12px; color: var(--text-muted); font-weight: 500; text-align: center; flex: 1; }
+  </style>
+</head>
+<body class="dashboard-body">
+
+<div class="page-header">
+  <h1 class="header-title">CHS PROJECT VITAL SYSTEM</h1>
+  <p class="header-subtitle">VIRTUAL • INVENTORY • TRACKING • LOGGING</p>
+</div>
+
+<div class="navbar">
+  <h1>📦 Borrower Dashboard</h1>
+  <div class="navbar-right">
+    <span>Welcome, <strong id="userName"></strong></span>
+    <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+  </div>
+</div>
+
+<div id="sideMenu" class="side-menu">
+  <button class="close-btn" onclick="toggleMenu()">✕</button>
+  <div class="side-menu-header">
+    <strong id="sideUserName">User</strong>
+    <p>Borrower</p>
+  </div>
+  <div class="menu-content">
+    <button onclick="openProfile()" class="menu-btn">👤 My Profile</button>
+    <button onclick="changePassword()" class="menu-btn">🔐 Change Password</button>
+    <hr style="margin:10px 0;border:none;border-top:1px solid rgba(255,255,255,0.12);">
+    <button onclick="logout()" class="menu-btn danger">🚪 Logout</button>
+  </div>
+</div>
+
+<!-- Profile Modal -->
+<div id="profileModal" class="modal" style="justify-content:center;align-items:center;padding:20px;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>👤 My Profile</h3>
+      <button class="close-btn" onclick="closeProfile()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>Full Name</label><input type="text" id="profileName" readonly style="background:#f4f7f6;color:#777;"></div>
+      <div class="form-group"><label>School ID Number</label><input type="text" id="profileIdNumber" placeholder="e.g., 2024-00123"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="profileEmail" readonly style="background:#f4f7f6;color:#777;"></div>
+      <div class="form-group"><label>Contact Number</label><input type="tel" id="profileContact"></div>
+      <div class="form-group"><label>Department / Course</label><input type="text" id="profileDepartment"></div>
+      <div class="form-group"><label>Year Level</label><input type="number" id="profileYear"></div>
+      <button onclick="saveProfile()">💾 Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Password Modal -->
+<div id="passwordModal" class="modal" style="justify-content:center;align-items:center;padding:20px;">
+  <div class="modal-content" style="max-width:400px;">
+    <div class="modal-header">
+      <h3>🔐 Change Password</h3>
+      <button class="close-btn" onclick="closePassword()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>Current Password</label><input type="password" id="currentPassword" placeholder="Enter current password"></div>
+      <div class="form-group"><label>New Password</label><input type="password" id="newPassword" placeholder="At least 8 characters" minlength="8"></div>
+      <div class="form-group"><label>Confirm New Password</label><input type="password" id="confirmPassword" placeholder="Repeat new password"></div>
+      <button onclick="updatePassword()">✓ Update Password</button>
+    </div>
+  </div>
+</div>
+
+<!-- Return QR Modal -->
+<div id="returnModal" class="modal" style="justify-content:center;align-items:center;padding:20px;">
+  <div class="modal-content" style="max-width:460px;">
+    <div class="modal-header">
+      <h3>📥 Return QR Code</h3>
+      <button class="close-btn" onclick="closeReturnModal()">✕</button>
+    </div>
+    <div class="modal-body" style="text-align:center;">
+      <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px;">
+        Show this QR code to the instructor or student assistant to process your return.
+      </p>
+      <div class="return-modal-items">
+        <p>Items to Return</p>
+        <ul id="returnItemsList"></ul>
+      </div>
+      <canvas id="returnQRcode" style="display:block;margin:0 auto;"></canvas>
+      <p style="color:#bbb;font-size:12px;margin-top:12px;">Stock will be restored automatically after scanning</p>
+      <button onclick="saveReturnQR()" style="width:auto;padding:10px 24px;margin-top:12px;background:var(--primary);">💾 Save QR Image</button>
+    </div>
+  </div>
+</div>
+
+<div class="dashboard-main">
+  <!-- Arrow tab navigation -->
+  <div class="tab-nav" id="tabNav">
+    <button class="tab-arrow" id="tabPrev" onclick="navTab(-1)" disabled>&#8592;</button>
+    <div class="tab-indicator-wrap">
+      <div class="tab-label" id="tabLabel">📦 Borrow Items</div>
+      <div class="tab-dots" id="tabDots"></div>
+    </div>
+    <button class="tab-arrow" id="tabNext" onclick="navTab(1)">&#8594;</button>
+  </div>
+
+  <!-- TAB: Borrow -->
+  <div id="borrow-tab" class="tab-content active">
+    <div class="card">
+      <h3>📋 Equipment Borrowing Form</h3>
+
+      <!-- Borrower Info Section -->
+      <div style="background:var(--surface-alt);border:1px solid var(--border);border-left:4px solid var(--primary);border-radius:10px;padding:16px 18px;margin-bottom:20px;">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--primary);margin-bottom:14px;">👤 Borrower Information</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;">
+          <div class="form-group">
+            <label>Borrower Name</label>
+            <input type="text" id="borrowerNameDisplay" readonly
+              style="background:#f4f7f6;color:#555;font-weight:600;">
+          </div>
+          <div class="form-group">
+            <label>ID Number <span style="color:var(--danger);">*</span></label>
+            <input type="text" id="borrowerIdNumber" placeholder="e.g., 2024-00123">
+          </div>
+          <div class="form-group">
+            <label>Course, Year &amp; Section <span style="color:var(--danger);">*</span></label>
+            <input type="text" id="borrowerCourse" placeholder="e.g., BSN 2C">
+          </div>
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="borrowerDate" readonly
+              style="background:#f4f7f6;color:#555;">
+          </div>
+        </div>
+      </div>
+
+      <!-- Procedure Details Section -->
+      <div style="background:var(--surface-alt);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:10px;padding:16px 18px;margin-bottom:20px;">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--primary);margin-bottom:4px;">🔬 Procedure <span style="color:var(--danger);">*</span></div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">Tap a procedure — recommended items will be auto-selected below.</div>
+
+        <!-- Hidden input stores the selected procedure value -->
+        <input type="hidden" id="borrowProcedure" value="">
+
+        <!-- Procedure Cards Grid -->
+        <div id="procedureCards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:10px;margin-bottom:14px;"></div>
+
+        <!-- Selected Procedure display (shown after selection) -->
+        <div id="selectedProcedureDisplay" style="display:none;background:#f0faf6;border:1.5px solid var(--success);border-radius:8px;padding:10px 14px;margin-bottom:14px;align-items:center;gap:10px;">
+          <span style="font-size:18px;">&#x2705;</span>
+          <span style="font-size:14px;font-weight:700;color:var(--primary);" id="selectedProcedureLabel"></span>
+          <button onclick="clearSelectedProcedure()" style="margin-left:auto;width:auto;padding:4px 10px;font-size:12px;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:6px;margin-top:0;">Change</button>
+        </div>
+
+        <!-- Extra fields row -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;">
+          <div class="form-group">
+            <label>Attested By</label>
+            <select id="borrowAttestedBy">
+              <option value="">— Select —</option>
+              <option value="Clinical Instructor">Clinical Instructor</option>
+              <option value="Student Assistant">Student Assistant</option>
+              <option value="Lab Coordinator">Lab Coordinator</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Notes (Optional)</label>
+            <input type="text" id="borrowNotes" placeholder="Any remarks...">
+          </div>
+        </div>
+      </div>
+
+      <!-- Procedure Kit Banner (shown when procedure auto-maps items) -->
+      <div id="procedureKitBanner" style="display:none;background:linear-gradient(135deg,#e8f6f0,#f0faf6);border:1.5px solid var(--success);border-radius:10px;padding:14px 18px;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <span style="font-size:20px;">🧰</span>
+          <span style="font-weight:700;color:var(--success);font-size:14px;">Procedure Kit Auto-Selected</span>
+          <button onclick="clearProcedureKit()" style="margin-left:auto;width:auto;padding:4px 12px;font-size:12px;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:6px;">Clear Kit</button>
+        </div>
+        <div style="font-size:13px;color:var(--text-muted);">The recommended items for <strong id="kitProcedureName" style="color:var(--primary);"></strong> have been pre-selected below. You may add or remove items as needed.</div>
+      </div>
+
+      <!-- Shelf / Location Filter -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--primary);">📦 Select Items to Borrow</div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+          <span style="font-size:12px;color:var(--text-muted);font-weight:600;">📚 Shelf:</span>
+          <select id="shelfFilter" onchange="filterItems()" style="padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text-main);background:var(--surface);outline:none;cursor:pointer;">
+            <option value="">All Shelves</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <input id="searchItems" type="text" placeholder="🔍 Search by name..." oninput="filterItems()"
+          style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text-main);background:var(--surface);outline:none;transition:border-color 0.2s;"
+          onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div id="itemsList"></div>
+      <div class="items-page-nav" id="itemsPageNav" style="display:none;">
+        <button class="items-page-btn" id="itemsPrev" onclick="itemsPageNav(-1)">← Prev</button>
+        <span class="items-page-info" id="itemsPageInfo"></span>
+        <button class="items-page-btn" id="itemsNext" onclick="itemsPageNav(1)">Next →</button>
+      </div>
+
+      <!-- Return Date -->
+      <div class="form-group" style="margin-top:20px;">
+        <label style="font-size:13px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:10px;">
+          📅 Expected Return Date &amp; Time
+        </label>
+        <div style="position:relative;">
+          <input type="datetime-local" id="returnDate" required
+            style="width:100%;padding:14px 16px 14px 44px;border:2px solid var(--border);border-radius:12px;font-size:15px;font-family:'DM Sans',sans-serif;color:var(--text-main);background:var(--surface);outline:none;transition:border-color 0.2s,box-shadow 0.2s;box-sizing:border-box;appearance:none;-webkit-appearance:none;"
+            onfocus="this.style.borderColor='var(--primary)';this.style.boxShadow='0 0 0 3px rgba(13,79,79,0.12)'"
+            onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+          <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;pointer-events:none;">🗓️</span>
+        </div>
+        <div id="returnDateQuick" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;"></div>
+      </div>
+
+      <!-- Confirmation Checkbox -->
+      <div style="background:#f0faf6;border:1px solid #b8e8d4;border-radius:10px;padding:14px 16px;margin-top:18px;display:flex;align-items:flex-start;gap:12px;">
+        <input type="checkbox" id="borrowConfirm"
+          style="width:18px;height:18px;margin-top:2px;accent-color:var(--primary);flex-shrink:0;cursor:pointer;">
+        <label for="borrowConfirm" style="font-size:13px;color:var(--text-main);line-height:1.6;cursor:pointer;font-weight:500;">
+          I confirm that the information above is accurate and I agree to return all borrowed items in good condition by the due date.
+        </label>
+      </div>
+
+      <button onclick="generateQR()" style="margin-top:18px;">🔖 Generate Borrow QR Code</button>
+
+      <div id="qrResultBox" class="qr-result-box" style="display:none;">
+        <p class="qr-title">Borrow QR Code</p>
+        <p class="qr-subtitle">Show this to the instructor or SA at the counter</p>
+        <canvas id="qrcode" style="display:block;margin:0 auto;"></canvas>
+        <div class="qr-items-summary">
+          <p>Items Selected</p>
+          <ul id="qrItemsList"></ul>
+        </div>
+        <div id="qrFormSummary" style="background:var(--surface-alt);border-radius:8px;padding:12px 16px;margin:12px 0;text-align:left;font-size:13px;color:var(--text-muted);line-height:2;"></div>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:8px;">
+          <button onclick="saveQRCode()" style="width:auto;padding:10px 22px;background:var(--success);margin-top:0;">💾 Save QR Image</button>
+          <button onclick="resetBorrowForm()" style="width:auto;padding:10px 22px;background:var(--surface-alt);color:var(--text-main);border:1.5px solid var(--border);margin-top:0;">↩ New Borrow</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: My Borrows -->
+  <div id="borrowed-tab" class="tab-content">
+    <div class="card">
+      <h3>🔄 Currently Borrowed</h3>
+      <div id="borrowedItemsList"></div>
+    </div>
+  </div>
+
+  <!-- TAB: History -->
+  <div id="history-tab" class="tab-content">
+    <div class="card">
+      <h3>📋 Borrow History</h3>
+      <div id="historyList"></div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+let selectedItems   = [];
+let itemNameMap     = {};   // itemId → display name
+let itemTypeMap     = {};   // itemId → "Consumable" | "Non-Consumable"
+let itemLocationMap = {};   // itemId → shelf/location string
+
+// ── Auth ─────────────────────────────────────────────────
+// IMPORTANT: All localStorage keys are scoped per userID
+// so different borrower accounts never share data
+function getUserID()   { return localStorage.getItem("userID") || ""; }
+function getUserName() { return localStorage.getItem("userName") || "User"; }
+function storageKey()  { return `borrows_${getUserID()}`; }
+
+function checkAuth() {
+  const id = getUserID();
+  if (!id) { window.location = "login.html"; return; }
+  document.getElementById("userName").textContent     = getUserName();
+  document.getElementById("sideUserName").textContent = getUserName();
+
+  ["profileModal","passwordModal","returnModal"].forEach(mid => {
+    const el = document.getElementById(mid);
+    if (el) el.addEventListener("click", e => { if (e.target === el) el.style.display = "none"; });
+  });
+}
+
+// ── Side Menu ─────────────────────────────────────────────
+function toggleMenu() { document.getElementById("sideMenu").classList.toggle("active"); }
+document.addEventListener("click", e => {
+  const menu = document.getElementById("sideMenu");
+  const tog  = document.querySelector(".menu-toggle");
+  if (menu && !menu.contains(e.target) && tog && !tog.contains(e.target))
+    menu.classList.remove("active");
+});
+
+// ── Tabs ──────────────────────────────────────────────────
+// ── Arrow Tab Navigation ─────────────────────────────────
+const TAB_DEFS = [
+  { id: 'borrow-tab',   label: '📦 Borrow Items' },
+  { id: 'borrowed-tab', label: '🔄 My Borrows' },
+  { id: 'history-tab',  label: '📋 History' }
+];
+let _currentTabIdx = 0;
+
+function initTabNav() {
+  const dots = document.getElementById('tabDots');
+  dots.innerHTML = '';
+  TAB_DEFS.forEach((t, i) => {
+    const d = document.createElement('span');
+    d.className = 'tab-dot' + (i === 0 ? ' active' : '');
+    d.id = 'dot_' + i;
+    d.onclick = () => goToTab(i);
+    d.style.cursor = 'pointer';
+    dots.appendChild(d);
+  });
+  updateTabNav();
+}
+
+function navTab(dir) {
+  goToTab(_currentTabIdx + dir);
+}
+
+function goToTab(idx) {
+  _currentTabIdx = Math.max(0, Math.min(TAB_DEFS.length - 1, idx));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById(TAB_DEFS[_currentTabIdx].id).classList.add('active');
+  updateTabNav();
+  const tabId = TAB_DEFS[_currentTabIdx].id;
+  if (tabId === 'borrowed-tab') loadBorrowedItems();
+  if (tabId === 'history-tab')  loadBorrowHistory();
+  if (tabId === 'borrow-tab')   filterItems();
+}
+
+function updateTabNav() {
+  document.getElementById('tabLabel').textContent = TAB_DEFS[_currentTabIdx].label;
+  document.getElementById('tabPrev').disabled = _currentTabIdx === 0;
+  document.getElementById('tabNext').disabled = _currentTabIdx === TAB_DEFS.length - 1;
+  TAB_DEFS.forEach((_, i) => {
+    const d = document.getElementById('dot_' + i);
+    if (d) d.className = 'tab-dot' + (i === _currentTabIdx ? ' active' : '');
+  });
+}
+
+function switchTab(tabName, btn) {
+  const idx = TAB_DEFS.findIndex(t => t.id === tabName);
+  if (idx >= 0) goToTab(idx);
+}
+
+// ── Profile ───────────────────────────────────────────────
+function openProfile() {
+  document.getElementById("sideMenu").classList.remove("active");
+  document.getElementById("profileModal").style.display = "flex";
+
+  fetch(API, { method:"POST", body: new URLSearchParams({ action:"getUserProfile", userID:getUserID() }) })
+  .then(r => r.json())
+  .then(data => {
+    if (data.status === "success") {
+      document.getElementById("profileName").value       = data.name       || "";
+      document.getElementById("profileEmail").value      = data.email      || "";
+      document.getElementById("profileContact").value    = data.contact    || "";
+      document.getElementById("profileDepartment").value = data.department || "";
+      document.getElementById("profileYear").value       = data.year       || "";
+      if (document.getElementById("profileIdNumber"))
+        document.getElementById("profileIdNumber").value = data.idNumber   || "";
+    } else {
+      showNotification("Could not load profile", "error");
+    }
+  })
+  .catch(() => showNotification("Error loading profile","error"));
+}
+
+function closeProfile() { document.getElementById("profileModal").style.display = "none"; }
+
+function saveProfile() {
+  fetch(API, { method:"POST", body: new URLSearchParams({
+    action:"updateUserProfile", userID:getUserID(),
+    contact:    document.getElementById("profileContact").value,
+    department: document.getElementById("profileDepartment").value,
+    year:       document.getElementById("profileYear").value,
+    idNumber:   document.getElementById("profileIdNumber") ? document.getElementById("profileIdNumber").value : ""
+  })})
+  .then(r=>r.json()).then(data => {
+    if (data.status==="success") {
+      // Update cached idNumber too
+      const newId = document.getElementById("profileIdNumber") ? document.getElementById("profileIdNumber").value : "";
+      if (newId) { localStorage.setItem("userIDNumber", newId); localStorage.setItem("borrowerIdNumber", newId); }
+      showNotification("✓ Profile updated!","success"); closeProfile();
+    }
+    else showNotification("Failed to update profile","error");
+  })
+  .catch(()=>showNotification("Error saving profile","error"));
+}
+
+// ── Password ──────────────────────────────────────────────
+function changePassword() {
+  document.getElementById("sideMenu").classList.remove("active");
+  document.getElementById("passwordModal").style.display = "flex";
+}
+function closePassword() {
+  document.getElementById("passwordModal").style.display = "none";
+  ["currentPassword","newPassword","confirmPassword"].forEach(id => document.getElementById(id).value = "");
+}
+function updatePassword() {
+  const np = document.getElementById("newPassword").value;
+  const cp = document.getElementById("confirmPassword").value;
+  if (np !== cp)    { showNotification("Passwords do not match","error"); return; }
+  if (np.length < 8){ showNotification("Password must be at least 8 characters","error"); return; }
+  fetch(API, { method:"POST", body: new URLSearchParams({
+    action:"changePassword", userID:getUserID(),
+    currentPassword:document.getElementById("currentPassword").value, newPassword:np
+  })})
+  .then(r=>r.json()).then(data => {
+    if (data.status==="success") { showNotification("✓ Password changed!","success"); closePassword(); }
+    else showNotification(data.message||"Failed to change password","error");
+  })
+  .catch(()=>showNotification("Error changing password","error"));
+}
+
+// ── Load Items (paginated) ───────────────────────────────
+let _allItemRows = [];   // all inventory rows from server
+let _filteredItems = []; // after search/shelf filter
+let _itemPage = 1;
+const ITEMS_PER_PAGE = 8;
+
+function loadItems() {
+  fetch(API, { method:"POST", body: new URLSearchParams({ action:"getItems" }) })
+  .then(r=>r.json())
+  .then(data => {
+    itemNameMap     = {};
+    itemTypeMap     = {};
+    itemLocationMap = {};
+    selectedItems   = [];
+    _allItemRows    = [];
+
+    if (!data || data.length <= 1) {
+      document.getElementById("itemsList").innerHTML = "<div class='empty-state'><div class='icon'>📭</div>No items available</div>";
+      document.getElementById("itemsPageNav").style.display = "none";
+      return;
+    }
+
+    populateShelfFilter(data);
+
+    for (let i = 1; i < data.length; i++) {
+      const row    = data[i];
+      const itemId = String(row[0]);
+      const name   = row[1] || "";
+      const size   = row[2] || "";
+      const stock  = parseInt(row[4]) || 0;
+      const type   = row[5] || "";
+      const loc    = row[6] || "";
+      itemNameMap[itemId]     = size ? `${name} (${size})` : name;
+      itemTypeMap[itemId]     = type;
+      itemLocationMap[itemId] = loc;
+      _allItemRows.push({ itemId, name, size, stock, type, loc, avail: stock > 0 });
+    }
+
+    _filteredItems = [..._allItemRows];
+    _itemPage = 1;
+    renderItemsPage();
+  })
+  .catch(()=>showNotification("Failed to load items","error"));
+}
+
+function renderItemsPage() {
+  const container = document.getElementById("itemsList");
+  const nav       = document.getElementById("itemsPageNav");
+  const total     = _filteredItems.length;
+
+  if (total === 0) {
+    container.innerHTML = "<div class='empty-state'><div class='icon'>🔍</div>No matching items</div>";
+    nav.style.display = "none"; return;
+  }
+
+  const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
+  _itemPage = Math.min(_itemPage, totalPages);
+  const start = (_itemPage - 1) * ITEMS_PER_PAGE;
+  const end   = Math.min(start + ITEMS_PER_PAGE, total);
+  const pageRows = _filteredItems.slice(start, end);
+
+  container.innerHTML = "";
+  pageRows.forEach(({ itemId, name, size, stock, type, loc, avail }) => {
+    const typePill = type === "Consumable"
+      ? `<span style="font-size:11px;background:#e8f0ff;color:#2d4fa0;padding:2px 8px;border-radius:10px;font-weight:600;">Consumable</span>`
+      : `<span style="font-size:11px;background:#f0faf6;color:#1a5a3e;padding:2px 8px;border-radius:10px;font-weight:600;">Non-Consumable</span>`;
+    const locPill = loc
+      ? `<span style="font-size:11px;background:#f5f0e8;color:#7a5c1e;padding:2px 8px;border-radius:10px;font-weight:600;">📚 ${loc}</span>`
+      : "";
+    const isSelected = selectedItems.find(i => i.id === itemId);
+    const el = document.createElement("div");
+    el.className = "tap-item" + (!avail ? " tap-item-disabled" : "") + (isSelected ? " tap-item-selected" : "");
+    el.id = `ti_${itemId}`;
+    if (avail) el.onclick = () => tapItem(itemId);
+    el.innerHTML = `
+      <div style="flex:1;">
+        <div style="font-weight:600;font-size:14px;color:var(--primary);">${name}${size ? ` <em style="color:var(--text-muted);font-weight:400;font-size:13px;">— ${size}</em>` : ""}</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:4px;flex-wrap:wrap;">
+          ${typePill}${locPill}
+          <span style="font-size:12px;font-weight:600;color:${avail ? "var(--success)" : "var(--danger)"};">${avail ? `Stock: ${stock}` : "Out of stock"}</span>
+        </div>
+      </div>
+      <div class="tap-qty-box" id="qty_${itemId}" style="display:${isSelected ? "flex" : "none"};">
+        <button class="qty-btn" onclick="event.stopPropagation();changeQty('${itemId}',-1)">−</button>
+        <span class="qty-num" id="qtynum_${itemId}">${isSelected ? isSelected.qty : 1}</span>
+        <button class="qty-btn" onclick="event.stopPropagation();changeQty('${itemId}',1,'${stock}')">+</button>
+      </div>
+      <div class="tap-check" id="chk_${itemId}" style="display:${isSelected ? "flex" : "none"};">✓</div>`;
+    container.appendChild(el);
+  });
+
+  // Update pagination nav
+  nav.style.display = totalPages > 1 ? "flex" : "none";
+  document.getElementById("itemsPrev").disabled = _itemPage === 1;
+  document.getElementById("itemsNext").disabled = _itemPage === totalPages;
+  document.getElementById("itemsPageInfo").textContent =
+    `${start + 1}–${end} of ${total} items  (page ${_itemPage}/${totalPages})`;
+}
+
+function itemsPageNav(dir) {
+  _itemPage = Math.max(1, Math.min(Math.ceil(_filteredItems.length / ITEMS_PER_PAGE), _itemPage + dir));
+  renderItemsPage();
+  document.getElementById("itemsList").scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function tapItem(itemId) {
+  const existing = selectedItems.find(i=>i.id===itemId);
+  const el = document.getElementById(`ti_${itemId}`);
+  const qtyEl = document.getElementById(`qty_${itemId}`);
+  const chkEl = document.getElementById(`chk_${itemId}`);
+  if (existing) {
+    selectedItems = selectedItems.filter(i=>i.id!==itemId);
+    if (el)  el.classList.remove("tap-item-selected");
+    if (qtyEl) qtyEl.style.display = "none";
+    if (chkEl) chkEl.style.display = "none";
+  } else {
+    selectedItems.push({ id: itemId, name: itemNameMap[itemId], qty: 1 });
+    if (el)  el.classList.add("tap-item-selected");
+    if (qtyEl) qtyEl.style.display = "flex";
+    if (chkEl) chkEl.style.display = "flex";
+  }
+}
+
+function changeQty(itemId, delta, maxStock) {
+  const item = selectedItems.find(i=>i.id===itemId);
+  if (!item) return;
+  const max = maxStock ? parseInt(maxStock) : 999;
+  item.qty = Math.min(max, Math.max(1, item.qty + delta));
+  const qn = document.getElementById(`qtynum_${itemId}`);
+  if (qn) qn.textContent = item.qty;
+}
+
+function filterItems() {
+  const q     = (document.getElementById("searchItems")?.value || "").toLowerCase();
+  const shelf = (document.getElementById("shelfFilter")?.value || "").toLowerCase();
+  _filteredItems = _allItemRows.filter(row => {
+    const text = (row.name + " " + row.size + " " + row.loc).toLowerCase();
+    const textMatch  = !q     || text.includes(q);
+    const shelfMatch = !shelf || row.loc.toLowerCase() === shelf;
+    return textMatch && shelfMatch;
+  });
+  _itemPage = 1;
+  renderItemsPage();
+}
+
+// ── The 8 Procedures (always shown as cards) ─────────────
+const PROCEDURE_LIST = [
+  { name: "Hand Washing",          icon: "🧼", color: "#e8f4ff", border: "#90c8f0" },
+  { name: "Wound Care",            icon: "🩹", color: "#fff4e8", border: "#f0b87a" },
+  { name: "Internal Examination",  icon: "🔍", color: "#f4e8ff", border: "#c890f0" },
+  { name: "Female Catheterization",icon: "💧", color: "#e8fff4", border: "#70d4a0" },
+  { name: "Leopold's Maneuver",    icon: "🤰", color: "#fff8e8", border: "#f0d070" },
+  { name: "Perianal Flushing",     icon: "♻️", color: "#e8f8ff", border: "#70c8e8" },
+  { name: "Newborn Care",          icon: "👶", color: "#fff0f4", border: "#f090b0" },
+  { name: "Intrapartum Care",      icon: "🏥", color: "#f0fff0", border: "#70d070" }
+];
+
+// ── Procedure → Item keyword mapping ────────────────────
+const PROCEDURE_ITEMS = {
+  "Hand Washing": [
+    "soap","alcohol","hand sanitizer","basin","towel","gloves","apron","wash","handwash"
+  ],
+  "Wound Care": [
+    "gauze","bandage","dressing","iodine","povidone","antiseptic","forceps","scissors","tape","wound","saline","cotton","syringe","gloves","basin","sterile"
+  ],
+  "Internal Examination": [
+    "gloves","sterile gloves","lubricant","jelly","speculum","drape","basin","pad","underpad","disposable"
+  ],
+  "Female Catheterization": [
+    "catheter","foley","urine bag","drainage bag","lubricant","jelly","sterile gloves","antiseptic","cotton","syringe","saline","basin","tape","drape"
+  ],
+  "Leopold's Maneuver": [
+    "stethoscope","doppler","fetoscope","measuring tape","tape measure","lubricant","jelly","gloves","drape","pillow"
+  ],
+  "Perianal Flushing": [
+    "basin","soap","cotton","gauze","gloves","towel","pad","underpad","forceps","antiseptic"
+  ],
+  "Newborn Care": [
+    "bulb syringe","suction","cord clamp","vitamin k","erythromycin","eye ointment","scale","blanket","towel","gloves","basin","thermometer","stethoscope","tape","measuring tape","band"
+  ],
+  "Intrapartum Care": [
+    "gloves","sterile gloves","scissor","clamp","cord clamp","basin","drape","suture","needle","syringe","oxytocin","iv","catheter","stethoscope","doppler","pad","underpad","gauze","cotton","antiseptic"
+  ]
+};
+
+// ── Build procedure cards on load ────────────────────────
+function buildProcedureCards() {
+  const container = document.getElementById("procedureCards");
+  if (!container) return;
+  container.innerHTML = "";
+  PROCEDURE_LIST.forEach(proc => {
+    const card = document.createElement("div");
+    card.id = "proc_" + proc.name.replace(/[^a-zA-Z0-9]/g,"_");
+    card.style.cssText = `
+      background:${proc.color};border:2px solid ${proc.border};border-radius:12px;
+      padding:14px 10px;text-align:center;cursor:pointer;transition:all 0.2s ease;
+      user-select:none;`;
+    card.innerHTML = `
+      <div style="font-size:28px;margin-bottom:8px;">${proc.icon}</div>
+      <div style="font-size:13px;font-weight:700;color:var(--primary);line-height:1.3;">${proc.name}</div>`;
+    card.onclick = () => selectProcedure(proc.name);
+    card.onmouseover = () => { if (document.getElementById("borrowProcedure").value !== proc.name) card.style.transform = "translateY(-3px)"; card.style.boxShadow = "0 6px 18px rgba(0,0,0,0.12)"; };
+    card.onmouseout  = () => { if (document.getElementById("borrowProcedure").value !== proc.name) { card.style.transform = ""; card.style.boxShadow = ""; } };
+    container.appendChild(card);
+  });
+}
+
+function selectProcedure(procName) {
+  // Update hidden input
+  document.getElementById("borrowProcedure").value = procName;
+
+  // Highlight selected card, reset others
+  PROCEDURE_LIST.forEach(p => {
+    const card = document.getElementById("proc_" + p.name.replace(/[^a-zA-Z0-9]/g,"_"));
+    if (!card) return;
+    if (p.name === procName) {
+      card.style.transform   = "translateY(-3px)";
+      card.style.boxShadow   = "0 6px 20px rgba(13,79,79,0.25)";
+      card.style.border      = "2.5px solid var(--primary)";
+      card.style.outline     = "3px solid rgba(13,79,79,0.15)";
+    } else {
+      const orig = PROCEDURE_LIST.find(x=>x.name===p.name);
+      card.style.transform   = "";
+      card.style.boxShadow   = "";
+      card.style.border      = `2px solid ${orig ? orig.border : "var(--border)"}`;
+      card.style.outline     = "";
+    }
+  });
+
+  // Hide cards grid, show selected display
+  document.getElementById("procedureCards").style.display          = "none";
+  const disp = document.getElementById("selectedProcedureDisplay");
+  disp.style.display = "flex";
+  const proc = PROCEDURE_LIST.find(p=>p.name===procName);
+  document.getElementById("selectedProcedureLabel").textContent = (proc ? proc.icon + " " : "") + procName;
+
+  // Auto-select items
+  autoSelectProcedureItems(procName);
+}
+
+function clearSelectedProcedure() {
+  document.getElementById("borrowProcedure").value = "";
+  document.getElementById("procedureCards").style.display = "grid";
+  document.getElementById("selectedProcedureDisplay").style.display = "none";
+  // Reset all card styles
+  PROCEDURE_LIST.forEach(p => {
+    const card = document.getElementById("proc_" + p.name.replace(/[^a-zA-Z0-9]/g,"_"));
+    if (!card) return;
+    card.style.transform = "";
+    card.style.boxShadow = "";
+    card.style.border    = `2px solid ${p.border}`;
+    card.style.outline   = "";
+  });
+  clearProcedureKit(false);
+}
+
+function autoSelectProcedureItems(proc) {
+  const keywords = PROCEDURE_ITEMS[proc] || [];
+  // Clear existing selection first
+  clearProcedureKit(false);
+  if (keywords.length === 0) {
+    renderItemsPage();
+    return;
+  }
+
+  // Match against ALL items (not just current page DOM)
+  let matched = 0;
+  _allItemRows.forEach(row => {
+    if (row.avail) {
+      const itemName = (itemNameMap[row.itemId] || "").toLowerCase();
+      const isMatch  = keywords.some(kw => itemName.includes(kw.toLowerCase()));
+      if (isMatch && !selectedItems.find(i => i.id === row.itemId)) {
+        selectedItems.push({ id: row.itemId, name: itemNameMap[row.itemId], qty: 1 });
+        matched++;
+      }
+    }
+  });
+
+  // Reset filter and go to page 1 so selected items are visible
+  _filteredItems = [..._allItemRows];
+  _itemPage = 1;
+  renderItemsPage();
+
+  const banner = document.getElementById("procedureKitBanner");
+  if (matched > 0) {
+    banner.style.display = "block";
+    document.getElementById("kitProcedureName").textContent = proc;
+    showNotification(`✓ ${matched} item(s) suggested for ${proc}`, "success");
+  } else {
+    banner.style.display = "none";
+    showNotification(`No matching items in inventory for "${proc}" — select manually`, "info");
+  }
+}
+
+function clearProcedureKit(showMsg = true) {
+  selectedItems = [];
+  _itemPage = 1;
+  renderItemsPage();
+  document.getElementById("procedureKitBanner").style.display = "none";
+  if (showMsg) showNotification("Kit cleared", "info");
+}
+
+// ── Legacy stub — no longer used but kept for safety ─────
+function updateProcedures() {}
+function onProcedureChange() {}
+
+// ── Shelf / Location Filter Population ───────────────────
+function populateShelfFilter(data) {
+  const sel = document.getElementById("shelfFilter");
+  if (!sel) return;
+  const locations = new Set();
+  for (let i = 1; i < data.length; i++) {
+    const loc = (data[i][6] || "").trim();
+    if (loc) locations.add(loc);
+  }
+  // Keep current "All Shelves" option then add sorted unique locations
+  sel.innerHTML = '<option value="">All Shelves</option>';
+  [...locations].sort().forEach(loc => {
+    sel.innerHTML += `<option value="${loc}">${loc}</option>`;
+  });
+}
+
+// ── Init borrow form fields ───────────────────────────────
+function initBorrowForm() {
+  const nameEl = document.getElementById("borrowerNameDisplay");
+  const dateEl = document.getElementById("borrowerDate");
+  if (nameEl) nameEl.value = getUserName();
+  if (dateEl) {
+    const now = new Date();
+    dateEl.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  }
+  // Pre-fill from localStorage
+  const storedCourse = localStorage.getItem("borrowerCourse")   || "";
+  const storedId     = localStorage.getItem("borrowerIdNumber") || localStorage.getItem("userIDNumber") || "";
+  if (storedCourse) document.getElementById("borrowerCourse").value    = storedCourse;
+  if (storedId)     document.getElementById("borrowerIdNumber").value  = storedId;
+  buildProcedureCards();
+}
+
+// ── Generate QR ───────────────────────────────────────────
+function generateQR() {
+  // Form field validation
+  const idNumber  = document.getElementById("borrowerIdNumber").value.trim();
+  const course    = document.getElementById("borrowerCourse").value.trim();
+  const procedure = document.getElementById("borrowProcedure").value;
+  const confirmed = document.getElementById("borrowConfirm").checked;
+
+  if (!idNumber)  { showNotification("Please enter your ID Number","error"); return; }
+  if (!course)    { showNotification("Please enter your Course, Year & Section","error"); return; }
+  if (!procedure) { showNotification("Please select a Procedure","error"); return; }
+  if (!confirmed) { showNotification("Please confirm the borrowing agreement","error"); return; }
+
+  if (selectedItems.length === 0) { showNotification("Please select at least one item","error"); return; }
+  const rd = document.getElementById("returnDate").value;
+  if (!rd) { showNotification("Please set a return date and time","error"); return; }
+
+  // Save course/id for convenience next time
+  localStorage.setItem("borrowerCourse",    course);
+  localStorage.setItem("borrowerIdNumber",  idNumber);
+
+  const subject    = document.getElementById("borrowSubject").value;
+  const attestedBy = document.getElementById("borrowAttestedBy").value;
+  const notes      = document.getElementById("borrowNotes").value.trim();
+
+  // Build items string with quantity: "id:qty,id:qty"
+  const itemsWithQty  = selectedItems.map(i=>`${i.id}:${i.qty}`).join(",");
+  const itemNamesList = selectedItems.map(i=> i.qty > 1 ? `${i.name} ×${i.qty}` : i.name);
+  const itemTypes     = selectedItems.map(i=> itemTypeMap[i.id] || "").join(",");
+
+  const borrowRecord = {
+    student:     getUserID(),
+    studentName: getUserName(),
+    idNumber,
+    course,
+    subject,
+    procedure,
+    attestedBy,
+    notes,
+    items:       itemsWithQty,
+    itemTypes,
+    itemNames:   itemNamesList.join(", "),
+    itemList:    itemNamesList,
+    returnDate:  rd,
+    borrowDate:  new Date().toISOString()
+  };
+
+  const qrPayload = JSON.stringify({
+    student:     borrowRecord.student,
+    studentName: borrowRecord.studentName,
+    idNumber,
+    course,
+    subject,
+    procedure,
+    attestedBy,
+    notes,
+    items:       borrowRecord.items,
+    itemTypes:   borrowRecord.itemTypes,
+    itemNames:   borrowRecord.itemNames,
+    returnDate:  borrowRecord.returnDate,
+    borrowDate:  borrowRecord.borrowDate
+  });
+
+  saveBorrowToStorage(borrowRecord);
+
+  QRCode.toCanvas(document.getElementById("qrcode"), qrPayload, {
+    width:260, margin:10, color:{ dark:'#0d4f4f', light:'#FFFFFF' }
+  });
+
+  document.getElementById("qrItemsList").innerHTML =
+    itemNamesList.map(n=>`<li>${n}</li>`).join("");
+
+  // Show form summary under QR
+  const summaryEl = document.getElementById("qrFormSummary");
+  if (summaryEl) {
+    summaryEl.innerHTML = [
+      course    ? `<div>📚 <strong>Course:</strong> ${course}</div>` : '',
+      idNumber  ? `<div>🪪 <strong>ID:</strong> ${idNumber}</div>` : '',
+      subject   ? `<div>📖 <strong>Subject:</strong> ${subject}</div>` : '',
+      procedure ? `<div>🔬 <strong>Procedure:</strong> ${procedure}</div>` : '',
+      attestedBy? `<div>✍️ <strong>Attested by:</strong> ${attestedBy}</div>` : '',
+      notes     ? `<div>📝 <strong>Notes:</strong> ${notes}</div>` : ''
+    ].filter(Boolean).join("");
+  }
+
+  document.getElementById("qrResultBox").style.display = "block";
+  document.getElementById("qrResultBox").scrollIntoView({ behavior:"smooth", block:"nearest" });
+
+  showNotification("✓ QR Code generated! Show it to the instructor.","success");
+}
+
+function saveQRCode() {
+  const a = document.createElement("a");
+  a.download = "borrow-qr.png";
+  a.href = document.getElementById("qrcode").toDataURL();
+  a.click();
+}
+
+function resetBorrowForm() {
+  selectedItems = [];
+  document.getElementById("searchItems").value = "";
+  document.getElementById("returnDate").value  = "";
+  document.getElementById("qrResultBox").style.display = "none";
+  document.getElementById("borrowProcedure").value  = "";
+  clearSelectedProcedure();
+  document.getElementById("borrowAttestedBy").value = "";
+  document.getElementById("borrowNotes").value      = "";
+  document.getElementById("borrowConfirm").checked  = false;
+  // Re-render paginated items (clears selection visually)
+  _filteredItems = [..._allItemRows];
+  _itemPage = 1;
+  renderItemsPage();
+  // Reset quick date buttons
+  const qd = document.getElementById("returnDateQuick");
+  if (qd) qd.querySelectorAll("button").forEach(b => {
+    b.classList.remove("qd-active");
+    b.style.background  = "var(--surface)";
+    b.style.color       = "var(--text-muted)";
+    b.style.borderColor = "var(--border)";
+  });
+}
+
+// ── localStorage (per-user scoped) ───────────────────────
+function saveBorrowToStorage(record) {
+  const existing = JSON.parse(localStorage.getItem(storageKey())||"[]");
+  record.localId = Date.now();
+  existing.unshift(record);
+  localStorage.setItem(storageKey(), JSON.stringify(existing.slice(0,30)));
+}
+
+function getLocalBorrows() {
+  return JSON.parse(localStorage.getItem(storageKey())||"[]");
+}
+
+// ── My Borrows ────────────────────────────────────────────
+function loadBorrowedItems() {
+  // Fetch server-side status to cross-reference
+  fetch(API, { method:"POST", body: new URLSearchParams({ action:"getBorrowedItems", student:getUserID() }) })
+  .then(r=>r.json())
+  .then(serverData => renderBorrowedItems(serverData))
+  .catch(()=>renderBorrowedItems(null));
+}
+
+function renderBorrowedItems(serverData) {
+  const container = document.getElementById("borrowedItemsList");
+  container.innerHTML = "";
+
+  // Build set of item IDs currently marked as "Borrowed" on server
+  const serverBorrowedItems = new Set();
+  if (serverData && Array.isArray(serverData) && !serverData.error) {
+    serverData.forEach(record => {
+      const status = record.length>=7 ? record[6] : record[5];
+      const items  = record.length>=7 ? record[3] : record[2];
+      if (status==="Borrowed") {
+        items.split(",").forEach(id => serverBorrowedItems.add(id.trim()));
+      }
+    });
+  }
+
+  const localBorrows = getLocalBorrows();
+  let hasAny = false;
+
+  // Show local borrow records (these have full item names)
+  localBorrows.forEach(record => {
+    const returnDate = new Date(record.returnDate);
+    const isOverdue  = returnDate < new Date();
+    const itemNames  = record.itemList && record.itemList.length
+      ? record.itemList
+      : (record.itemNames ? record.itemNames.split(", ") : ["Unknown item"]);
+
+    const qrPayload = JSON.stringify({
+      student:     record.student,
+      studentName: record.studentName,
+      items:       record.items,
+      itemTypes:   record.itemTypes || "",
+      itemNames:   record.itemNames,
+      returnDate:  record.returnDate,
+      action:      "return"
+    });
+
+    hasAny = true;
+    container.innerHTML += buildBorrowCard({ itemNames, itemTypes: record.itemTypes || "", returnDate, isOverdue, qrPayload });
+  });
+
+  // Fallback: server records if no local data (logged in from different device)
+  if (!hasAny && serverData && Array.isArray(serverData)) {
+    serverData.forEach(record => {
+      const status     = record.length>=7 ? record[6] : record[5];
+      const rawItems   = record.length>=7 ? record[3] : record[2];
+      const returnDateV = record.length>=7 ? record[5] : record[4];
+      if (status!=="Borrowed") return;
+
+      const itemNames  = resolveItemNames(rawItems);
+      const returnDate = new Date(returnDateV);
+      const isOverdue  = returnDate < new Date();
+      const qrPayload  = JSON.stringify({
+        student:     getUserID(),
+        studentName: getUserName(),
+        items:       rawItems,
+        itemNames:   itemNames.join(", "),
+        returnDate:  returnDateV,
+        action:      "return"
+      });
+
+      hasAny = true;
+      container.innerHTML += buildBorrowCard({ itemNames, itemTypes: data[i] && data[i][9] ? String(data[i][9]) : "", returnDate, isOverdue, qrPayload });
+    });
+  }
+
+  if (!hasAny)
+    container.innerHTML = "<div class='empty-state'><div class='icon'>📭</div>No items currently borrowed</div>";
+}
+
+function buildBorrowCard({ itemNames, itemTypes, returnDate, isOverdue, qrPayload }) {
+  // Filter out consumables from return display and QR payload
+  let parsedPayload = {};
+  try { parsedPayload = JSON.parse(qrPayload); } catch(e) {}
+
+  // Determine which items are non-consumable (for return)
+  const typeList = (parsedPayload.itemTypes || "").split(",").map(t=>t.trim());
+  const allItemNames  = Array.isArray(itemNames) ? itemNames : [itemNames];
+
+  // Filter: keep only non-consumable entries for return
+  const returnableNames = allItemNames.filter((_, idx) => typeList[idx] !== "Consumable");
+  const hasReturnables  = returnableNames.length > 0;
+
+  // Build a filtered QR payload for return (only non-consumable item IDs)
+  let returnQRPayload = qrPayload;
+  if (parsedPayload.items) {
+    const itemEntries = parsedPayload.items.split(",").map(s=>s.trim()).filter(Boolean);
+    const filteredEntries = itemEntries.filter((_, idx) => typeList[idx] !== "Consumable");
+    if (filteredEntries.length > 0) {
+      const filteredPayload = Object.assign({}, parsedPayload, {
+        items:     filteredEntries.join(","),
+        itemNames: returnableNames.join(", ")
+      });
+      returnQRPayload = JSON.stringify(filteredPayload);
+    }
+  }
+
+  const single    = allItemNames.length === 1;
+  const titleText = single ? allItemNames[0] : `${allItemNames.length} Items Borrowed`;
+
+  const groupHTML = !single ? `
+    <div class="items-group">
+      <div class="items-group-label">Items in this borrow</div>
+      <ul>${allItemNames.map((n,i)=>`<li>${n}${typeList[i]==='Consumable'?' <em style="font-size:11px;color:#2d4fa0;">(consumable)</em>':''}</li>`).join("")}</ul>
+    </div>` : "";
+
+  const cardId = 'card_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+  window._returnQRStore = window._returnQRStore || {};
+  window._returnQRStore[cardId] = { itemNames: returnableNames.length ? returnableNames : allItemNames, qrPayload: returnQRPayload };
+
+  const returnBtn = hasReturnables
+    ? `<button onclick="showReturnQRById('${cardId}')"
+        style="width:auto;padding:10px 20px;background:var(--primary);margin-top:0;font-size:13px;">
+        📥 Return Item${returnableNames.length>1?'s':''}
+      </button>`
+    : `<div style="font-size:13px;color:var(--text-muted);font-style:italic;">✓ All consumable items — no return needed</div>`;
+
+  // extract procedure/course/id from parsed QR payload
+  const cardProc   = (parsedPayload && parsedPayload.procedure) ? parsedPayload.procedure : "";
+  const cardCourse = (parsedPayload && parsedPayload.course)    ? parsedPayload.course    : "";
+  const cardIdNum  = (parsedPayload && parsedPayload.idNumber)  ? parsedPayload.idNumber  : "";
+
+  const procBadge = cardProc ? `
+    <div style="display:inline-flex;align-items:center;gap:6px;background:#f0faf6;border:1px solid #b0dcc8;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px;">
+      🔬 ${cardProc}
+    </div>` : "";
+
+  const cardMeta = [
+    cardIdNum  ? `<p><strong>🪪 ID:</strong> ${cardIdNum}</p>`     : "",
+    cardCourse ? `<p><strong>📚 Course:</strong> ${cardCourse}</p>` : ""
+  ].filter(Boolean).join("");
+
+  return `
+    <div class="borrow-card ${isOverdue?'overdue':''}">
+      ${procBadge}
+      <div class="borrow-card-title">${isOverdue?'⚠️ OVERDUE — ':''}${titleText}</div>
+      <div class="borrow-card-meta">
+        ${cardMeta}
+        <p><strong>Return by:</strong> ${returnDate.toLocaleString()}</p>
+        ${isOverdue?'<p style="color:var(--danger);font-weight:600;">Please return immediately!</p>':''}
+      </div>
+      ${groupHTML}
+      <div class="borrow-actions">${returnBtn}</div>
+    </div>`;
+}
+
+// ── Return QR Modal ───────────────────────────────────────
+function closeReturnModal() { document.getElementById("returnModal").style.display="none"; }
+
+function showReturnQRById(cardId) {
+  const stored = (window._returnQRStore||{})[cardId];
+  if (!stored) { showNotification("Data not found. Please reload.","error"); return; }
+  showReturnQR(stored.itemNames, stored.qrPayload);
+}
+
+function showReturnQR(itemNames, qrPayload) {
+  document.getElementById("returnModal").style.display = "flex";
+  document.getElementById("returnItemsList").innerHTML =
+    itemNames.map(n=>`<li>${n}</li>`).join("");
+
+  // Recreate canvas to avoid stale render
+  const modal = document.getElementById("returnModal");
+  const oldCanvas = document.getElementById("returnQRcode");
+  const parent    = oldCanvas.parentElement;
+  oldCanvas.remove();
+  const canvas = document.createElement("canvas");
+  canvas.id    = "returnQRcode";
+  canvas.style.cssText = "display:block;margin:0 auto;";
+
+  // Insert before the save button
+  const saveBtn = parent.querySelector('button');
+  parent.insertBefore(canvas, saveBtn || null);
+
+  setTimeout(()=>{
+    try {
+      QRCode.toCanvas(canvas, qrPayload, { width:260, margin:8, color:{ dark:'#0d4f4f', light:'#ffffff' } });
+    } catch(e) {
+      showNotification("Error generating QR","error");
+    }
+  }, 60);
+}
+
+function saveReturnQR() {
+  const canvas = document.getElementById("returnQRcode");
+  if (!canvas) return;
+  const a = document.createElement("a");
+  a.download = "return-qr.png";
+  a.href = canvas.toDataURL();
+  a.click();
+}
+
+// ── History ───────────────────────────────────────────────
+function loadBorrowHistory() {
+  const container = document.getElementById("historyList");
+  container.innerHTML = "<div class='empty-state'><div class='icon'>⏳</div>Loading history...</div>";
+
+  fetch(API, { method:"POST", body: new URLSearchParams({ action:"getBorrowHistory", student:getUserID() }) })
+  .then(r => {
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return r.json();
+  })
+  .then(data => {
+    container.innerHTML = "";
+
+    if (!data || data.length === 0 || data.error) {
+      container.innerHTML = "<div class='empty-state'><div class='icon'>📋</div>No borrow history yet</div>";
+      return;
+    }
+
+    // Sort newest first
+    const sorted = [...data].reverse();
+
+    sorted.forEach(record => {
+      // Handle variable record formats
+      let status, rawItems, borrowDateV, returnDateV;
+      if (record.length >= 7) {
+        status      = record[6];
+        rawItems    = record[3];
+        borrowDateV = record[4];
+        returnDateV = record[5];
+      } else {
+        status      = record[5];
+        rawItems    = record[2];
+        borrowDateV = record[3];
+        returnDateV = record[4];
+      }
+
+      if (!rawItems) return; // skip empty records
+
+      const itemNames  = resolveItemNames(rawItems);
+      const single     = itemNames.length === 1;
+      const titleText  = single ? itemNames[0] : `${itemNames.length} items`;
+      // procedure stored in col 13, idNumber col 10, course col 11
+      const recProc    = record.length > 13 ? (record[13] || "") : "";
+      const recCourse  = record.length > 11 ? (record[11] || "") : "";
+      const recIdNum   = record.length > 10 ? (record[10] || "") : "";
+
+      const badge = status === "Returned"
+        ? `<span class="status-badge status-returned">✓ Returned</span>`
+        : `<span class="status-badge status-borrowed">Borrowed</span>`;
+
+      const groupHTML = !single ? `
+        <div class="items-group" style="margin:8px 0;">
+          <div class="items-group-label">Items</div>
+          <ul>${itemNames.map(n=>`<li>${n}</li>`).join("")}</ul>
+        </div>` : "";
+
+      const procBadge = recProc ? `
+        <div style="display:inline-flex;align-items:center;gap:6px;background:#f0faf6;border:1px solid #b0dcc8;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px;">
+          🔬 ${recProc}
+        </div>` : "";
+
+      const metaExtra = [
+        recIdNum  ? `<p><strong>ID:</strong> ${recIdNum}</p>`     : "",
+        recCourse ? `<p><strong>Course:</strong> ${recCourse}</p>` : ""
+      ].filter(Boolean).join("");
+
+      let borrowDateStr = "—", returnDateStr = "—";
+      try { borrowDateStr = new Date(borrowDateV).toLocaleString(); } catch(e){}
+      try { returnDateStr = new Date(returnDateV).toLocaleString(); } catch(e){}
+
+      container.innerHTML += `
+        <div class="borrow-card">
+          ${procBadge}
+          <div class="borrow-card-title">${titleText}</div>
+          ${groupHTML}
+          <div class="borrow-card-meta">
+            ${metaExtra}
+            <p><strong>Borrowed:</strong> ${borrowDateStr}</p>
+            <p><strong>Return date:</strong> ${returnDateStr}</p>
+          </div>
+          ${badge}
+        </div>`;
+    });
+
+    if (container.innerHTML === "") {
+      container.innerHTML = "<div class='empty-state'><div class='icon'>📋</div>No history yet</div>";
+    }
+  })
+  .catch(err => {
+    console.error("History error:", err);
+    container.innerHTML = "<div class='empty-state' style='color:var(--danger);'>❌ Failed to load history. Please try again.</div>";
+  });
+}
+
+// ── Resolve item IDs → names ──────────────────────────────
+function resolveItemNames(rawItems) {
+  if (!rawItems) return ["Unknown item"];
+  const parts = String(rawItems).split(",").map(s => s.trim()).filter(Boolean);
+  return parts.map(part => {
+    // Support both "id" and "id:qty" formats
+    const [idPart, qtyPart] = part.split(":");
+    const id  = idPart.trim();
+    const qty = parseInt(qtyPart) || 1;
+    let name;
+    if (/^\d+$/.test(id)) {
+      name = itemNameMap[id] || `Item #${id}`;
+    } else {
+      name = id; // already a name string
+    }
+    return qty > 1 ? `${name} ×${qty}` : name;
+  });
+}
+
+// ── Overdue check ─────────────────────────────────────────
+function checkOverdueItems() {
+  fetch(API, { method:"POST", body: new URLSearchParams({ action:"getOverdueItems", student:getUserID() }) })
+  .then(r=>r.json())
+  .then(data => {
+    if (data && data.hasOverdue && data.overdueCount > 0) {
+      const list = data.items.map(i=>{
+        const name = resolveItemNames(String(i.itemName||i.itemId||""))[0];
+        return `${name} (${i.daysOverdue}d)`;
+      }).join(", ");
+      showNotification(`⚠️ Overdue: ${list}`,"error");
+    }
+  })
+  .catch(()=>{});
+}
+
+// ── Init ─────────────────────────────────────────────────
+checkAuth();
+loadItems();
+checkOverdueItems();
+initBorrowForm();
+initTabNav();
+setInterval(checkOverdueItems, 5*60*1000);
+
+// ── Quick Return Date Buttons ─────────────────────────────
+function initQuickDates() {
+  const container = document.getElementById("returnDateQuick");
+  if (!container) return;
+
+  const options = [
+    { label: "3 hrs",  hours: 3  },
+    { label: "6 hrs",  hours: 6  },
+    { label: "1 day",  hours: 24 },
+    { label: "2 days", hours: 48 },
+    { label: "1 week", hours: 168 }
+  ];
+
+  options.forEach(opt => {
+    const btn = document.createElement("button");
+    btn.textContent = opt.label;
+    btn.style.cssText = "padding:6px 14px;font-size:12px;font-weight:600;border:1.5px solid var(--border);border-radius:20px;background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all 0.2s;font-family:'DM Sans',sans-serif;width:auto;margin:0;";
+    btn.onmouseover = () => { btn.style.borderColor='var(--primary)'; btn.style.color='var(--primary)'; };
+    btn.onmouseout  = () => {
+      if (!btn.classList.contains('qd-active')) { btn.style.borderColor='var(--border)'; btn.style.color='var(--text-muted)'; }
+    };
+    btn.onclick = () => {
+      const now = new Date();
+      now.setHours(now.getHours() + opt.hours);
+      // Format to datetime-local value: YYYY-MM-DDTHH:MM
+      const pad = n => String(n).padStart(2,'0');
+      const val = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+      document.getElementById("returnDate").value = val;
+      // Highlight active button
+      container.querySelectorAll("button").forEach(b => {
+        b.classList.remove('qd-active');
+        b.style.background = 'var(--surface)';
+        b.style.color      = 'var(--text-muted)';
+        b.style.borderColor = 'var(--border)';
+      });
+      btn.classList.add('qd-active');
+      btn.style.background   = 'var(--primary)';
+      btn.style.color        = 'white';
+      btn.style.borderColor  = 'var(--primary)';
+    };
+    container.appendChild(btn);
+  });
+}
+initQuickDates();
+</script>
+
+</body>
+</html>
