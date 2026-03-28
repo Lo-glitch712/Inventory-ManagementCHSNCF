@@ -660,7 +660,9 @@ function loadItems() {
     selectedItems   = [];
     _allItemRows    = [];
 
-    if (!data || data.length <= 1) {
+    // GS getItems() already strips the header row (data.slice(1)),
+    // so data is a plain array of data rows. Empty if no items.
+    if (!Array.isArray(data) || data.length === 0) {
       document.getElementById("itemsList").innerHTML = "<div class='empty-state'><div class='icon'></div>No items available</div>";
       document.getElementById("itemsPageNav").style.display = "none";
       return;
@@ -668,7 +670,8 @@ function loadItems() {
 
     populateShelfFilter(data);
 
-    for (let i = 1; i < data.length; i++) {
+    // Loop starts at 0 — header already removed by server
+    for (let i = 0; i < data.length; i++) {
       const row    = data[i];
       const itemId = String(row[0]);
       const name   = row[1] || "";
@@ -686,7 +689,7 @@ function loadItems() {
     _itemPage = 1;
     renderItemsPage();
   })
-  .catch(()=>showNotification("Failed to load items","error"));
+  .catch((err)=>showNotification("Failed to load items: " + (err.message||"network error"),"error"));
 }
 
 function renderItemsPage() {
@@ -955,7 +958,7 @@ function populateShelfFilter(data) {
   const sel = document.getElementById("shelfFilter");
   if (!sel) return;
   const locations = new Set();
-  for (let i = 1; i < data.length; i++) {
+  for (let i = 0; i < data.length; i++) {
     const loc = (data[i][6] || "").trim();
     if (loc) locations.add(loc);
   }
