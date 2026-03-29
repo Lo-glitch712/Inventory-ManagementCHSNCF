@@ -154,13 +154,13 @@
   <h1> Admin Dashboard</h1>
   <div class="navbar-right">
     <span>Welcome, <strong id="userName"></strong> <span id="roleTag"></span></span>
-    <button class="menu-toggle" onclick="toggleMenu()"></button>
+    <button class="menu-toggle" onclick="toggleMenu()">&#9776;</button>
   </div>
 </div>
 
 <!-- Side Menu -->
 <div id="sideMenu" class="side-menu">
-  <button class="close-btn" onclick="toggleMenu()"></button>
+  <button class="close-btn" onclick="toggleMenu()">&#10005;</button>
   <div class="side-menu-header">
     <strong id="sideUserName">User</strong>
     <p id="sideUserRole">Role</p>
@@ -178,7 +178,7 @@
   <div class="modal-content">
     <div class="modal-header">
       <h3> My Profile</h3>
-      <button class="close-btn" onclick="closeProfile()"></button>
+      <button class="close-btn" onclick="closeProfile()">&#10005;</button>
     </div>
     <div class="modal-body">
       <div class="form-group"><label>Full Name</label><input type="text" id="profileName" readonly style="background:#f4f7f6;color:#777;"></div>
@@ -195,7 +195,7 @@
   <div class="modal-content" style="max-width:400px;">
     <div class="modal-header">
       <h3> Change Password</h3>
-      <button class="close-btn" onclick="closePassword()"></button>
+      <button class="close-btn" onclick="closePassword()">&#10005;</button>
     </div>
     <div class="modal-body">
       <div class="form-group"><label>Current Password</label><input type="password" id="currentPassword" placeholder="Enter current password"></div>
@@ -211,7 +211,7 @@
   <div class="modal-content" style="max-width:500px;">
     <div class="modal-header">
       <h3> Edit Item</h3>
-      <button class="close-btn" onclick="closeEditModal()"></button>
+      <button class="close-btn" onclick="closeEditModal()">&#10005;</button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="editRowIndex">
@@ -242,7 +242,7 @@
   <div class="modal-content" style="max-width:540px;">
     <div class="modal-header">
       <h3 id="detailModalTitle">Borrower Details</h3>
-      <button class="close-btn" onclick="closeDetailModal()"></button>
+      <button class="close-btn" onclick="closeDetailModal()">&#10005;</button>
     </div>
     <div class="modal-body" id="detailModalBody"></div>
   </div>
@@ -546,13 +546,13 @@ function switchTab(tabName, btn) {
 //  Shelf View 
 function renderShelfView() {
   const grid = document.getElementById("shelfGrid");
-  if (!currentData || currentData.length <= 1) {
+  if (!currentData || currentData.length === 0) {
     grid.innerHTML = "<div class='empty-state'><div class='icon'></div>No inventory items yet</div>";
     return;
   }
   // Group by location (col 6)
   const shelves = {};
-  for (let i = 1; i < currentData.length; i++) {
+  for (let i = 0; i < currentData.length; i++) {
     const row      = currentData[i];
     const location = (row[6] || "Unassigned").trim();
     if (!shelves[location]) shelves[location] = [];
@@ -596,7 +596,7 @@ function renderShelfView() {
 //  Add Stock 
 function renderAddStock() {
   const grid = document.getElementById("addStockGrid");
-  if (!currentData || currentData.length <= 1) {
+  if (!currentData || currentData.length === 0) {
     grid.innerHTML = "<div class='empty-state'><div class='icon'></div>No inventory items yet</div>";
     return;
   }
@@ -604,7 +604,7 @@ function renderAddStock() {
   const wrapper = document.createElement('div');
   wrapper.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;';
 
-  for (let i = 1; i < currentData.length; i++) {
+  for (let i = 0; i < currentData.length; i++) {
     const row   = currentData[i];
     const idx   = i;
     const stock = parseInt(row[4]) || 0;
@@ -667,14 +667,14 @@ function addStockToItem(rowIndex, inputEl) {
 //  Stock Alerts 
 function renderAlerts() {
   const container = document.getElementById("alertsList");
-  if (!currentData || currentData.length <= 1) {
+  if (!currentData || currentData.length === 0) {
     container.innerHTML = "<div class='empty-state'><div class='icon'></div>No inventory data</div>";
     return;
   }
 
   const outOfStock = [];
   const lowStock   = [];
-  for (let i = 1; i < currentData.length; i++) {
+  for (let i = 0; i < currentData.length; i++) {
     const row   = currentData[i];
     const stock = parseInt(row[4]) || 0;
     if (stock === 0)       outOfStock.push({ row, idx: i });
@@ -799,7 +799,7 @@ function searchAndPage() { _invPage = 1; applyInvFilter(); }
 
 function applyInvFilter() {
   const q = (document.getElementById('inventorySearch')?.value || '').toLowerCase().trim();
-  _filteredInvRows = currentData.length <= 1 ? [] : currentData.slice(1).filter(row =>
+  _filteredInvRows = currentData.filter(row =>
     [row[1],row[2],row[3],row[6]].some(v => (v||'').toString().toLowerCase().includes(q))
   );
   renderInvPage();
@@ -865,8 +865,9 @@ function loadItems() {
   fetch(API, { method:"POST", body: new URLSearchParams({ action:"getItems" }) })
   .then(r=>r.json())
   .then(data => {
-    currentData = data;
-    _filteredInvRows = data && data.length > 1 ? data.slice(1) : [];
+    // Server already strips the header row, so data is pure data rows
+    currentData = Array.isArray(data) ? data : [];
+    _filteredInvRows = [...currentData];
     _invPage = 1;
     renderInvPage();
     renderAlerts();
@@ -1123,9 +1124,8 @@ function resolveAdminItemNames(rawItems) {
   return String(rawItems).split(",").map(entry => {
     const id  = entry.split(":")[0].trim();
     const qty = parseInt(entry.split(":")[1]) || 1;
-    // Look up in currentData (inventory)
     let name = null;
-    for (let i = 1; i < currentData.length; i++) {
+    for (let i = 0; i < currentData.length; i++) {
       if (String(currentData[i][0]) === id) {
         const n = currentData[i][1] || "";
         const s = currentData[i][2] || "";
