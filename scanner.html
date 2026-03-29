@@ -42,21 +42,34 @@
   </div>
 </div>
 
-<script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="app.js"></script>
 <script>
+// Auth guard — run immediately
+if (!localStorage.getItem("userID")) window.location = "login.html";
+
 let scanner      = null;
+let isPaused     = false;   // tracks whether we explicitly called pause()
 let isProcessing = false;
 
-// Helper: pause/resume work differently with Html5Qrcode vs Html5QrcodeScanner
-function resumeScanner() {
-  if (!scanner) return;
-  try { scanner.resume(); } catch(e) {}
+// ── Pause / Resume ──────────────────────────────────────────────────────────
+// Html5Qrcode.pause() / resume() only work AFTER the camera is running.
+// We track isPaused ourselves so we never call resume() without a prior pause().
+function pauseScanner() {
+  if (!scanner || isPaused) return;
+  try { scanner.pause(true); isPaused = true; } catch(e) {}
 }
 
+function resumeScanner() {
+  if (!scanner || !isPaused) return;
+  try { scanner.resume(); isPaused = false; } catch(e) {}
+}
+
+// ── Scan result handlers ────────────────────────────────────────────────────
 function onScanSuccess(decodedText) {
   if (isProcessing) return;
   isProcessing = true;
+  pauseScanner();   // stop scanning while we process
 
   let data;
   try {
@@ -68,7 +81,6 @@ function onScanSuccess(decodedText) {
     return;
   }
 
-  // Validate required fields
   if (!data.student || !data.items) {
     showNotification("QR code is missing required data","error");
     isProcessing = false;
@@ -76,30 +88,36 @@ function onScanSuccess(decodedText) {
     return;
   }
 
-  // Check borrow status from the server FIRST, then decide borrow or return
   checkAndProcess(data);
 }
 
+function onScanError(err) {
+  // The library fires this continuously for every frame with no QR code —
+  // only surface genuine permission / device errors.
+  const msg = (typeof err === "string" ? err : (err && err.message) || "").toLowerCase();
+  if (msg.includes("notallowed") || msg.includes("permission")) {
+    showCameraError("Camera permission denied. Please allow camera access in your browser settings, then refresh the page.");
+  }
+  // all other errors (no QR found in frame) are silent
+}
+
+// ── Business logic ──────────────────────────────────────────────────────────
 function checkAndProcess(qrData) {
-  showResult("info", " Checking status...", qrData);
+  showResult("info", `
+    <div class="borrow-header">&#128269; Checking status...</div>
+    <div class="borrow-info">
+      <p><strong>Borrower:</strong> ${qrData.studentName || "—"}</p>
+    </div>`);
 
   fetch(API, {
     method: "POST",
-    body: new URLSearchParams({
-      action:  "checkBorrowStatus",
-      student: qrData.student,
-      items:   qrData.items
-    })
+    body: new URLSearchParams({ action:"checkBorrowStatus", student:qrData.student, items:qrData.items })
   })
   .then(r => r.json())
   .then(response => {
-    // Server returns { status: "Borrowed" } if items are currently borrowed by this student
-    // Otherwise returns anything else (Not Found, Returned, error, etc.)
     if (response.status === "Borrowed") {
-      // Items are currently borrowed → this scan is a RETURN
       processReturn(qrData);
     } else {
-      // Items are NOT currently borrowed → this scan is a BORROW
       processBorrow(qrData);
     }
   })
@@ -114,13 +132,12 @@ function checkAndProcess(qrData) {
 function processBorrow(data) {
   const itemDisplay = data.itemNames || data.items;
   showResult("borrow", `
-    <div class="borrow-header"> Processing Borrow...</div>
+    <div class="borrow-header">&#8987; Processing Borrow...</div>
     <div class="borrow-info">
       <p><strong>Borrower:</strong> ${data.studentName}</p>
       <p><strong>Items:</strong> ${itemDisplay}</p>
       <p><strong>Return by:</strong> ${new Date(data.returnDate).toLocaleString()}</p>
-    </div>
-  `);
+    </div>`);
 
   fetch(API, {
     method: "POST",
@@ -132,26 +149,25 @@ function processBorrow(data) {
       returnDate:  data.returnDate,
       lentBy:      localStorage.getItem("userID")   || "",
       lentByName:  localStorage.getItem("userName") || "",
-      idNumber:    data.idNumber   || "",
-      course:      data.course     || "",
-      subject:     data.subject    || "",
-      procedure:   data.procedure  || ""
+      idNumber:    data.idNumber  || "",
+      course:      data.course    || "",
+      subject:     data.subject   || "",
+      procedure:   data.procedure || ""
     })
   })
   .then(r => r.json())
   .then(response => {
     if (response.status === "success") {
       showResult("success", `
-        <div class="borrow-header"> Borrow Confirmed!</div>
+        <div class="borrow-header">&#10003; Borrow Confirmed!</div>
         <div class="borrow-info">
           <p><strong>Borrower:</strong> ${data.studentName}</p>
           <p><strong>Items:</strong> ${itemDisplay}</p>
           <p><strong>Return by:</strong> ${new Date(data.returnDate).toLocaleString()}</p>
         </div>
         <div style="margin-top:12px;padding:12px;background:#d4f3e8;border-radius:8px;color:#1a6e4a;font-weight:600;">
-           Stock has been deducted
-        </div>
-      `);
+          Stock has been deducted
+        </div>`);
       resetScanner(3500);
     } else {
       showNotification(response.message || "Borrow failed","error");
@@ -171,12 +187,11 @@ function processBorrow(data) {
 function processReturn(data) {
   const itemDisplay = data.itemNames || data.items;
   showResult("return", `
-    <div class="borrow-header"> Processing Return...</div>
+    <div class="borrow-header">&#8987; Processing Return...</div>
     <div class="borrow-info">
       <p><strong>Borrower:</strong> ${data.studentName}</p>
       <p><strong>Items:</strong> ${itemDisplay}</p>
-    </div>
-  `);
+    </div>`);
 
   fetch(API, {
     method: "POST",
@@ -191,15 +206,14 @@ function processReturn(data) {
   .then(response => {
     if (response.status === "success") {
       showResult("success", `
-        <div class="borrow-header"> Return Confirmed!</div>
+        <div class="borrow-header">&#10003; Return Confirmed!</div>
         <div class="borrow-info">
           <p><strong>Borrower:</strong> ${data.studentName}</p>
           <p><strong>Items:</strong> ${itemDisplay}</p>
         </div>
         <div style="margin-top:12px;padding:12px;background:#d4f3e8;border-radius:8px;color:#1a6e4a;font-weight:600;">
-           Stock has been restored
-        </div>
-      `);
+          Stock has been restored
+        </div>`);
       resetScanner(3500);
     } else {
       showNotification(response.message || "Return failed","error");
@@ -216,7 +230,7 @@ function processReturn(data) {
   });
 }
 
-//  Display helpers 
+// ── Display helpers ─────────────────────────────────────────────────────────
 const borderColors = {
   info:    'var(--primary)',
   borrow:  '#3b82f6',
@@ -243,68 +257,81 @@ function resetScanner(delay) {
   }, delay || 3500);
 }
 
-function onScanError(error) {
-  // Only alert for permission denial — ignore normal "no QR found" errors
-  if (error && error.name === "NotAllowedError") {
-    showNotification("Camera permission denied. Please allow camera access.","error");
-  }
+function showCameraError(msg) {
+  document.getElementById("reader").innerHTML = `
+    <div class="warning" style="margin:0;">
+      <strong>Camera Error</strong><br>${msg}<br><br>
+      <button onclick="location.reload()" style="width:auto;padding:8px 20px;font-size:13px;margin-top:4px;">
+        &#8635; Retry
+      </button>
+    </div>`;
 }
 
-//  Init Scanner — back/rear camera only 
+// ── Camera init ─────────────────────────────────────────────────────────────
+// Strategy:
+// 1. Skip getCameras() — it requires permission to return useful labels,
+//    and calling it before the user grants permission returns an empty list.
+// 2. Go straight to facingMode:"environment" (rear camera constraint).
+//    The browser will prompt for permission automatically.
+// 3. If that fails (desktop, or user denies), fall back to any available camera.
+
+const SCAN_CONFIG = { fps: 10, qrbox: { width: 250, height: 250 }, disableFlip: false };
+
 async function initScanner() {
+  // Show loading state
+  document.getElementById("reader").innerHTML =
+    `<div style="text-align:center;padding:40px 20px;color:var(--text-muted);font-size:14px;">
+      &#128247; Starting camera...
+    </div>`;
+
+  scanner = new Html5Qrcode("reader");
+
+  // Try rear camera via facingMode first (works on mobile without needing device labels)
   try {
-    // Get list of video devices and pick the back/rear camera
-    const devices = await Html5Qrcode.getCameras();
-    if (!devices || devices.length === 0) {
-      throw new Error("No camera devices found");
-    }
-
-    // Prefer any camera labeled "back", "rear", or "environment"
-    // On most phones the last camera in the list is also the rear camera
-    let cameraId = null;
-    for (const d of devices) {
-      const label = (d.label || "").toLowerCase();
-      if (label.includes("back") || label.includes("rear") || label.includes("environment")) {
-        cameraId = d.id;
-        break;
-      }
-    }
-    // Fallback: use last device (usually rear on mobile)
-    if (!cameraId) cameraId = devices[devices.length - 1].id;
-
-    scanner = new Html5Qrcode("reader");
-    scanner.start(
-      cameraId,
-      { fps: 10, qrbox: { width: 250, height: 250 }, disableFlip: false },
+    await scanner.start(
+      { facingMode: "environment" },
+      SCAN_CONFIG,
       onScanSuccess,
       onScanError
     );
-  } catch (e) {
-    // Final fallback: use facingMode environment (standard constraint)
+    return; // success — stop here
+  } catch (e1) {
+    const msg = (e1 && e1.message || String(e1)).toLowerCase();
+
+    // Permission denied — show error, don't try fallbacks
+    if (msg.includes("notallowed") || msg.includes("permission") || msg.includes("denied")) {
+      showCameraError("Camera permission was denied. Please allow camera access in your browser settings, then tap Retry.");
+      return;
+    }
+
+    // facingMode:"environment" not available (e.g. desktop with one camera) — try any camera
     try {
-      scanner = new Html5Qrcode("reader");
-      scanner.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 250, height: 250 }, disableFlip: false },
-        onScanSuccess,
-        onScanError
-      );
+      const devices = await Html5Qrcode.getCameras();
+      if (!devices || devices.length === 0) throw new Error("No cameras found");
+
+      // Prefer a rear/back labeled camera, otherwise use the last one
+      let camId = devices[devices.length - 1].id;
+      for (const d of devices) {
+        const label = (d.label || "").toLowerCase();
+        if (label.includes("back") || label.includes("rear") || label.includes("environment")) {
+          camId = d.id;
+          break;
+        }
+      }
+
+      await scanner.start(camId, SCAN_CONFIG, onScanSuccess, onScanError);
     } catch (e2) {
-      document.getElementById("reader").innerHTML = `
-        <div class="warning">
-          <strong>Camera Error:</strong> Unable to initialize back camera.<br>
-          • Allow camera permission in browser settings<br>
-          • Use HTTPS or localhost<br>
-          • Ensure no other app is using the camera
-        </div>`;
+      showCameraError(
+        "Unable to access the camera.<br>" +
+        "&#8226; Make sure camera permission is allowed<br>" +
+        "&#8226; Use HTTPS (not HTTP)<br>" +
+        "&#8226; Close other apps using the camera"
+      );
     }
   }
 }
 
 initScanner();
-
-// Auth guard
-if (!localStorage.getItem("userID")) window.location = "login.html";
 </script>
 
 </body>
