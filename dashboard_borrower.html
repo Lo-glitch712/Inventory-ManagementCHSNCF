@@ -238,12 +238,12 @@
   <h1> Borrower Dashboard</h1>
   <div class="navbar-right">
     <span>Welcome, <strong id="userName"></strong></span>
-    <button class="menu-toggle" onclick="toggleMenu()"></button>
+    <button class="menu-toggle" onclick="toggleMenu()">&#9776;</button>
   </div>
 </div>
 
 <div id="sideMenu" class="side-menu">
-  <button class="close-btn" onclick="toggleMenu()"></button>
+  <button class="close-btn" onclick="toggleMenu()">&#10005;</button>
   <div class="side-menu-header">
     <strong id="sideUserName">User</strong>
     <p>Borrower</p>
@@ -261,7 +261,7 @@
   <div class="modal-content">
     <div class="modal-header">
       <h3> My Profile</h3>
-      <button class="close-btn" onclick="closeProfile()"></button>
+      <button class="close-btn" onclick="closeProfile()">&#10005;</button>
     </div>
     <div class="modal-body">
       <div class="form-group"><label>Full Name</label><input type="text" id="profileName" readonly style="background:#f4f7f6;color:#777;"></div>
@@ -280,7 +280,7 @@
   <div class="modal-content" style="max-width:400px;">
     <div class="modal-header">
       <h3> Change Password</h3>
-      <button class="close-btn" onclick="closePassword()"></button>
+      <button class="close-btn" onclick="closePassword()">&#10005;</button>
     </div>
     <div class="modal-body">
       <div class="form-group"><label>Current Password</label><input type="password" id="currentPassword" placeholder="Enter current password"></div>
@@ -296,7 +296,7 @@
   <div class="modal-content" style="max-width:460px;">
     <div class="modal-header">
       <h3> Return QR Code</h3>
-      <button class="close-btn" onclick="closeReturnModal()"></button>
+      <button class="close-btn" onclick="closeReturnModal()">&#10005;</button>
     </div>
     <div class="modal-body" style="text-align:center;">
       <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px;">
@@ -356,24 +356,14 @@
 
       <!-- Procedure Details Section -->
       <div style="background:var(--surface-alt);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:10px;padding:16px 18px;margin-bottom:20px;">
-        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--primary);margin-bottom:4px;"> Procedure <span style="color:var(--danger);">*</span></div>
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">Tap a procedure — recommended items will be auto-selected below.</div>
-
-        <!-- Hidden input stores the selected procedure value -->
-        <input type="hidden" id="borrowProcedure" value="">
-
-        <!-- Procedure Cards Grid -->
-        <div id="procedureCards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:10px;margin-bottom:14px;"></div>
-
-        <!-- Selected Procedure display (shown after selection) -->
-        <div id="selectedProcedureDisplay" style="display:none;background:#f0faf6;border:1.5px solid var(--success);border-radius:8px;padding:10px 14px;margin-bottom:14px;align-items:center;gap:10px;">
-          <span style="font-size:18px;"></span>
-          <span style="font-size:14px;font-weight:700;color:var(--primary);" id="selectedProcedureLabel"></span>
-          <button onclick="clearSelectedProcedure()" style="margin-left:auto;width:auto;padding:4px 10px;font-size:12px;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:6px;margin-top:0;">Change</button>
-        </div>
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--primary);margin-bottom:14px;"> Procedure Details</div>
 
         <!-- Extra fields row -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 16px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;">
+          <div class="form-group">
+            <label>Procedure (Optional)</label>
+            <input type="text" id="borrowProcedure" placeholder="e.g., Wound Care, Hand Washing">
+          </div>
           <div class="form-group">
             <label>Subject</label>
             <input type="text" id="borrowSubject" placeholder="e.g., NCM 101">
@@ -388,21 +378,14 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Notes (Optional)</label>
-            <input type="text" id="borrowNotes" placeholder="Any remarks...">
+            <label>Room</label>
+            <input type="text" id="borrowNotes" placeholder="e.g., Room 201, Lab A">
           </div>
         </div>
       </div>
 
-      <!-- Procedure Kit Banner (shown when procedure auto-maps items) -->
-      <div id="procedureKitBanner" style="display:none;background:linear-gradient(135deg,#e8f6f0,#f0faf6);border:1.5px solid var(--success);border-radius:10px;padding:14px 18px;margin-bottom:16px;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-          <span style="font-size:20px;"></span>
-          <span style="font-weight:700;color:var(--success);font-size:14px;">Procedure Kit Auto-Selected</span>
-          <button onclick="clearProcedureKit()" style="margin-left:auto;width:auto;padding:4px 12px;font-size:12px;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:6px;">Clear Kit</button>
-        </div>
-        <div style="font-size:13px;color:var(--text-muted);">The recommended items for <strong id="kitProcedureName" style="color:var(--primary);"></strong> have been pre-selected below. You may add or remove items as needed.</div>
-      </div>
+
+
 
       <!-- Shelf / Location Filter -->
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
@@ -792,166 +775,14 @@ function filterItems() {
   renderItemsPage();
 }
 
-//  The 8 Procedures (always shown as cards) 
-const PROCEDURE_LIST = [
-  { name: "Hand Washing",          icon: "", color: "#e8f4ff", border: "#90c8f0" },
-  { name: "Wound Care",            icon: "", color: "#fff4e8", border: "#f0b87a" },
-  { name: "Internal Examination",  icon: "", color: "#f4e8ff", border: "#c890f0" },
-  { name: "Female Catheterization",icon: "", color: "#e8fff4", border: "#70d4a0" },
-  { name: "Leopold's Maneuver",    icon: "", color: "#fff8e8", border: "#f0d070" },
-  { name: "Perianal Flushing",     icon: "", color: "#e8f8ff", border: "#70c8e8" },
-  { name: "Newborn Care",          icon: "", color: "#fff0f4", border: "#f090b0" },
-  { name: "Intrapartum Care",      icon: "", color: "#f0fff0", border: "#70d070" }
-];
-
-//  Procedure → Item keyword mapping 
-const PROCEDURE_ITEMS = {
-  "Hand Washing": [
-    "soap","alcohol","hand sanitizer","basin","towel","gloves","apron","wash","handwash"
-  ],
-  "Wound Care": [
-    "gauze","bandage","dressing","iodine","povidone","antiseptic","forceps","scissors","tape","wound","saline","cotton","syringe","gloves","basin","sterile"
-  ],
-  "Internal Examination": [
-    "gloves","sterile gloves","lubricant","jelly","speculum","drape","basin","pad","underpad","disposable"
-  ],
-  "Female Catheterization": [
-    "catheter","foley","urine bag","drainage bag","lubricant","jelly","sterile gloves","antiseptic","cotton","syringe","saline","basin","tape","drape"
-  ],
-  "Leopold's Maneuver": [
-    "stethoscope","doppler","fetoscope","measuring tape","tape measure","lubricant","jelly","gloves","drape","pillow"
-  ],
-  "Perianal Flushing": [
-    "basin","soap","cotton","gauze","gloves","towel","pad","underpad","forceps","antiseptic"
-  ],
-  "Newborn Care": [
-    "bulb syringe","suction","cord clamp","vitamin k","erythromycin","eye ointment","scale","blanket","towel","gloves","basin","thermometer","stethoscope","tape","measuring tape","band"
-  ],
-  "Intrapartum Care": [
-    "gloves","sterile gloves","scissor","clamp","cord clamp","basin","drape","suture","needle","syringe","oxytocin","iv","catheter","stethoscope","doppler","pad","underpad","gauze","cotton","antiseptic"
-  ]
-};
-
-//  Build procedure cards on load 
-function buildProcedureCards() {
-  const container = document.getElementById("procedureCards");
-  if (!container) return;
-  container.innerHTML = "";
-  PROCEDURE_LIST.forEach(proc => {
-    const card = document.createElement("div");
-    card.id = "proc_" + proc.name.replace(/[^a-zA-Z0-9]/g,"_");
-    card.style.cssText = `
-      background:${proc.color};border:2px solid ${proc.border};border-radius:12px;
-      padding:14px 10px;text-align:center;cursor:pointer;transition:all 0.2s ease;
-      user-select:none;`;
-    card.innerHTML = `
-      <div style="font-size:28px;margin-bottom:8px;">${proc.icon}</div>
-      <div style="font-size:13px;font-weight:700;color:var(--primary);line-height:1.3;">${proc.name}</div>`;
-    card.onclick = () => selectProcedure(proc.name);
-    card.onmouseover = () => { if (document.getElementById("borrowProcedure").value !== proc.name) card.style.transform = "translateY(-3px)"; card.style.boxShadow = "0 6px 18px rgba(0,0,0,0.12)"; };
-    card.onmouseout  = () => { if (document.getElementById("borrowProcedure").value !== proc.name) { card.style.transform = ""; card.style.boxShadow = ""; } };
-    container.appendChild(card);
-  });
-}
-
-function selectProcedure(procName) {
-  // Update hidden input
-  document.getElementById("borrowProcedure").value = procName;
-
-  // Highlight selected card, reset others
-  PROCEDURE_LIST.forEach(p => {
-    const card = document.getElementById("proc_" + p.name.replace(/[^a-zA-Z0-9]/g,"_"));
-    if (!card) return;
-    if (p.name === procName) {
-      card.style.transform   = "translateY(-3px)";
-      card.style.boxShadow   = "0 6px 20px rgba(13,79,79,0.25)";
-      card.style.border      = "2.5px solid var(--primary)";
-      card.style.outline     = "3px solid rgba(13,79,79,0.15)";
-    } else {
-      const orig = PROCEDURE_LIST.find(x=>x.name===p.name);
-      card.style.transform   = "";
-      card.style.boxShadow   = "";
-      card.style.border      = `2px solid ${orig ? orig.border : "var(--border)"}`;
-      card.style.outline     = "";
-    }
-  });
-
-  // Hide cards grid, show selected display
-  document.getElementById("procedureCards").style.display          = "none";
-  const disp = document.getElementById("selectedProcedureDisplay");
-  disp.style.display = "flex";
-  const proc = PROCEDURE_LIST.find(p=>p.name===procName);
-  document.getElementById("selectedProcedureLabel").textContent = (proc ? proc.icon + " " : "") + procName;
-
-  // Auto-select items
-  autoSelectProcedureItems(procName);
-}
-
-function clearSelectedProcedure() {
-  document.getElementById("borrowProcedure").value = "";
-  document.getElementById("procedureCards").style.display = "grid";
-  document.getElementById("selectedProcedureDisplay").style.display = "none";
-  // Reset all card styles
-  PROCEDURE_LIST.forEach(p => {
-    const card = document.getElementById("proc_" + p.name.replace(/[^a-zA-Z0-9]/g,"_"));
-    if (!card) return;
-    card.style.transform = "";
-    card.style.boxShadow = "";
-    card.style.border    = `2px solid ${p.border}`;
-    card.style.outline   = "";
-  });
-  clearProcedureKit(false);
-}
-
-function autoSelectProcedureItems(proc) {
-  const keywords = PROCEDURE_ITEMS[proc] || [];
-  // Clear existing selection first
-  clearProcedureKit(false);
-  if (keywords.length === 0) {
-    renderItemsPage();
-    return;
-  }
-
-  // Match against ALL items (not just current page DOM)
-  let matched = 0;
-  _allItemRows.forEach(row => {
-    if (row.avail) {
-      const itemName = (itemNameMap[row.itemId] || "").toLowerCase();
-      const isMatch  = keywords.some(kw => itemName.includes(kw.toLowerCase()));
-      if (isMatch && !selectedItems.find(i => i.id === row.itemId)) {
-        selectedItems.push({ id: row.itemId, name: itemNameMap[row.itemId], qty: 1 });
-        matched++;
-      }
-    }
-  });
-
-  // Reset filter and go to page 1 so selected items are visible
-  _filteredItems = [..._allItemRows];
-  _itemPage = 1;
-  renderItemsPage();
-
-  const banner = document.getElementById("procedureKitBanner");
-  if (matched > 0) {
-    banner.style.display = "block";
-    document.getElementById("kitProcedureName").textContent = proc;
-    showNotification(` ${matched} item(s) suggested for ${proc}`, "success");
-  } else {
-    banner.style.display = "none";
-    showNotification(`No matching items in inventory for "${proc}" — select manually`, "info");
-  }
-}
-
-function clearProcedureKit(showMsg = true) {
-  selectedItems = [];
-  _itemPage = 1;
-  renderItemsPage();
-  document.getElementById("procedureKitBanner").style.display = "none";
-  if (showMsg) showNotification("Kit cleared", "info");
-}
-
-//  Legacy stub — no longer used but kept for safety 
+//  Legacy stubs — kept for safety 
 function updateProcedures() {}
 function onProcedureChange() {}
+function buildProcedureCards() {}
+function selectProcedure() {}
+function clearSelectedProcedure() {}
+function autoSelectProcedureItems() {}
+function clearProcedureKit() {}
 
 //  Shelf / Location Filter Population 
 function populateShelfFilter(data) {
@@ -983,7 +814,6 @@ function initBorrowForm() {
   const storedId     = localStorage.getItem("borrowerIdNumber") || localStorage.getItem("userIDNumber") || "";
   if (storedCourse) document.getElementById("borrowerCourse").value    = storedCourse;
   if (storedId)     document.getElementById("borrowerIdNumber").value  = storedId;
-  buildProcedureCards();
 }
 
 //  Generate QR 
@@ -996,7 +826,6 @@ function generateQR() {
 
   if (!idNumber)  { showNotification("Please enter your ID Number","error"); return; }
   if (!course)    { showNotification("Please enter your Course, Year & Section","error"); return; }
-  if (!procedure) { showNotification("Please select a Procedure","error"); return; }
   if (!confirmed) { showNotification("Please confirm the borrowing agreement","error"); return; }
 
   if (selectedItems.length === 0) { showNotification("Please select at least one item","error"); return; }
@@ -1067,7 +896,7 @@ function generateQR() {
       subject   ? `<div> <strong>Subject:</strong> ${subject}</div>` : '',
       procedure ? `<div> <strong>Procedure:</strong> ${procedure}</div>` : '',
       attestedBy? `<div> <strong>Attested by:</strong> ${attestedBy}</div>` : '',
-      notes     ? `<div> <strong>Notes:</strong> ${notes}</div>` : ''
+      notes     ? `<div> <strong>Room:</strong> ${notes}</div>` : ''
     ].filter(Boolean).join("");
   }
 
@@ -1090,7 +919,6 @@ function resetBorrowForm() {
   document.getElementById("returnDate").value  = "";
   document.getElementById("qrResultBox").style.display = "none";
   document.getElementById("borrowProcedure").value  = "";
-  clearSelectedProcedure();
   document.getElementById("borrowSubject").value    = "";
   document.getElementById("borrowAttestedBy").value = "";
   document.getElementById("borrowNotes").value      = "";
