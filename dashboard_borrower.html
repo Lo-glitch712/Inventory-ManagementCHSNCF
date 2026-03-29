@@ -452,11 +452,32 @@
     </div>
   </div>
 
-  <!-- TAB: My Borrows -->
+  <!-- TAB: My Items -->
   <div id="borrowed-tab" class="tab-content">
     <div class="card">
-      <h3> Currently Borrowed</h3>
+      <h3>🗂️ My Items</h3>
       <div id="borrowedItemsList"></div>
+    </div>
+  </div>
+
+  <!-- TAB: Procedures -->
+  <div id="procedures-tab" class="tab-content">
+    <div class="card">
+      <h3>🩺 Procedures &amp; Required Items</h3>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
+        Select a procedure to see the equipment needed.
+      </p>
+      <div id="proceduresList"></div>
+      <!-- Procedure Detail Panel -->
+      <div id="procedureDetail" style="display:none;margin-top:16px;background:var(--surface-alt);border:1.5px solid var(--primary);border-radius:12px;padding:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div style="font-weight:800;color:var(--primary);font-size:16px;" id="procedureDetailTitle"></div>
+          <button onclick="closeProcedureDetail()" style="width:32px;height:32px;border-radius:50%;background:var(--surface);border:1.5px solid var(--border);color:var(--text-muted);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;margin:0;min-width:unset;font-weight:700;">✕</button>
+        </div>
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.7px;font-weight:700;color:var(--text-muted);margin-bottom:10px;">Equipment Needed</div>
+        <div id="procedureItemsList"></div>
+        <button onclick="applyProcedureItems()" style="margin-top:14px;background:var(--accent);color:var(--primary-dark);font-weight:700;padding:10px 22px;width:auto;">➕ Add Items to Borrow Form</button>
+      </div>
     </div>
   </div>
 
@@ -507,9 +528,10 @@ document.addEventListener("click", e => {
 //  Tabs 
 //  Arrow Tab Navigation 
 const TAB_DEFS = [
-  { id: 'borrow-tab',   label: ' Borrow Items' },
-  { id: 'borrowed-tab', label: ' My Borrows' },
-  { id: 'history-tab',  label: ' History' }
+  { id: 'borrow-tab',     label: '📋 Borrow Items' },
+  { id: 'borrowed-tab',   label: '🗂️ My Items' },
+  { id: 'procedures-tab', label: '🩺 Procedures' },
+  { id: 'history-tab',    label: '📜 History' }
 ];
 let _currentTabIdx = 0;
 
@@ -537,9 +559,10 @@ function goToTab(idx) {
   document.getElementById(TAB_DEFS[_currentTabIdx].id).classList.add('active');
   updateTabNav();
   const tabId = TAB_DEFS[_currentTabIdx].id;
-  if (tabId === 'borrowed-tab') loadBorrowedItems();
-  if (tabId === 'history-tab')  loadBorrowHistory();
-  if (tabId === 'borrow-tab')   filterItems();
+  if (tabId === 'borrowed-tab')   loadBorrowedItems();
+  if (tabId === 'history-tab')    loadBorrowHistory();
+  if (tabId === 'borrow-tab')     filterItems();
+  if (tabId === 'procedures-tab') loadProcedures();
 }
 
 function updateTabNav() {
@@ -629,6 +652,7 @@ function updatePassword() {
 
 //  Load Items (paginated) 
 let _allItemRows = [];   // all inventory rows from server
+let _allItemRowsFull = []; // full raw rows (includes procedures field)
 let _filteredItems = []; // after search/shelf filter
 let _itemPage = 1;
 const ITEMS_PER_PAGE = 8;
@@ -642,6 +666,7 @@ function loadItems() {
     itemLocationMap = {};
     selectedItems   = [];
     _allItemRows    = [];
+    _allItemRowsFull = [];
 
     // GS getItems() already strips the header row (data.slice(1)),
     // so data is a plain array of data rows. Empty if no items.
@@ -667,6 +692,7 @@ function loadItems() {
       itemTypeMap[itemId]     = type;
       itemLocationMap[itemId] = loc;
       _allItemRows.push({ itemId, name, size, stock, type, loc, avail: stock > 0 });
+      _allItemRowsFull.push(row);
     }
 
     _filteredItems = [..._allItemRows];
@@ -776,14 +802,109 @@ function filterItems() {
   renderItemsPage();
 }
 
-//  Legacy stubs — kept for safety 
-function updateProcedures() {}
-function onProcedureChange() {}
-function buildProcedureCards() {}
-function selectProcedure() {}
-function clearSelectedProcedure() {}
-function autoSelectProcedureItems() {}
-function clearProcedureKit() {}
+//  Procedures Tab 
+let _procedureMap = {};   // procedureName → [{ itemId, name, qty:1 }]
+let _currentProcedure = null;
+
+function loadProcedures() {
+  const container = document.getElementById("proceduresList");
+  if (!container) return;
+
+  // Build procedure map from already-loaded inventory
+  _procedureMap = {};
+  _allItemRows.forEach(({ itemId, name, size }) => {
+    // procedures field is row[8] — stored in _allItemRows as raw row
+    // We need it from the full data; re-check _allItemRows which we enriched below
+  });
+
+  // Re-derive from _allItemRowsFull (with procedures)
+  if (_allItemRowsFull && _allItemRowsFull.length) {
+    _allItemRowsFull.forEach(row => {
+      const itemId    = String(row[0]);
+      const itemName  = String(row[1]||"");
+      const itemSize  = String(row[2]||"");
+      const displayName = itemSize ? `${itemName} (${itemSize})` : itemName;
+      const procsRaw  = String(row[8]||"").trim();
+      if (!procsRaw) return;
+      procsRaw.split(",").forEach(p => {
+        const proc = p.trim();
+        if (!proc) return;
+        if (!_procedureMap[proc]) _procedureMap[proc] = [];
+        // Avoid duplicates
+        if (!_procedureMap[proc].find(i=>i.itemId===itemId))
+          _procedureMap[proc].push({ itemId, name: displayName });
+      });
+    });
+  }
+
+  const procedures = Object.keys(_procedureMap).sort();
+
+  if (procedures.length === 0) {
+    container.innerHTML = "<div class='empty-state'><div class='icon'>🩺</div>No procedures defined yet.<br><small style='color:var(--text-muted);font-size:12px;'>Procedures are set in the inventory by the admin.</small></div>";
+    return;
+  }
+
+  container.innerHTML = procedures.map(proc => `
+    <div onclick="openProcedureDetail('${proc.replace(/'/g,"\\'")}')"
+      style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);cursor:pointer;margin-bottom:10px;transition:all 0.18s;"
+      onmouseover="this.style.borderColor='var(--primary)';this.style.background='#f0faf6'"
+      onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--surface)'">
+      <div>
+        <div style="font-weight:700;color:var(--primary);font-size:14px;">🩺 ${proc}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:3px;">${_procedureMap[proc].length} item${_procedureMap[proc].length!==1?'s':''} required</div>
+      </div>
+      <span style="font-size:20px;color:var(--primary);">›</span>
+    </div>`).join("");
+}
+
+function openProcedureDetail(proc) {
+  _currentProcedure = proc;
+  const items = _procedureMap[proc] || [];
+  document.getElementById("procedureDetailTitle").textContent = "🩺 " + proc;
+  document.getElementById("procedureItemsList").innerHTML = items.length
+    ? `<ul style="list-style:none;padding:0;margin:0;">${items.map(it=>`
+        <li style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
+          <span style="color:var(--primary);font-weight:900;font-size:16px;">•</span>
+          <span style="font-size:14px;color:var(--text-main);font-weight:500;">${it.name}</span>
+          <span style="margin-left:auto;font-size:11px;background:#f0faf6;color:#1a5a3e;padding:2px 8px;border-radius:10px;font-weight:600;">${itemTypeMap[it.itemId]||""}</span>
+        </li>`).join("")}</ul>`
+    : "<p style='color:var(--text-muted);font-size:13px;'>No items listed for this procedure.</p>";
+  document.getElementById("procedureDetail").style.display = "block";
+  document.getElementById("procedureDetail").scrollIntoView({ behavior:"smooth", block:"nearest" });
+}
+
+function closeProcedureDetail() {
+  document.getElementById("procedureDetail").style.display = "none";
+  _currentProcedure = null;
+}
+
+function applyProcedureItems() {
+  if (!_currentProcedure) return;
+  const items = _procedureMap[_currentProcedure] || [];
+  if (!items.length) { showNotification("No items to add","error"); return; }
+
+  let added = 0;
+  items.forEach(it => {
+    const row = _allItemRows.find(r=>r.itemId===it.itemId);
+    if (!row || !row.avail) return;
+    if (!selectedItems.find(s=>s.id===it.itemId)) {
+      selectedItems.push({ id: it.itemId, name: it.name, qty: 1 });
+      added++;
+    }
+  });
+
+  if (added > 0) {
+    showNotification(`✅ Added ${added} item${added!==1?'s':''} from "${_currentProcedure}" to your borrow form`, "success");
+    // Set procedure field in borrow form
+    const procField = document.getElementById("borrowProcedure");
+    if (procField && !procField.value) procField.value = _currentProcedure;
+    // Switch to borrow tab
+    goToTab(0);
+    filterItems();
+  } else {
+    showNotification("Items already added or out of stock","error");
+  }
+}
 
 //  Shelf / Location Filter Population 
 function populateShelfFilter(data) {
@@ -964,12 +1085,16 @@ function renderBorrowedItems(serverData) {
   container.innerHTML = "";
 
   // Build set of item IDs currently marked as "Borrowed" on server
+  // Also build a set of record keys (student+items normalized) that are still Borrowed
+  const serverBorrowedKeys = new Set();
   const serverBorrowedItems = new Set();
   if (serverData && Array.isArray(serverData) && !serverData.error) {
     serverData.forEach(record => {
       const status = record.length>=7 ? record[6] : record[5];
       const items  = record.length>=7 ? record[3] : record[2];
       if (status==="Borrowed") {
+        const normKey = items.split(",").map(s=>s.split(":")[0].trim()).sort().join(",");
+        serverBorrowedKeys.add(normKey);
         items.split(",").forEach(id => serverBorrowedItems.add(id.trim()));
       }
     });
@@ -978,8 +1103,15 @@ function renderBorrowedItems(serverData) {
   const localBorrows = getLocalBorrows();
   let hasAny = false;
 
-  // Show local borrow records (these have full item names)
+  // Show local borrow records — only those still "Borrowed" on server
   localBorrows.forEach(record => {
+    // Check if this local record is still active on server
+    const normKey = (record.items||"").split(",").map(s=>s.split(":")[0].trim()).sort().join(",");
+    // If server has any data, verify the record is still borrowed; skip if returned
+    if (serverData && Array.isArray(serverData) && !serverData.error) {
+      if (!serverBorrowedKeys.has(normKey)) return; // already returned or not found
+    }
+
     const returnDate = new Date(record.returnDate);
     const isOverdue  = returnDate < new Date();
     const itemNames  = record.itemList && record.itemList.length
@@ -1021,12 +1153,12 @@ function renderBorrowedItems(serverData) {
       });
 
       hasAny = true;
-      container.innerHTML += buildBorrowCard({ itemNames, itemTypes: data[i] && data[i][9] ? String(data[i][9]) : "", returnDate, isOverdue, qrPayload });
+      container.innerHTML += buildBorrowCard({ itemNames, itemTypes: record[9] ? String(record[9]) : "", returnDate, isOverdue, qrPayload });
     });
   }
 
   if (!hasAny)
-    container.innerHTML = "<div class='empty-state'><div class='icon'></div>No items currently borrowed</div>";
+    container.innerHTML = "<div class='empty-state'><div class='icon'>📭</div>No items currently borrowed</div>";
 }
 
 function buildBorrowCard({ itemNames, itemTypes, returnDate, isOverdue, qrPayload }) {
@@ -1070,11 +1202,11 @@ function buildBorrowCard({ itemNames, itemTypes, returnDate, isOverdue, qrPayloa
   window._returnQRStore[cardId] = { itemNames: returnableNames.length ? returnableNames : allItemNames, qrPayload: returnQRPayload };
 
   const returnBtn = hasReturnables
-    ? `<button onclick="showReturnQRById('${cardId}')"
+    ? `<button onclick="event.stopPropagation();showReturnQRById('${cardId}')"
         style="width:auto;padding:10px 20px;background:var(--primary);margin-top:0;font-size:13px;">
-         Return Item${returnableNames.length>1?'s':''}
+        📲 Return Item${returnableNames.length>1?'s':''}
       </button>`
-    : `<div style="font-size:13px;color:var(--text-muted);font-style:italic;"> All consumable items — no return needed</div>`;
+    : `<div style="font-size:13px;color:var(--text-muted);font-style:italic;">✅ All consumable items — no return needed</div>`;
 
   // extract procedure/course/id from parsed QR payload
   const cardProc   = (parsedPayload && parsedPayload.procedure) ? parsedPayload.procedure : "";
@@ -1092,9 +1224,10 @@ function buildBorrowCard({ itemNames, itemTypes, returnDate, isOverdue, qrPayloa
   ].filter(Boolean).join("");
 
   return `
-    <div class="borrow-card ${isOverdue?'overdue':''}">
+    <div class="borrow-card ${isOverdue?'overdue':''}" onclick="showReturnQRById('${cardId}')" style="cursor:pointer;transition:box-shadow 0.18s,transform 0.18s;" onmouseover="this.style.boxShadow='0 6px 24px rgba(13,79,79,0.15)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''">
+      <div style="font-size:11px;color:var(--text-muted);font-weight:600;margin-bottom:6px;letter-spacing:0.3px;">👆 Tap to show Return QR</div>
       ${procBadge}
-      <div class="borrow-card-title">${isOverdue?' OVERDUE — ':''}${titleText}</div>
+      <div class="borrow-card-title">${isOverdue?'⚠️ OVERDUE — ':''}${titleText}</div>
       <div class="borrow-card-meta">
         ${cardMeta}
         <p><strong>Return by:</strong> ${returnDate.toLocaleString()}</p>
