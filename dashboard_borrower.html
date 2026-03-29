@@ -802,28 +802,31 @@ function filterItems() {
  renderItemsPage();
 }
 
-// Procedures Tab
-const PROC_STORE_KEY = 'chs_vital_procedures';
+// Procedures Tab (reads from Google Sheet via API)
 let _currentProcedure = null;
 let _loadedProcedures = [];
-
-function getStoredProcedures() {
-  try {
-    const stored = localStorage.getItem(PROC_STORE_KEY);
-    if (stored) return JSON.parse(stored);
-  } catch(e) {}
-  return [];
-}
 
 function loadProcedures() {
   const container = document.getElementById("proceduresList");
   if (!container) return;
+  container.innerHTML = "<div class='empty-state' style='padding:20px;'><div class='icon'></div>Loading procedures...</div>";
+  document.getElementById("procedureDetail").style.display = "none";
 
-  _loadedProcedures = getStoredProcedures();
+  fetch(API, { method:'POST', body: new URLSearchParams({ action:'getProcedures' }) })
+  .then(r => r.json())
+  .then(data => {
+    _loadedProcedures = (data.status === 'success' && Array.isArray(data.procedures)) ? data.procedures : [];
+    renderProceduresList();
+  })
+  .catch(() => { _loadedProcedures = []; renderProceduresList(); });
+}
+
+function renderProceduresList() {
+  const container = document.getElementById("proceduresList");
+  if (!container) return;
 
   if (_loadedProcedures.length === 0) {
     container.innerHTML = "<div class='empty-state'><div class='icon'></div>No procedures set up yet.<br><small style='color:var(--text-muted);font-size:12px;'>The admin will add procedures in the Admin Dashboard.</small></div>";
-    document.getElementById("procedureDetail").style.display = "none";
     return;
   }
 
