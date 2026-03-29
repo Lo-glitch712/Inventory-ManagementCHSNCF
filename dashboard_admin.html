@@ -1296,68 +1296,93 @@ function openDetailModal(borrower) {
 
 function closeDetailModal() { document.getElementById("borrowerDetailModal").style.display = "none"; }
 
-// ── Procedures Manager ───────────────────────────────────────────────────────
-// Storage key for custom procedures (persisted in localStorage)
-const PROC_STORE_KEY = 'chs_vital_procedures';
+// ── Procedures Manager (synced to Google Sheet) ───────────────────────────────
+let _cachedProcs   = null;  // in-memory cache so UI stays snappy
+let _editingProcId = null;
 
-// Load procedures from localStorage, seeding from built-in PROCEDURES if empty
-function getCustomProcedures() {
-  try {
-    const stored = localStorage.getItem(PROC_STORE_KEY);
-    if (stored) return JSON.parse(stored);
-  } catch(e) {}
-  // Seed from built-in list on first load
-  const seeded = PROCEDURES.map(p => ({
-    id:    p.id,
-    label: p.label.replace(/^\s*\S+\s*/, '').trim(), // strip leading emoji/symbol
-    items: (PROC_ITEMS[p.id] || []).slice()
-  }));
-  saveCustomProcedures(seeded);
-  return seeded;
+// Fetch from Google Sheet, fall back to built-in list if sheet is empty
+function fetchProcedures(callback) {
+  fetch(API, { method:'POST', body: new URLSearchParams({ action:'getProcedures' }) })
+  .then(r => r.json())
+  .then(data => {
+    if (data.status === 'success' && Array.isArray(data.procedures)) {
+      if (data.procedures.length === 0) {
+        // First-time setup: seed from built-in list and save
+        _cachedProcs = PROCEDURES.map(p => ({
+          id:    p.id,
+          label: p.label.replace(/^\s*\S+\s*/, '').trim(),
+          items: (PROC_ITEMS[p.id] || []).slice()
+        }));
+        persistProcedures(_cachedProcs, () => callback(_cachedProcs));
+      } else {
+        _cachedProcs = data.procedures;
+        syncProceduresArray(_cachedProcs);
+        callback(_cachedProcs);
+      }
+    } else {
+      showNotification('Could not load procedures: ' + (data.message||''), 'error');
+      callback(_cachedProcs || []);
+    }
+  })
+  .catch(err => {
+    showNotification('Network error loading procedures', 'error');
+    callback(_cachedProcs || []);
+  });
 }
 
-function saveCustomProcedures(procs) {
-  localStorage.setItem(PROC_STORE_KEY, JSON.stringify(procs));
-  // Sync PROCEDURES array so the "Add Item" proc-tag picker stays in sync
-  syncProceduresArray(procs);
+// Save full procedures array to Google Sheet
+function persistProcedures(procs, done) {
+  fetch(API, {
+    method: 'POST',
+    body: new URLSearchParams({ action:'saveProcedures', procedures: JSON.stringify(procs) })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.status === 'success') {
+      _cachedProcs = procs;
+      syncProceduresArray(procs);
+      if (done) done();
+    } else {
+      showNotification('Failed to save: ' + (data.message||''), 'error');
+    }
+  })
+  .catch(() => showNotification('Network error saving procedures', 'error'));
 }
 
 function syncProceduresArray(procs) {
   PROCEDURES.length = 0;
   procs.forEach(p => PROCEDURES.push({ id: p.id, label: p.label }));
-  // Rebuild proc tags in add-item form
   buildProcTags('addProcTags', selectedAddProcs, updateSuggestions);
 }
-
-let _editingProcId = null;
 
 function renderProceduresManager() {
   const container = document.getElementById('proceduresManagerList');
   if (!container) return;
-  const procs = getCustomProcedures();
+  container.innerHTML = "<div class='empty-state' style='padding:20px;'><div class='icon'></div>Loading procedures...</div>";
 
-  if (procs.length === 0) {
-    container.innerHTML = "<div class='empty-state'><div class='icon'></div>No procedures yet. Add one above.</div>";
-    return;
-  }
-
-  container.innerHTML = procs.map((p, idx) => `
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);margin-bottom:10px;gap:10px;">
-      <div style="flex:1;min-width:0;">
-        <div style="font-weight:700;color:var(--primary);font-size:14px;">${p.label}</div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:3px;">${p.items.length} item${p.items.length!==1?'s':''}: ${p.items.slice(0,4).join(', ')}${p.items.length>4?' …':''}</div>
-      </div>
-      <div style="display:flex;gap:8px;flex-shrink:0;">
-        <button onclick="openProcedureModal('${p.id}')"
-          style="width:auto;padding:7px 16px;margin:0;font-size:12px;font-weight:600;background:var(--primary);color:white;border:none;border-radius:7px;cursor:pointer;">
-          Edit Items
-        </button>
-        <button onclick="deleteProcedure('${p.id}')"
-          style="width:auto;padding:7px 14px;margin:0;font-size:12px;font-weight:600;background:#fde8e8;color:var(--danger);border:1.5px solid #f5c6c6;border-radius:7px;cursor:pointer;">
-          Delete
-        </button>
-      </div>
-    </div>`).join('');
+  fetchProcedures(procs => {
+    if (procs.length === 0) {
+      container.innerHTML = "<div class='empty-state'><div class='icon'></div>No procedures yet. Add one above.</div>";
+      return;
+    }
+    container.innerHTML = procs.map(p => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);margin-bottom:10px;gap:10px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;color:var(--primary);font-size:14px;">${p.label}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:3px;">${p.items.length} item${p.items.length!==1?'s':''}: ${p.items.slice(0,4).join(', ')}${p.items.length>4?' …':''}</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0;">
+          <button onclick="openProcedureModal('${p.id}')"
+            style="width:auto;padding:7px 16px;margin:0;font-size:12px;font-weight:600;background:var(--primary);color:white;border:none;border-radius:7px;cursor:pointer;">
+            Edit Items
+          </button>
+          <button onclick="deleteProcedure('${p.id}')"
+            style="width:auto;padding:7px 14px;margin:0;font-size:12px;font-weight:600;background:#fde8e8;color:var(--danger);border:1.5px solid #f5c6c6;border-radius:7px;cursor:pointer;">
+            Delete
+          </button>
+        </div>
+      </div>`).join('');
+  });
 }
 
 function addProcedure() {
@@ -1365,28 +1390,28 @@ function addProcedure() {
   const name  = (input.value || '').trim();
   if (!name) { showNotification('Please enter a procedure name', 'error'); return; }
 
-  const procs = getCustomProcedures();
+  const procs = (_cachedProcs || []).slice();
   const id    = 'proc_' + Date.now();
   procs.push({ id, label: name, items: [] });
-  saveCustomProcedures(procs);
   input.value = '';
-  renderProceduresManager();
-  showNotification('Procedure added', 'success');
+  persistProcedures(procs, () => {
+    renderProceduresManager();
+    showNotification('Procedure added and saved', 'success');
+  });
 }
 
 function deleteProcedure(procId) {
   if (!confirm('Delete this procedure? This cannot be undone.')) return;
-  let procs = getCustomProcedures();
-  procs = procs.filter(p => p.id !== procId);
-  saveCustomProcedures(procs);
-  renderProceduresManager();
-  showNotification('Procedure deleted', 'success');
+  const procs = (_cachedProcs || []).filter(p => p.id !== procId);
+  persistProcedures(procs, () => {
+    renderProceduresManager();
+    showNotification('Procedure deleted', 'success');
+  });
 }
 
 function openProcedureModal(procId) {
   _editingProcId = procId;
-  const procs = getCustomProcedures();
-  const proc  = procs.find(p => p.id === procId);
+  const proc = (_cachedProcs || []).find(p => p.id === procId);
   if (!proc) return;
   document.getElementById('procModalTitle').textContent = 'Items for: ' + proc.label;
   renderProcModalItems(proc);
@@ -1419,24 +1444,24 @@ function addItemToProcedure() {
   const name  = (input.value || '').trim();
   if (!name) { showNotification('Please enter an item name', 'error'); return; }
 
-  const procs = getCustomProcedures();
+  const procs = (_cachedProcs || []).slice();
   const proc  = procs.find(p => p.id === _editingProcId);
   if (!proc) return;
   if (proc.items.includes(name)) { showNotification('Item already in list', 'error'); return; }
   proc.items.push(name);
-  saveCustomProcedures(procs);
   input.value = '';
-  renderProcModalItems(proc);
-  showNotification('Item added', 'success');
+  persistProcedures(procs, () => {
+    renderProcModalItems(proc);
+    showNotification('Item added and saved', 'success');
+  });
 }
 
 function removeProcItem(idx) {
-  const procs = getCustomProcedures();
+  const procs = (_cachedProcs || []).slice();
   const proc  = procs.find(p => p.id === _editingProcId);
   if (!proc) return;
   proc.items.splice(idx, 1);
-  saveCustomProcedures(procs);
-  renderProcModalItems(proc);
+  persistProcedures(procs, () => renderProcModalItems(proc));
 }
 
 checkAuth();
