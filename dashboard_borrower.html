@@ -362,7 +362,9 @@
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;">
  <div class="form-group">
  <label>Procedure (Optional)</label>
- <input type="text" id="borrowProcedure" placeholder="e.g., Wound Care, Hand Washing">
+ <select id="borrowProcedure" onchange="onProcedureDropdownChange()">
+   <option value="">— Select Procedure —</option>
+ </select>
  </div>
  <div class="form-group">
  <label>Subject</label>
@@ -488,7 +490,33 @@
  <div id="historyList"></div>
  </div>
  </div>
-</div>
+
+ <!-- TAB: Summary Sheet -->
+ <div id="summary-tab" class="tab-content">
+ <div class="card">
+ <h3> Summary Sheet</h3>
+ <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
+   Track usage for each borrow session — record how many items were returned, consumed, or lost for documentation.
+ </p>
+ <div id="summaryList"></div>
+ </div>
+
+ <!-- Summary Modal -->
+ <div id="summaryModal" class="modal" style="justify-content:center;align-items:flex-start;padding:20px;overflow-y:auto;">
+  <div class="modal-content" style="max-width:520px;margin:auto;">
+   <div class="modal-header">
+    <h3> Item Usage Summary</h3>
+    <button class="close-btn" onclick="closeSummaryModal()">&#10005;</button>
+   </div>
+   <div class="modal-body">
+    <div id="summaryModalBody"></div>
+    <button onclick="saveSummaryEntry()" style="margin-top:16px;"> Save Summary</button>
+   </div>
+  </div>
+ </div>
+ </div>
+
+</div><!-- /dashboard-main -->
 
 <script src="app.js"></script>
 <script>
@@ -531,7 +559,8 @@ const TAB_DEFS = [
  { id: 'borrow-tab', label: ' Borrow Items' },
  { id: 'borrowed-tab', label: ' My Items' },
  { id: 'procedures-tab', label: ' Procedures' },
- { id: 'history-tab', label: ' History' }
+ { id: 'history-tab', label: ' History' },
+ { id: 'summary-tab', label: ' Summary Sheet' }
 ];
 let _currentTabIdx = 0;
 
@@ -563,6 +592,7 @@ function goToTab(idx) {
  if (tabId === 'history-tab') loadBorrowHistory();
  if (tabId === 'borrow-tab') filterItems();
  if (tabId === 'procedures-tab') loadProcedures();
+ if (tabId === 'summary-tab') loadSummarySheet();
 }
 
 function updateTabNav() {
@@ -817,6 +847,7 @@ function loadProcedures() {
   .then(data => {
     _loadedProcedures = (data.status === 'success' && Array.isArray(data.procedures)) ? data.procedures : [];
     renderProceduresList();
+    populateProcedureDropdown();
   })
   .catch(() => { _loadedProcedures = []; renderProceduresList(); });
 }
@@ -841,6 +872,21 @@ function renderProceduresList() {
       </div>
       <span style="font-size:20px;color:var(--primary);">›</span>
     </div>`).join('');
+}
+
+function populateProcedureDropdown() {
+  const sel = document.getElementById("borrowProcedure");
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">— Select Procedure —</option>';
+  _loadedProcedures.forEach(proc => {
+    const itemCount = proc.items.length;
+    const opt = document.createElement("option");
+    opt.value = proc.label;
+    opt.textContent = `${proc.label} (${itemCount} item${itemCount!==1?'s':''})`;
+    sel.appendChild(opt);
+  });
+  if (current) sel.value = current;
 }
 
 function openProcedureDetail(procId) {
@@ -883,12 +929,43 @@ function applyProcedureItems() {
 
   if (added > 0) {
     showNotification(`Added ${added} item${added!==1?'s':''} from "${_currentProcedure.label}" to your borrow form`, "success");
-    const procField = document.getElementById("borrowProcedure");
-    if (procField && !procField.value) procField.value = _currentProcedure.label;
+    // Set procedure dropdown value
+    const procSel = document.getElementById("borrowProcedure");
+    if (procSel) {
+      // Try to find matching option
+      const opt = [...procSel.options].find(o => o.value === _currentProcedure.label);
+      if (opt) procSel.value = _currentProcedure.label;
+    }
     goToTab(0);
     filterItems();
   } else {
     showNotification("Items already added or out of stock", "error");
+  }
+}
+
+// Called when procedure dropdown changes — auto-add items
+function onProcedureDropdownChange() {
+  const val = document.getElementById("borrowProcedure").value;
+  if (!val) return;
+  const proc = _loadedProcedures.find(p => p.label === val);
+  if (!proc) return;
+  _currentProcedure = proc;
+  // Auto-add items silently (don't switch tabs)
+  const items = proc.items || [];
+  let added = 0;
+  items.forEach(itemName => {
+    const row = _allItemRows.find(r =>
+      itemNameMap[r.itemId].toLowerCase().includes(itemName.toLowerCase())
+    );
+    if (!row || !row.avail) return;
+    if (!selectedItems.find(s => s.id === row.itemId)) {
+      selectedItems.push({ id: row.itemId, name: itemNameMap[row.itemId], qty: 1 });
+      added++;
+    }
+  });
+  if (added > 0) {
+    showNotification(`Added ${added} item${added!==1?'s':''} for "${proc.label}"`, "success");
+    filterItems();
   }
 }
 
@@ -1026,7 +1103,9 @@ function resetBorrowForm() {
  document.getElementById("searchItems").value = "";
  document.getElementById("returnDate").value = "";
  document.getElementById("qrResultBox").style.display = "none";
- document.getElementById("borrowProcedure").value = "";
+ const procSel = document.getElementById("borrowProcedure");
+ if (procSel) procSel.value = "";
+
  document.getElementById("borrowSubject").value = "";
  document.getElementById("borrowAttestedBy").value = "";
  document.getElementById("borrowNotes").value = "";
@@ -1404,6 +1483,8 @@ loadItems();
 checkOverdueItems();
 initBorrowForm();
 initTabNav();
+// Pre-load procedures so the dropdown is ready immediately
+loadProcedures();
 setInterval(checkOverdueItems, 5*60*1000);
 
 // Quick Return Date Buttons 
@@ -1450,6 +1531,319 @@ function initQuickDates() {
  });
 }
 initQuickDates();
+
+// ── Summary Sheet ────────────────────────────────────────────────────────────
+// Stored locally per-user: summaries_<userID>
+// Each entry: { id, borrowDate, procedure, items: [{name, qty, type, returned, consumed, lost, notes}], savedAt }
+
+function summaryKey() { return `summaries_${getUserID()}`; }
+function getSummaries() { return JSON.parse(localStorage.getItem(summaryKey()) || "[]"); }
+function saveSummaries(arr) { localStorage.setItem(summaryKey(), JSON.stringify(arr)); }
+
+let _editingSummaryId = null; // the localId of the borrow being edited
+
+function loadSummarySheet() {
+  const container = document.getElementById("summaryList");
+  if (!container) return;
+
+  // Pull from history (server) + local borrows to build list
+  container.innerHTML = "<div class='empty-state'><div class='icon'>⏳</div>Loading...</div>";
+
+  fetch(API, { method:"POST", body: new URLSearchParams({ action:"getBorrowHistory", student:getUserID() }) })
+  .then(r => r.json())
+  .then(data => {
+    container.innerHTML = "";
+    const savedSummaries = getSummaries();
+
+    // Build combined list from server history
+    let rows = [];
+    if (Array.isArray(data) && data.length > 0 && !data.error) {
+      data.slice().reverse().forEach((record, idx) => {
+        let status, rawItems, borrowDateV, returnDateV;
+        if (record.length >= 7) { status=record[6]; rawItems=record[3]; borrowDateV=record[4]; returnDateV=record[5]; }
+        else { status=record[5]; rawItems=record[2]; borrowDateV=record[3]; returnDateV=record[4]; }
+        if (!rawItems) return;
+        const recProc = record.length > 13 ? (record[13] || "") : "";
+        const uid = `srv_${idx}_${borrowDateV}`;
+        const existing = savedSummaries.find(s => s.id === uid);
+        rows.push({ uid, rawItems, borrowDateV, returnDateV, status, procedure: recProc, existing });
+      });
+    }
+
+    // Also include local borrows not in server history (very recent)
+    getLocalBorrows().forEach(lb => {
+      const uid = `loc_${lb.localId}`;
+      const existing = savedSummaries.find(s => s.id === uid);
+      const alreadyCovered = rows.find(r => {
+        const norm = (lb.items||"").split(",").map(s=>s.split(":")[0].trim()).sort().join(",");
+        const rNorm = (r.rawItems||"").split(",").map(s=>s.split(":")[0].trim()).sort().join(",");
+        return norm === rNorm;
+      });
+      if (!alreadyCovered) {
+        rows.push({ uid, rawItems: lb.items, borrowDateV: lb.borrowDate, returnDateV: lb.returnDate, status: "Borrowed", procedure: lb.procedure || "", existing });
+      }
+    });
+
+    if (rows.length === 0) {
+      container.innerHTML = "<div class='empty-state'><div class='icon'>📋</div>No borrow records found. Borrow items first.</div>";
+      return;
+    }
+
+    rows.forEach(row => {
+      const { uid, rawItems, borrowDateV, returnDateV, status, procedure, existing } = row;
+      const itemNames = resolveItemNames(rawItems);
+      let borrowDateStr = "—", returnDateStr = "—";
+      try { borrowDateStr = new Date(borrowDateV).toLocaleString(); } catch(e){}
+      try { returnDateStr = new Date(returnDateV).toLocaleString(); } catch(e){}
+
+      const statusBadge = status === "Returned"
+        ? `<span class="status-badge status-returned"> Returned</span>`
+        : `<span class="status-badge status-borrowed">Borrowed</span>`;
+
+      const hasSummary = !!existing;
+      const summaryPreview = hasSummary ? buildSummaryPreview(existing) : "";
+
+      container.innerHTML += `
+        <div class="borrow-card" style="margin-bottom:16px;">
+          ${procedure ? `<div style="display:inline-flex;align-items:center;gap:6px;background:#f0faf6;border:1px solid #b0dcc8;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px;">${procedure}</div>` : ""}
+          <div class="borrow-card-title">${itemNames.length===1 ? itemNames[0] : itemNames.length + " items borrowed"}</div>
+          ${itemNames.length>1 ? `<div class="items-group" style="margin:8px 0;"><div class="items-group-label">Items</div><ul>${itemNames.map(n=>`<li>${n}</li>`).join("")}</ul></div>` : ""}
+          <div class="borrow-card-meta">
+            <p><strong>Borrowed:</strong> ${borrowDateStr}</p>
+            <p><strong>Return date:</strong> ${returnDateStr}</p>
+          </div>
+          ${statusBadge}
+          ${summaryPreview}
+          <div class="borrow-actions" style="margin-top:12px;">
+            <button onclick="openSummaryModal('${uid}','${encodeURIComponent(JSON.stringify(itemNames))}','${encodeURIComponent(procedure)}')"
+              style="width:auto;padding:10px 20px;background:${hasSummary?'var(--accent)':'var(--primary)'};color:${hasSummary?'var(--primary-dark)':'white'};margin-top:0;font-size:13px;">
+              ${hasSummary ? '✏️ Edit Summary' : '📋 Fill Summary'}
+            </button>
+            ${hasSummary ? `<button onclick="printSummary('${uid}')" style="width:auto;padding:10px 18px;background:var(--surface-alt);color:var(--text-main);border:1.5px solid var(--border);margin-top:0;font-size:13px;">🖨️ Print</button>` : ""}
+          </div>
+        </div>`;
+    });
+  })
+  .catch(() => {
+    container.innerHTML = "<div class='empty-state' style='color:var(--danger);'>Failed to load records. Please try again.</div>";
+  });
+}
+
+function buildSummaryPreview(summary) {
+  const totals = { returned:0, consumed:0, lost:0 };
+  summary.items.forEach(it => {
+    totals.returned += (parseInt(it.returned)||0);
+    totals.consumed += (parseInt(it.consumed)||0);
+    totals.lost += (parseInt(it.lost)||0);
+  });
+  return `
+    <div style="margin-top:10px;background:#f0faf6;border:1px solid #b0dcc8;border-radius:8px;padding:10px 14px;">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.7px;font-weight:700;color:var(--primary);margin-bottom:8px;">Summary</div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;">
+        <span style="color:#1a6e4a;font-weight:600;">✅ Returned: ${totals.returned}</span>
+        <span style="color:#2d4fa0;font-weight:600;">🔵 Consumed: ${totals.consumed}</span>
+        <span style="color:#a02d2d;font-weight:600;">❌ Lost: ${totals.lost}</span>
+      </div>
+      ${summary.items.map(it => `
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid #d4eadf;font-size:13px;">
+          <strong>${it.name}</strong> (qty: ${it.qty})
+          <span style="margin-left:8px;color:#1a6e4a;">↩ ${it.returned||0}</span>
+          <span style="margin-left:8px;color:#2d4fa0;">🔵 ${it.consumed||0}</span>
+          <span style="margin-left:8px;color:#a02d2d;">❌ ${it.lost||0}</span>
+          ${it.notes ? `<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">📝 ${it.notes}</div>` : ""}
+        </div>`).join("")}
+      <div style="font-size:11px;color:var(--text-muted);margin-top:8px;">Saved: ${new Date(summary.savedAt).toLocaleString()}</div>
+    </div>`;
+}
+
+function openSummaryModal(uid, encodedItems, encodedProc) {
+  _editingSummaryId = uid;
+  const itemNames = JSON.parse(decodeURIComponent(encodedItems));
+  const procedure = decodeURIComponent(encodedProc);
+  const savedSummaries = getSummaries();
+  const existing = savedSummaries.find(s => s.id === uid);
+
+  const body = document.getElementById("summaryModalBody");
+
+  // Resolve item info (name, qty, type)
+  const itemEntries = uid.startsWith("loc_")
+    ? buildItemEntriesFromLocal(uid, itemNames)
+    : buildItemEntriesFromNames(itemNames);
+
+  body.innerHTML = `
+    ${procedure ? `<div style="background:#f0faf6;border:1px solid #b0dcc8;border-radius:8px;padding:8px 14px;margin-bottom:16px;font-weight:700;color:var(--primary);">${procedure}</div>` : ""}
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">For each item, fill in how many were returned, consumed, or lost. Quantities must not exceed the borrowed amount.</p>
+    <div id="summaryItemFields">
+    ${itemEntries.map((item, idx) => {
+      const prev = existing ? existing.items[idx] : null;
+      return `
+        <div style="background:var(--surface-alt);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:12px;">
+          <div style="font-weight:700;color:var(--primary);font-size:14px;margin-bottom:4px;">${item.name}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">
+            Borrowed: <strong>${item.qty}</strong>
+            ${item.type ? ` &nbsp;•&nbsp; <span style="background:${item.type==='Consumable'?'#e8f0ff':'#f0faf6'};color:${item.type==='Consumable'?'#2d4fa0':'#1a5a3e'};padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">${item.type}</span>` : ""}
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;">
+            <div>
+              <label style="font-size:12px;font-weight:700;color:#1a6e4a;display:block;margin-bottom:4px;">✅ Returned</label>
+              <input type="number" id="sum_returned_${idx}" min="0" max="${item.qty}" value="${prev ? (prev.returned||0) : (item.type==='Consumable'?0:item.qty)}"
+                style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-weight:700;color:#1a6e4a;text-align:center;font-family:'DM Sans',sans-serif;"
+                oninput="validateSummaryRow(${idx},${item.qty})">
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:700;color:#2d4fa0;display:block;margin-bottom:4px;">🔵 Consumed</label>
+              <input type="number" id="sum_consumed_${idx}" min="0" max="${item.qty}" value="${prev ? (prev.consumed||0) : (item.type==='Consumable'?item.qty:0)}"
+                style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-weight:700;color:#2d4fa0;text-align:center;font-family:'DM Sans',sans-serif;"
+                oninput="validateSummaryRow(${idx},${item.qty})">
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:700;color:#a02d2d;display:block;margin-bottom:4px;">❌ Lost</label>
+              <input type="number" id="sum_lost_${idx}" min="0" max="${item.qty}" value="${prev ? (prev.lost||0) : 0}"
+                style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-weight:700;color:#a02d2d;text-align:center;font-family:'DM Sans',sans-serif;"
+                oninput="validateSummaryRow(${idx},${item.qty})">
+            </div>
+          </div>
+          <div id="sum_warn_${idx}" style="font-size:12px;color:var(--danger);font-weight:600;display:none;margin-bottom:6px;">⚠️ Total exceeds borrowed quantity (${item.qty})</div>
+          <div>
+            <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:4px;">📝 Notes (optional)</label>
+            <input type="text" id="sum_notes_${idx}" placeholder="e.g., item was damaged, used during simulation..."
+              value="${prev ? (prev.notes||"") : ""}"
+              style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;">
+          </div>
+          <input type="hidden" id="sum_name_${idx}" value="${item.name}">
+          <input type="hidden" id="sum_qty_${idx}" value="${item.qty}">
+          <input type="hidden" id="sum_type_${idx}" value="${item.type||''}">
+        </div>`;
+    }).join("")}
+    </div>
+    <input type="hidden" id="sum_item_count" value="${itemEntries.length}">`;
+
+  document.getElementById("summaryModal").style.display = "flex";
+  // Close on backdrop click
+  document.getElementById("summaryModal").onclick = e => { if (e.target === document.getElementById("summaryModal")) closeSummaryModal(); };
+}
+
+function buildItemEntriesFromNames(itemNames) {
+  return itemNames.map(n => {
+    // Parse "Name ×qty" format
+    const match = n.match(/^(.+?) ×(\d+)$/);
+    const name = match ? match[1] : n;
+    const qty = match ? parseInt(match[2]) : 1;
+    // Try to find type from itemNameMap
+    const found = Object.entries(itemNameMap).find(([id, nm]) => nm === name || nm.startsWith(name));
+    const type = found ? (itemTypeMap[found[0]] || "") : "";
+    return { name, qty, type };
+  });
+}
+
+function buildItemEntriesFromLocal(uid, itemNames) {
+  const lid = parseInt(uid.replace("loc_", ""));
+  const lb = getLocalBorrows().find(b => b.localId === lid);
+  if (!lb) return buildItemEntriesFromNames(itemNames);
+  return itemNames.map((n, idx) => {
+    const match = n.match(/^(.+?) ×(\d+)$/);
+    const name = match ? match[1] : n;
+    const qty = match ? parseInt(match[2]) : 1;
+    const typeArr = (lb.itemTypes || "").split(",");
+    const type = typeArr[idx] ? typeArr[idx].trim() : "";
+    return { name, qty, type };
+  });
+}
+
+function validateSummaryRow(idx, maxQty) {
+  const r = parseInt(document.getElementById(`sum_returned_${idx}`).value)||0;
+  const c = parseInt(document.getElementById(`sum_consumed_${idx}`).value)||0;
+  const l = parseInt(document.getElementById(`sum_lost_${idx}`).value)||0;
+  const warn = document.getElementById(`sum_warn_${idx}`);
+  if (warn) warn.style.display = (r + c + l > maxQty) ? "block" : "none";
+}
+
+function closeSummaryModal() {
+  document.getElementById("summaryModal").style.display = "none";
+  _editingSummaryId = null;
+}
+
+function saveSummaryEntry() {
+  if (!_editingSummaryId) return;
+  const count = parseInt(document.getElementById("sum_item_count").value) || 0;
+  const items = [];
+  let hasError = false;
+
+  for (let i = 0; i < count; i++) {
+    const name = document.getElementById(`sum_name_${i}`).value;
+    const qty = parseInt(document.getElementById(`sum_qty_${i}`).value) || 0;
+    const type = document.getElementById(`sum_type_${i}`).value;
+    const returned = parseInt(document.getElementById(`sum_returned_${i}`).value) || 0;
+    const consumed = parseInt(document.getElementById(`sum_consumed_${i}`).value) || 0;
+    const lost = parseInt(document.getElementById(`sum_lost_${i}`).value) || 0;
+    const notes = document.getElementById(`sum_notes_${i}`).value.trim();
+    if (returned + consumed + lost > qty) {
+      showNotification(`Total for "${name}" exceeds borrowed qty (${qty})`, "error");
+      hasError = true; break;
+    }
+    items.push({ name, qty, type, returned, consumed, lost, notes });
+  }
+
+  if (hasError) return;
+
+  const summaries = getSummaries();
+  const idx = summaries.findIndex(s => s.id === _editingSummaryId);
+  const entry = { id: _editingSummaryId, items, savedAt: new Date().toISOString() };
+  if (idx >= 0) summaries[idx] = entry;
+  else summaries.unshift(entry);
+  saveSummaries(summaries);
+
+  showNotification("✅ Summary saved!", "success");
+  closeSummaryModal();
+  loadSummarySheet();
+}
+
+function printSummary(uid) {
+  const summaries = getSummaries();
+  const s = summaries.find(x => x.id === uid);
+  if (!s) return;
+  const totals = { returned:0, consumed:0, lost:0 };
+  s.items.forEach(it => { totals.returned+=(parseInt(it.returned)||0); totals.consumed+=(parseInt(it.consumed)||0); totals.lost+=(parseInt(it.lost)||0); });
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Summary Sheet</title>
+  <style>
+    body{font-family:'DM Sans',sans-serif;padding:32px;color:#1a3333;max-width:640px;margin:auto;}
+    h1{font-size:22px;color:#0d4f4f;margin-bottom:4px;}
+    .sub{font-size:12px;color:#888;margin-bottom:24px;letter-spacing:1px;}
+    table{width:100%;border-collapse:collapse;margin-top:16px;}
+    th{background:#0d4f4f;color:white;padding:10px 12px;font-size:12px;text-align:left;}
+    td{padding:10px 12px;border-bottom:1px solid #e0ece8;font-size:13px;}
+    tr:last-child td{border-bottom:none;}
+    .totals{margin-top:20px;background:#f0faf6;border:1px solid #b0dcc8;border-radius:8px;padding:14px 18px;font-size:14px;}
+    .footer{margin-top:30px;font-size:11px;color:#aaa;border-top:1px solid #e0ece8;padding-top:12px;}
+  </style></head><body>
+  <h1>📋 Item Usage Summary Sheet</h1>
+  <div class="sub">CHS PROJECT VITAL • Generated ${new Date().toLocaleString()}</div>
+  <div style="font-weight:700;margin-bottom:4px;">Borrower: ${getUserName()}</div>
+  <table>
+    <tr><th>Item</th><th>Borrowed</th><th>Returned</th><th>Consumed</th><th>Lost</th><th>Notes</th></tr>
+    ${s.items.map(it=>`<tr>
+      <td><strong>${it.name}</strong>${it.type?` <span style="font-size:11px;color:#888;">(${it.type})</span>`:""}</td>
+      <td>${it.qty}</td><td style="color:#1a6e4a;font-weight:600;">${it.returned||0}</td>
+      <td style="color:#2d4fa0;font-weight:600;">${it.consumed||0}</td>
+      <td style="color:#a02d2d;font-weight:600;">${it.lost||0}</td>
+      <td style="color:#666;font-size:12px;">${it.notes||"—"}</td>
+    </tr>`).join("")}
+  </table>
+  <div class="totals">
+    <strong>Totals:</strong> &nbsp;
+    ✅ Returned: <strong>${totals.returned}</strong> &nbsp;&nbsp;
+    🔵 Consumed: <strong>${totals.consumed}</strong> &nbsp;&nbsp;
+    ❌ Lost: <strong>${totals.lost}</strong>
+  </div>
+  <div class="footer">Saved: ${new Date(s.savedAt).toLocaleString()}</div>
+  </body></html>`;
+
+  const win = window.open("","_blank","width=720,height=600");
+  win.document.write(html);
+  win.document.close();
+  setTimeout(()=>win.print(), 400);
+}
 </script>
 
 </body>
