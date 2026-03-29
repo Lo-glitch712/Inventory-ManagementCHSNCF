@@ -365,6 +365,54 @@
     </div>
   </div>
 
+  <!-- TAB: Procedures -->
+  <div id="procedures-tab" class="tab-content">
+    <div class="card">
+      <h3>Procedures Manager</h3>
+      <p style="color:var(--text-muted);font-size:14px;margin-bottom:18px;">
+        Add or delete procedures. Click a procedure to manage the items listed under it.
+        These procedures and their items are shown to borrowers.
+      </p>
+
+      <!-- Add Procedure -->
+      <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+        <input id="newProcName" type="text" placeholder="New procedure name..."
+          style="flex:1;min-width:180px;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text-main);background:var(--surface);outline:none;transition:border-color 0.2s;"
+          onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"
+          onkeydown="if(event.key==='Enter') addProcedure()">
+        <button onclick="addProcedure()" style="width:auto;padding:10px 22px;margin:0;">Add Procedure</button>
+      </div>
+
+      <!-- Procedure list -->
+      <div id="proceduresManagerList"></div>
+    </div>
+  </div>
+
+  <!-- Procedure Items Edit Modal -->
+  <div id="procedureModal" class="modal">
+    <div class="modal-content" style="max-width:520px;">
+      <div class="modal-header">
+        <h3 id="procModalTitle">Edit Procedure Items</h3>
+        <button class="close-btn" onclick="closeProcedureModal()">&#10005;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">
+          Items listed here will appear in the borrower's Procedures tab when they tap this procedure.
+        </p>
+        <div id="procModalItemsList" style="margin-bottom:16px;"></div>
+        <!-- Add item to procedure -->
+        <div style="display:flex;gap:10px;margin-top:4px;flex-wrap:wrap;">
+          <input id="procNewItemInput" type="text" placeholder="Add item name (e.g., Stethoscope)..."
+            style="flex:1;min-width:150px;padding:9px 13px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text-main);background:var(--surface);outline:none;transition:border-color 0.2s;"
+            onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"
+            onkeydown="if(event.key==='Enter') addItemToProcedure()">
+          <button onclick="addItemToProcedure()" style="width:auto;padding:9px 18px;margin:0;font-size:13px;">Add Item</button>
+        </div>
+        <button onclick="closeProcedureModal()" style="margin-top:16px;background:var(--surface-alt);color:var(--text-main);border:1.5px solid var(--border);">Done</button>
+      </div>
+    </div>
+  </div>
+
   <!-- TAB: Scanner -->
   <div id="scanner-tab" class="tab-content">
     <div class="card">
@@ -474,12 +522,13 @@ function updateSuggestions() {
 
 //  Arrow Tab Navigation 
 const ADMIN_TABS = [
-  { id: 'inventory-tab', label: ' Inventory' },
-  { id: 'shelf-tab',     label: ' By Shelf' },
-  { id: 'addstock-tab',  label: ' Add Stock' },
-  { id: 'alerts-tab',    label: ' Alerts' },
-  { id: 'borrowed-tab',  label: ' Borrows' },
-  { id: 'scanner-tab',   label: ' Scanner' }
+  { id: 'inventory-tab',  label: ' Inventory' },
+  { id: 'shelf-tab',      label: ' By Shelf' },
+  { id: 'addstock-tab',   label: ' Add Stock' },
+  { id: 'alerts-tab',     label: ' Alerts' },
+  { id: 'borrowed-tab',   label: ' Borrows' },
+  { id: 'procedures-tab', label: ' Procedures' },
+  { id: 'scanner-tab',    label: ' Scanner' }
 ];
 let _adminTabIdx = 0;
 
@@ -499,7 +548,7 @@ function initAdminTabNav() {
   // Init procedure tags
   buildProcTags('addProcTags', selectedAddProcs, updateSuggestions);
   // Init modals backdrop close
-  ['profileModal','passwordModal','editModal','borrowerDetailModal'].forEach(id => {
+  ['profileModal','passwordModal','editModal','borrowerDetailModal','procedureModal'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('click', e => { if (e.target === el) el.style.display = 'none'; });
   });
@@ -513,10 +562,11 @@ function goToAdminTab(idx) {
   document.getElementById(ADMIN_TABS[_adminTabIdx].id).classList.add('active');
   updateAdminTabNav();
   const tabId = ADMIN_TABS[_adminTabIdx].id;
-  if (tabId === 'borrowed-tab')  loadBorrowedItemsTracking();
-  if (tabId === 'shelf-tab')     renderShelfView();
-  if (tabId === 'addstock-tab')  renderAddStock();
-  if (tabId === 'alerts-tab')    renderAlerts();
+  if (tabId === 'borrowed-tab')   loadBorrowedItemsTracking();
+  if (tabId === 'shelf-tab')      renderShelfView();
+  if (tabId === 'addstock-tab')   renderAddStock();
+  if (tabId === 'alerts-tab')     renderAlerts();
+  if (tabId === 'procedures-tab') renderProceduresManager();
 }
 
 function updateAdminTabNav() {
@@ -1245,6 +1295,149 @@ function openDetailModal(borrower) {
 }
 
 function closeDetailModal() { document.getElementById("borrowerDetailModal").style.display = "none"; }
+
+// ── Procedures Manager ───────────────────────────────────────────────────────
+// Storage key for custom procedures (persisted in localStorage)
+const PROC_STORE_KEY = 'chs_vital_procedures';
+
+// Load procedures from localStorage, seeding from built-in PROCEDURES if empty
+function getCustomProcedures() {
+  try {
+    const stored = localStorage.getItem(PROC_STORE_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch(e) {}
+  // Seed from built-in list on first load
+  const seeded = PROCEDURES.map(p => ({
+    id:    p.id,
+    label: p.label.replace(/^\s*\S+\s*/, '').trim(), // strip leading emoji/symbol
+    items: (PROC_ITEMS[p.id] || []).slice()
+  }));
+  saveCustomProcedures(seeded);
+  return seeded;
+}
+
+function saveCustomProcedures(procs) {
+  localStorage.setItem(PROC_STORE_KEY, JSON.stringify(procs));
+  // Sync PROCEDURES array so the "Add Item" proc-tag picker stays in sync
+  syncProceduresArray(procs);
+}
+
+function syncProceduresArray(procs) {
+  PROCEDURES.length = 0;
+  procs.forEach(p => PROCEDURES.push({ id: p.id, label: p.label }));
+  // Rebuild proc tags in add-item form
+  buildProcTags('addProcTags', selectedAddProcs, updateSuggestions);
+}
+
+let _editingProcId = null;
+
+function renderProceduresManager() {
+  const container = document.getElementById('proceduresManagerList');
+  if (!container) return;
+  const procs = getCustomProcedures();
+
+  if (procs.length === 0) {
+    container.innerHTML = "<div class='empty-state'><div class='icon'></div>No procedures yet. Add one above.</div>";
+    return;
+  }
+
+  container.innerHTML = procs.map((p, idx) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);margin-bottom:10px;gap:10px;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;color:var(--primary);font-size:14px;">${p.label}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:3px;">${p.items.length} item${p.items.length!==1?'s':''}: ${p.items.slice(0,4).join(', ')}${p.items.length>4?' …':''}</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-shrink:0;">
+        <button onclick="openProcedureModal('${p.id}')"
+          style="width:auto;padding:7px 16px;margin:0;font-size:12px;font-weight:600;background:var(--primary);color:white;border:none;border-radius:7px;cursor:pointer;">
+          Edit Items
+        </button>
+        <button onclick="deleteProcedure('${p.id}')"
+          style="width:auto;padding:7px 14px;margin:0;font-size:12px;font-weight:600;background:#fde8e8;color:var(--danger);border:1.5px solid #f5c6c6;border-radius:7px;cursor:pointer;">
+          Delete
+        </button>
+      </div>
+    </div>`).join('');
+}
+
+function addProcedure() {
+  const input = document.getElementById('newProcName');
+  const name  = (input.value || '').trim();
+  if (!name) { showNotification('Please enter a procedure name', 'error'); return; }
+
+  const procs = getCustomProcedures();
+  const id    = 'proc_' + Date.now();
+  procs.push({ id, label: name, items: [] });
+  saveCustomProcedures(procs);
+  input.value = '';
+  renderProceduresManager();
+  showNotification('Procedure added', 'success');
+}
+
+function deleteProcedure(procId) {
+  if (!confirm('Delete this procedure? This cannot be undone.')) return;
+  let procs = getCustomProcedures();
+  procs = procs.filter(p => p.id !== procId);
+  saveCustomProcedures(procs);
+  renderProceduresManager();
+  showNotification('Procedure deleted', 'success');
+}
+
+function openProcedureModal(procId) {
+  _editingProcId = procId;
+  const procs = getCustomProcedures();
+  const proc  = procs.find(p => p.id === procId);
+  if (!proc) return;
+  document.getElementById('procModalTitle').textContent = 'Items for: ' + proc.label;
+  renderProcModalItems(proc);
+  document.getElementById('procedureModal').style.display = 'flex';
+}
+
+function closeProcedureModal() {
+  document.getElementById('procedureModal').style.display = 'none';
+  _editingProcId = null;
+}
+
+function renderProcModalItems(proc) {
+  const container = document.getElementById('procModalItemsList');
+  if (!proc.items || proc.items.length === 0) {
+    container.innerHTML = "<p style='color:var(--text-muted);font-size:13px;font-style:italic;'>No items yet. Add one below.</p>";
+    return;
+  }
+  container.innerHTML = proc.items.map((item, idx) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface-alt);margin-bottom:7px;">
+      <span style="font-size:14px;color:var(--text-main);font-weight:500;">${item}</span>
+      <button onclick="removeProcItem(${idx})"
+        style="width:26px;height:26px;border-radius:50%;background:#fde8e8;color:var(--danger);border:1px solid #f5c6c6;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;margin:0;min-width:unset;line-height:1;">
+        &times;
+      </button>
+    </div>`).join('');
+}
+
+function addItemToProcedure() {
+  const input = document.getElementById('procNewItemInput');
+  const name  = (input.value || '').trim();
+  if (!name) { showNotification('Please enter an item name', 'error'); return; }
+
+  const procs = getCustomProcedures();
+  const proc  = procs.find(p => p.id === _editingProcId);
+  if (!proc) return;
+  if (proc.items.includes(name)) { showNotification('Item already in list', 'error'); return; }
+  proc.items.push(name);
+  saveCustomProcedures(procs);
+  input.value = '';
+  renderProcModalItems(proc);
+  showNotification('Item added', 'success');
+}
+
+function removeProcItem(idx) {
+  const procs = getCustomProcedures();
+  const proc  = procs.find(p => p.id === _editingProcId);
+  if (!proc) return;
+  proc.items.splice(idx, 1);
+  saveCustomProcedures(procs);
+  renderProcModalItems(proc);
+}
 
 checkAuth();
 loadItems();
