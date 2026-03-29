@@ -654,14 +654,15 @@ function loadItems() {
     populateShelfFilter(data);
 
     // Loop starts at 0 — header already removed by server
+    // String() used on all fields because Google Sheets may return numbers instead of strings
     for (let i = 0; i < data.length; i++) {
       const row    = data[i];
       const itemId = String(row[0]);
-      const name   = row[1] || "";
-      const size   = row[2] || "";
+      const name   = String(row[1] || "");
+      const size   = String(row[2] || "");
       const stock  = parseInt(row[4]) || 0;
-      const type   = row[5] || "";
-      const loc    = row[6] || "";
+      const type   = String(row[5] || "");
+      const loc    = String(row[6] || "");
       itemNameMap[itemId]     = size ? `${name} (${size})` : name;
       itemTypeMap[itemId]     = type;
       itemLocationMap[itemId] = loc;
@@ -768,7 +769,7 @@ function filterItems() {
   _filteredItems = _allItemRows.filter(row => {
     const text = (row.name + " " + row.size + " " + row.loc).toLowerCase();
     const textMatch  = !q     || text.includes(q);
-    const shelfMatch = !shelf || row.loc.toLowerCase() === shelf;
+    const shelfMatch = !shelf || String(row.loc).toLowerCase() === shelf;
     return textMatch && shelfMatch;
   });
   _itemPage = 1;
@@ -790,7 +791,7 @@ function populateShelfFilter(data) {
   if (!sel) return;
   const locations = new Set();
   for (let i = 0; i < data.length; i++) {
-    const loc = (data[i][6] || "").trim();
+    const loc = String(data[i][6] || "").trim();
     if (loc) locations.add(loc);
   }
   // Keep current "All Shelves" option then add sorted unique locations
