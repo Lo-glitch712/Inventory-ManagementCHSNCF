@@ -131,6 +131,11 @@ body.dashboard-body {
   cursor: pointer;
   width: auto !important;
   transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.menu-toggle:empty::before {
+  content: '☰';
 }
 
 .menu-toggle:hover {
@@ -173,6 +178,8 @@ body.dashboard-body {
   align-items: center;
   justify-content: center;
 }
+
+.side-menu .close-btn:empty::before { content: '✕'; }
 
 .side-menu-header {
   padding: 20px 0 24px;
@@ -283,6 +290,8 @@ body.dashboard-body {
   align-items: center;
   justify-content: center;
 }
+
+.modal-header .close-btn:empty::before { content: '✕'; }
 
 .modal-body {
   padding: 28px 24px;
