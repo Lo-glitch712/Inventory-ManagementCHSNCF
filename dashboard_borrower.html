@@ -459,14 +459,6 @@
  </div>
  </div>
 
- <!-- TAB: History -->
- <div id="history-tab" class="tab-content">
- <div class="card">
- <h3> Borrow History</h3>
- <div id="historyList"></div>
- </div>
- </div>
-
  <!-- TAB: Summary Sheet -->
  <div id="summary-tab" class="tab-content">
  <div class="card">
@@ -518,7 +510,6 @@ document.addEventListener("click", e => {
 const TAB_DEFS = [
  { id: 'borrow-tab', label: 'Borrow Items' },
  { id: 'borrowed-tab', label: 'My Items' },
- { id: 'history-tab', label: 'History' },
  { id: 'summary-tab', label: 'Summary Sheet' }
 ];
 let _currentTabIdx = 0;
@@ -548,7 +539,6 @@ function goToTab(idx) {
  updateTabNav();
  const tabId = TAB_DEFS[_currentTabIdx].id;
  if (tabId === 'borrowed-tab') loadBorrowedItems();
- if (tabId === 'history-tab') loadBorrowHistory();
  if (tabId === 'borrow-tab') filterItems();
  if (tabId === 'summary-tab') loadSummarySheet();
 }
