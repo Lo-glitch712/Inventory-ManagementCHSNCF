@@ -466,13 +466,21 @@ function confirmAndProcessReturn() {
  <div class="borrow-header">Processing Return...</div>
  <div class="borrow-info"><p><strong>Borrower:</strong> ${data.studentName || data.n}</p></div>`);
 
+ // Build not-returned items string (non-consumable items where returned < borrowed)
+ const notReturnedItemsStr = summaryItems
+   .filter(it => it.type !== "Consumable" && (it.qty - it.returned) > 0)
+   .map(it => `${it.id}:${it.qty - it.returned}`)
+   .join(",");
+
  fetch(API, {
    method: "POST",
    body: new URLSearchParams({
      action: "returnItem",
      student: data.student || data.s,
      studentName: data.studentName || data.n,
-     items: itemsForAPI
+     items: itemsForAPI,
+     originalItems: data.items,
+     notReturnedItems: notReturnedItemsStr
    })
  })
  .then(r => r.json())
