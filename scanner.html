@@ -123,6 +123,26 @@ function resumeScanner() {
  try { scanner.resume(); isPaused = false; } catch(e) {}
 }
 
+// Normalize compact QR keys → full keys (supports both old and new QR formats)
+function normalizeQRData(d) {
+  if (d.s !== undefined || d.n !== undefined || d.i !== undefined) {
+    return {
+      student:     d.s    || d.student     || '',
+      studentName: d.n    || d.studentName || '',
+      idNumber:    d.id   || d.idNumber    || '',
+      course:      d.c    || d.course      || '',
+      subject:     d.sb   || d.subject     || '',
+      procedure:   d.pr   || d.procedure   || '',
+      items:       d.i    || d.items       || '',
+      returnDate:  d.rd   || d.returnDate  || '',
+      // these are optional display-only fields — not in new QR
+      itemNames:   d.itemNames  || '',
+      itemTypes:   d.itemTypes  || '',
+    };
+  }
+  return d; // already full-key format
+}
+
 // Scan result handler
 function onScanSuccess(decodedText) {
  if (isProcessing) return;
@@ -135,6 +155,9 @@ function onScanSuccess(decodedText) {
  showNotification("Invalid QR code format", "error");
  isProcessing = false; resumeScanner(); return;
  }
+
+ // Normalize short-key format to long-key format (backward compat)
+ data = normalizeQRData(data);
 
  if (!data.student || !data.items) {
  showNotification("QR code is missing required data", "error");
