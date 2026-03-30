@@ -238,7 +238,7 @@
  <h1> Borrower Dashboard</h1>
  <div class="navbar-right">
  <span>Welcome, <strong id="userName"></strong></span>
- <button class="menu-toggle" onclick="toggleMenu()"></button>
+ <button class="menu-toggle" onclick="toggleMenu()">&#9776;</button>
  </div>
 </div>
 
@@ -459,26 +459,6 @@
  </div>
  </div>
 
- <!-- TAB: Procedures -->
- <div id="procedures-tab" class="tab-content">
- <div class="card">
- <h3> Procedures &amp; Required Items</h3>
- <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">Select a procedure to see the equipment needed.
- </p>
- <div id="proceduresList"></div>
- <!-- Procedure Detail Panel -->
- <div id="procedureDetail" style="display:none;margin-top:16px;background:var(--surface-alt);border:1.5px solid var(--primary);border-radius:12px;padding:20px;">
- <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
- <div style="font-weight:800;color:var(--primary);font-size:16px;" id="procedureDetailTitle"></div>
- <button onclick="closeProcedureDetail()" style="width:32px;height:32px;border-radius:50%;background:var(--surface);border:1.5px solid var(--border);color:var(--text-muted);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;margin:0;min-width:unset;font-weight:700;"></button>
- </div>
- <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.7px;font-weight:700;color:var(--text-muted);margin-bottom:10px;">Equipment Needed</div>
- <div id="procedureItemsList"></div>
- <button onclick="applyProcedureItems()" style="margin-top:14px;background:var(--accent);color:var(--primary-dark);font-weight:700;padding:10px 22px;width:auto;"> Add Items to Borrow Form</button>
- </div>
- </div>
- </div>
-
  <!-- TAB: History -->
  <div id="history-tab" class="tab-content">
  <div class="card">
@@ -490,8 +470,8 @@
  <!-- TAB: Summary Sheet -->
  <div id="summary-tab" class="tab-content">
  <div class="card">
- <h3>Return Summary Sheets</h3>
- <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">Summary sheets are generated when your items are returned and confirmed by the admin at the counter. Only returned records appear here.
+ <h3>Return Summary Sheet</h3>
+ <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">Your complete borrow overview — active borrows, non-consumable items not yet returned, and completed returns with item types.
  </p>
  <div id="summaryList"></div>
  </div>
@@ -539,7 +519,6 @@ document.addEventListener("click", e => {
 const TAB_DEFS = [
  { id: 'borrow-tab', label: 'Borrow Items' },
  { id: 'borrowed-tab', label: 'My Items' },
- { id: 'procedures-tab', label: 'Procedures' },
  { id: 'history-tab', label: 'History' },
  { id: 'summary-tab', label: 'Summary Sheet' }
 ];
@@ -572,7 +551,6 @@ function goToTab(idx) {
  if (tabId === 'borrowed-tab') loadBorrowedItems();
  if (tabId === 'history-tab') loadBorrowHistory();
  if (tabId === 'borrow-tab') filterItems();
- if (tabId === 'procedures-tab') loadProcedures();
  if (tabId === 'summary-tab') loadSummarySheet();
 }
 
@@ -738,15 +716,24 @@ function renderItemsPage() {
  ? `<span style="font-size:11px;background:#f5f0e8;color:#7a5c1e;padding:2px 8px;border-radius:10px;font-weight:600;"> ${loc}</span>`
  : "";
  const isSelected = selectedItems.find(i => i.id === itemId);
+ const isProcMatch = isProcedureMatch({ name, size, loc, itemId });
+ const procHighlight = isProcMatch
+   ? `<span style="font-size:11px;background:#fff3cd;color:#856404;border:1px solid #ffc107;padding:2px 8px;border-radius:10px;font-weight:700;">⭐ Recommended</span>`
+   : '';
  const el = document.createElement("div");
  el.className = "tap-item" + (!avail ? " tap-item-disabled" : "") + (isSelected ? " tap-item-selected" : "");
  el.id = `ti_${itemId}`;
  if (avail) el.onclick = () => tapItem(itemId);
+ if (isProcMatch && avail && !isSelected) {
+   el.style.borderColor = '#ffc107';
+   el.style.background = '#fffdf0';
+   el.style.boxShadow = '0 2px 10px rgba(255,193,7,0.2)';
+ }
  el.innerHTML = `
  <div style="flex:1;">
  <div style="font-weight:600;font-size:14px;color:var(--primary);">${name}${size ? ` <em style="color:var(--text-muted);font-weight:400;font-size:13px;">— ${size}</em>` : ""}</div>
  <div style="display:flex;gap:8px;align-items:center;margin-top:4px;flex-wrap:wrap;">
- ${typePill}${locPill}
+ ${typePill}${locPill}${procHighlight}
  <span style="font-size:12px;font-weight:600;color:${avail ? "var(--success)" : "var(--danger)"};">${avail ? `Stock: ${stock}` : "Out of stock"}</span>
  </div>
  </div>
@@ -803,14 +790,31 @@ function changeQty(itemId, delta, maxStock) {
 function filterItems() {
  const q = (document.getElementById("searchItems")?.value || "").toLowerCase();
  const shelf = (document.getElementById("shelfFilter")?.value || "").toLowerCase();
- _filteredItems = _allItemRows.filter(row => {
- const text = (row.name + " " + row.size + " " + row.loc).toLowerCase();
- const textMatch = !q || text.includes(q);
- const shelfMatch = !shelf || String(row.loc).toLowerCase() === shelf;
- return textMatch && shelfMatch;
+ let filtered = _allItemRows.filter(row => {
+   const text = (row.name + " " + row.size + " " + row.loc).toLowerCase();
+   const textMatch = !q || text.includes(q);
+   const shelfMatch = !shelf || String(row.loc).toLowerCase() === shelf;
+   return textMatch && shelfMatch;
  });
+ // If a procedure is selected, sort matching items to top
+ if (_activeProcedureItems && _activeProcedureItems.length > 0) {
+   filtered.sort((a, b) => {
+     const aMatch = isProcedureMatch(a);
+     const bMatch = isProcedureMatch(b);
+     if (aMatch && !bMatch) return -1;
+     if (!aMatch && bMatch) return 1;
+     return 0;
+   });
+ }
+ _filteredItems = filtered;
  _itemPage = 1;
  renderItemsPage();
+}
+
+function isProcedureMatch(row) {
+ if (!_activeProcedureItems || _activeProcedureItems.length === 0) return false;
+ const nameStr = (row.name + ' ' + row.size).toLowerCase();
+ return _activeProcedureItems.some(keyword => nameStr.includes(keyword));
 }
 
 // Procedures Tab (reads from Google Sheet via API)
@@ -924,29 +928,24 @@ function applyProcedureItems() {
  }
 }
 
-// Called when procedure dropdown changes — auto-add items
+// Called when procedure dropdown changes — highlight matching items
+let _activeProcedureItems = [];
 function onProcedureDropdownChange() {
  const val = document.getElementById("borrowProcedure").value;
- if (!val) return;
- const proc = _loadedProcedures.find(p => p.label === val);
- if (!proc) return;
- _currentProcedure = proc;
- // Auto-add items silently (don't switch tabs)
- const items = proc.items || [];
- let added = 0;
- items.forEach(itemName => {
- const row = _allItemRows.find(r =>
- itemNameMap[r.itemId].toLowerCase().includes(itemName.toLowerCase())
- );
- if (!row || !row.avail) return;
- if (!selectedItems.find(s => s.id === row.itemId)) {
- selectedItems.push({ id: row.itemId, name: itemNameMap[row.itemId], qty: 1 });
- added++;
+ _activeProcedureItems = [];
+ if (val) {
+   const proc = _loadedProcedures.find(p => p.label === val);
+   if (proc) {
+     _currentProcedure = proc;
+     _activeProcedureItems = (proc.items || []).map(s => s.toLowerCase());
+   }
+ } else {
+   _currentProcedure = null;
  }
- });
- if (added > 0) {
- showNotification(`Added ${added} item${added!==1?'s':''} for "${proc.label}"`, "success");
+ _itemPage = 1;
  filterItems();
+ if (val && _activeProcedureItems.length > 0) {
+   showNotification(`Showing highlighted items for "${val}" — select quantities and borrow`, 'info');
  }
 }
 
@@ -1523,83 +1522,174 @@ function saveSummaries(arr) { localStorage.setItem(summaryKey(), JSON.stringify(
 function loadSummarySheet() {
  const container = document.getElementById("summaryList");
  if (!container) return;
-
  container.innerHTML = "<div class='empty-state'><div class='icon'></div>Loading...</div>";
 
  fetch(API, { method:"POST", body: new URLSearchParams({ action:"getBorrowHistory", student:getUserID() }) })
  .then(r => r.json())
  .then(data => {
- container.innerHTML = "";
+   container.innerHTML = "";
+   if (!Array.isArray(data) || data.length === 0 || data.error) {
+     container.innerHTML = "<div class='empty-state'><div class='icon'></div>No records yet.</div>";
+     return;
+   }
 
- if (!Array.isArray(data) || data.length === 0 || data.error) {
- container.innerHTML = "<div class='empty-state'><div class='icon'></div>No returned records yet. Return your borrowed items at the counter.</div>";
- return;
- }
+   // Split records
+   const allRecords = [...data].reverse();
+   const borrowedRecords = allRecords.filter(r => (r[6]||r[5]) === "Borrowed");
+   const returnedRecords = allRecords.filter(r => (r[6]||r[5]) === "Returned");
 
- // Filter to Returned only, newest first
- const returnedRecords = data.filter(record => {
- const status = record.length >= 7 ? record[6] : record[5];
- return status === "Returned";
- }).reverse();
+   // Build "Not Returned" = items in borrowed records that are non-consumable
+   // (consumables are never returned, so we track non-consumables not yet back)
+   const notReturnedItems = [];
+   borrowedRecords.forEach(record => {
+     const rawItems = record[3] || record[2] || "";
+     const typeStr = record[9] || "";
+     const typeList = typeStr.split(",").map(t => t.trim());
+     const returnDate = new Date(record[5] || record[4]);
+     const isOverdue = returnDate < new Date();
+     rawItems.split(",").forEach((entry, idx) => {
+       const id = entry.split(":")[0].trim();
+       const qty = parseInt(entry.split(":")[1]) || 1;
+       const type = typeList[idx] || "Non-Consumable";
+       if (type !== "Consumable") {
+         const name = itemNameMap[id] || `Item #${id}`;
+         notReturnedItems.push({ name: qty > 1 ? `${name} ×${qty}` : name, type, isOverdue, returnDate });
+       }
+     });
+   });
 
- if (returnedRecords.length === 0) {
- container.innerHTML = "<div class='empty-state'><div class='icon'></div>No returned records yet. Summary sheets appear here after the admin confirms your return.</div>";
- return;
- }
+   let html = "";
 
- returnedRecords.forEach((record, idx) => {
- let rawItems, borrowDateV, returnDateV, actualReturn;
- if (record.length >= 7) {
- rawItems = record[3]; borrowDateV = record[4];
- returnDateV = record[5]; actualReturn = record[14] || "";
- } else {
- rawItems = record[2]; borrowDateV = record[3]; returnDateV = record[4]; actualReturn = "";
- }
- if (!rawItems) return;
+   // ── SECTION 1: CURRENTLY BORROWED ────────────────────────────────
+   html += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--primary);margin:0 0 12px;">📋 Currently Borrowed (${borrowedRecords.length})</div>`;
+   if (borrowedRecords.length === 0) {
+     html += `<div class='empty-state' style='margin-bottom:20px;'><div class='icon'></div>No active borrows</div>`;
+   } else {
+     borrowedRecords.forEach(record => {
+       const rawItems = record[3] || record[2] || "";
+       const typeStr = record[9] || "";
+       const typeList = typeStr.split(",").map(t => t.trim());
+       const returnDate = new Date(record[5] || record[4]);
+       const isOverdue = returnDate < new Date();
+       const recProc = record[13] || "";
+       const recCourse = record[11] || "";
+       const recIdNum = record[10] || "";
+       let borrowDateStr = "—";
+       try { borrowDateStr = new Date(record[4] || record[3]).toLocaleString(); } catch(e){}
+       let returnDateStr = "—";
+       try { returnDateStr = returnDate.toLocaleString(); } catch(e){}
 
- const recProc = record.length > 13 ? (record[13] || "") : "";
- const recCourse = record.length > 11 ? (record[11] || "") : "";
- const recIdNum = record.length > 10 ? (record[10] || "") : "";
- const recSubject = record.length > 12 ? (record[12] || "") : "";
- const lentBy = record[8] || "";
+       // Build per-item rows with type
+       const itemEntries = rawItems.split(",").map((entry, idx) => {
+         const id = entry.split(":")[0].trim();
+         const qty = parseInt(entry.split(":")[1]) || 1;
+         const type = typeList[idx] || "Non-Consumable";
+         const name = itemNameMap[id] ? (qty > 1 ? `${itemNameMap[id]} ×${qty}` : itemNameMap[id]) : `Item #${id}`;
+         const typeColor = type === "Consumable" ? "#2d4fa0" : "#1a5a3e";
+         const typeBg = type === "Consumable" ? "#e8f0ff" : "#f0faf6";
+         return `<li style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);">
+           <span style="font-size:13px;font-weight:500;">${name}</span>
+           <span style="font-size:11px;background:${typeBg};color:${typeColor};padding:2px 8px;border-radius:10px;font-weight:600;">${type}</span>
+         </li>`;
+       }).join("");
 
- const itemNames = resolveItemNames(rawItems);
- let borrowDateStr = "—", returnDateStr = "—", actualReturnStr = "—";
- try { borrowDateStr = new Date(borrowDateV).toLocaleString(); } catch(e){}
- try { returnDateStr = new Date(returnDateV).toLocaleString(); } catch(e){}
- try { if (actualReturn) actualReturnStr = new Date(actualReturn).toLocaleString(); } catch(e){}
+       html += `<div class="borrow-card ${isOverdue ? 'overdue' : ''}" style="margin-bottom:12px;">
+         ${recProc ? `<div style="display:inline-flex;background:#f0faf6;border:1px solid #b0dcc8;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px;">${recProc}</div>` : ""}
+         <div class="borrow-card-title">${isOverdue ? "⚠️ OVERDUE — " : ""}Active Borrow</div>
+         <div class="borrow-card-meta">
+           ${recIdNum ? `<p><strong>ID:</strong> ${recIdNum}</p>` : ""}
+           ${recCourse ? `<p><strong>Course:</strong> ${recCourse}</p>` : ""}
+           <p><strong>Borrowed:</strong> ${borrowDateStr}</p>
+           <p><strong>Return by:</strong> <span style="color:${isOverdue?'var(--danger)':'inherit'};font-weight:${isOverdue?700:400};">${returnDateStr}</span></p>
+         </div>
+         <div class="items-group"><div class="items-group-label">Items &amp; Type</div><ul style="list-style:none;padding:0;margin:0;">${itemEntries}</ul></div>
+         <span class="status-badge status-borrowed">Borrowed</span>
+       </div>`;
+     });
+   }
 
- const procBadge = recProc
- ? `<div style="display:inline-flex;align-items:center;gap:6px;background:#f0faf6;border:1px solid #b0dcc8;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px;">${recProc}</div>` : "";
+   html += `<hr style="border:none;border-top:1.5px solid var(--border);margin:20px 0;">`;
 
- const metaInfo = [
- recIdNum ? `<p><strong>ID Number:</strong> ${recIdNum}</p>` : "",
- recCourse ? `<p><strong>Course:</strong> ${recCourse}</p>` : "",
- recSubject ? `<p><strong>Subject:</strong> ${recSubject}</p>` : "",
- ].filter(Boolean).join("");
+   // ── SECTION 2: NOT RETURNED (non-consumables still out) ───────────
+   html += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--danger);margin:0 0 12px;">⚠️ Not Yet Returned — Non-Consumable Items (${notReturnedItems.length})</div>`;
+   if (notReturnedItems.length === 0) {
+     html += `<div class='empty-state' style='margin-bottom:20px;'><div class='icon'>✅</div>All non-consumable items returned!</div>`;
+   } else {
+     html += `<div style="background:#fff5f5;border:1px solid #f5c6c6;border-left:4px solid var(--danger);border-radius:10px;padding:14px 16px;margin-bottom:16px;">
+       <ul style="list-style:none;padding:0;margin:0;">
+         ${notReturnedItems.map(item => `<li style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f5c6c6;">
+           <span style="font-size:13px;font-weight:600;color:var(--danger);">⚠ ${item.name}</span>
+           <span style="font-size:11px;color:${item.isOverdue?'var(--danger)':'var(--text-muted)'};">${item.isOverdue ? 'OVERDUE' : 'Due ' + item.returnDate.toLocaleDateString()}</span>
+         </li>`).join("")}
+       </ul>
+       <p style="font-size:12px;color:var(--danger);margin-top:10px;font-weight:600;">Please return these items to the counter immediately.</p>
+     </div>`;
+   }
 
- const groupHTML = itemNames.length > 1
- ? `<div class="items-group" style="margin:8px 0;"><div class="items-group-label">Items Returned</div><ul>${itemNames.map(n=>`<li>${n}</li>`).join("")}</ul></div>`
- : "";
+   html += `<hr style="border:none;border-top:1.5px solid var(--border);margin:20px 0;">`;
 
- container.innerHTML += `
- <div class="borrow-card" style="border-left-color:var(--success);margin-bottom:16px;">
- ${procBadge}
- <div class="borrow-card-title">${itemNames.length===1 ? itemNames[0] : itemNames.length + " items returned"}</div>
- ${groupHTML}
- <div class="borrow-card-meta">
- ${metaInfo}
- <p><strong>Borrowed:</strong> ${borrowDateStr}</p>
- <p><strong>Due date:</strong> ${returnDateStr}</p>
- <p><strong>Returned on:</strong> ${actualReturnStr}</p>
- ${lentBy ? `<p><strong>Processed by:</strong> ${lentBy}</p>` : ""}
- </div>
- <span class="status-badge status-returned">Returned</span>
- </div>`;
- });
+   // ── SECTION 3: RETURNED ───────────────────────────────────────────
+   html += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--success);margin:0 0 12px;">✅ Returned (${returnedRecords.length})</div>`;
+   if (returnedRecords.length === 0) {
+     html += `<div class='empty-state' style='margin-bottom:20px;'><div class='icon'></div>No returned records yet</div>`;
+   } else {
+     returnedRecords.forEach(record => {
+       const rawItems = record[3] || record[2] || "";
+       const typeStr = record[9] || "";
+       const typeList = typeStr.split(",").map(t => t.trim());
+       const recProc = record[13] || "";
+       const recCourse = record[11] || "";
+       const recIdNum = record[10] || "";
+       const recSubject = record[12] || "";
+       const lentBy = record[8] || "";
+       const actualReturn = record[14] || "";
+       let borrowDateStr="—", returnDateStr="—", actualReturnStr="—";
+       try { borrowDateStr = new Date(record[4]||record[3]).toLocaleString(); } catch(e){}
+       try { returnDateStr = new Date(record[5]||record[4]).toLocaleString(); } catch(e){}
+       try { if (actualReturn) actualReturnStr = new Date(actualReturn).toLocaleString(); } catch(e){}
+
+       // Build per-item rows with type
+       const itemEntries = rawItems.split(",").map((entry, idx) => {
+         const id = entry.split(":")[0].trim();
+         const qty = parseInt(entry.split(":")[1]) || 1;
+         const type = typeList[idx] || "Non-Consumable";
+         const name = itemNameMap[id] ? (qty > 1 ? `${itemNameMap[id]} ×${qty}` : itemNameMap[id]) : `Item #${id}`;
+         const typeColor = type === "Consumable" ? "#2d4fa0" : "#1a5a3e";
+         const typeBg = type === "Consumable" ? "#e8f0ff" : "#f0faf6";
+         const retStatus = type === "Consumable"
+           ? `<span style="font-size:11px;background:#f5f0ff;color:#6b21a8;padding:2px 8px;border-radius:10px;font-weight:600;">Consumed</span>`
+           : `<span style="font-size:11px;background:#d4f3e8;color:#1a6e4a;padding:2px 8px;border-radius:10px;font-weight:600;">✓ Returned</span>`;
+         return `<li style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);gap:8px;">
+           <span style="font-size:13px;font-weight:500;">${name}</span>
+           <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+             <span style="font-size:11px;background:${typeBg};color:${typeColor};padding:2px 8px;border-radius:10px;font-weight:600;">${type}</span>
+             ${retStatus}
+           </div>
+         </li>`;
+       }).join("");
+
+       html += `<div class="borrow-card" style="border-left-color:var(--success);margin-bottom:12px;">
+         ${recProc ? `<div style="display:inline-flex;background:#f0faf6;border:1px solid #b0dcc8;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px;">${recProc}</div>` : ""}
+         <div class="borrow-card-title">Return Record</div>
+         <div class="borrow-card-meta">
+           ${recIdNum ? `<p><strong>ID:</strong> ${recIdNum}</p>` : ""}
+           ${recCourse ? `<p><strong>Course:</strong> ${recCourse}</p>` : ""}
+           ${recSubject ? `<p><strong>Subject:</strong> ${recSubject}</p>` : ""}
+           <p><strong>Borrowed:</strong> ${borrowDateStr}</p>
+           <p><strong>Due date:</strong> ${returnDateStr}</p>
+           <p><strong>Returned on:</strong> ${actualReturnStr}</p>
+           ${lentBy ? `<p><strong>Processed by:</strong> ${lentBy}</p>` : ""}
+         </div>
+         <div class="items-group"><div class="items-group-label">Items, Type &amp; Status</div><ul style="list-style:none;padding:0;margin:0;">${itemEntries}</ul></div>
+         <span class="status-badge status-returned">✅ Returned</span>
+       </div>`;
+     });
+   }
+
+   container.innerHTML = html;
  })
  .catch(() => {
- container.innerHTML = "<div class='empty-state' style='color:var(--danger);'>Failed to load records. Please try again.</div>";
+   container.innerHTML = "<div class='empty-state' style='color:var(--danger);'>Failed to load records. Please try again.</div>";
  });
 }
 </script>
