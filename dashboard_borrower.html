@@ -225,21 +225,6 @@
  .items-page-btn:hover:not(:disabled) { background: var(--primary); color: white; border-color: var(--primary); transform: none; box-shadow: none; }
  .items-page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
  .items-page-info { font-size: 12px; color: var(--text-muted); font-weight: 500; text-align: center; flex: 1; }
-
- /* ── Print / PDF styles ── */
- @media print {
-   body > *:not(#summaryPrintArea) { display: none !important; }
-   #summaryPrintArea {
-     display: block !important;
-     position: static !important;
-     font-family: 'DM Sans', sans-serif;
-     color: #1a3333;
-     max-width: 680px;
-     margin: 0 auto;
-     padding: 20px;
-   }
-   .no-print { display: none !important; }
- }
  </style>
 </head>
 <body class="dashboard-body">
@@ -491,9 +476,7 @@
  <div id="summaryList"></div>
  </div>
  </div>
- <div id="summaryPrintArea" style="display:none;"></div>
-
-</div><!-- /dashboard-main -->
+ </div><!-- /dashboard-main -->
 
 <script src="app.js"></script>
 <script>
@@ -1786,93 +1769,126 @@ function downloadRecordPDF(idx) {
   const userID    = localStorage.getItem("userIDNumber") || localStorage.getItem("userID") || "—";
   const printDate = new Date().toLocaleString();
 
-  const printArea = document.getElementById("summaryPrintArea");
-  printArea.innerHTML = `
-    <style>
-      @media print {
-        body > *:not(#summaryPrintArea) { display: none !important; }
-        #summaryPrintArea { display: block !important; }
-        .no-print { display: none !important; }
-      }
-      #summaryPrintArea {
-        font-family: 'DM Sans', sans-serif;
-        color: #1a3333;
-        max-width: 640px;
-        margin: 0 auto;
-        padding: 28px 24px;
-        background: white;
-      }
-      .pdf-header { border-bottom: 3px solid #0d4f4f; padding-bottom: 14px; margin-bottom: 22px; }
-      .pdf-logo { font-size: 20px; font-weight: 900; color: #0d4f4f; letter-spacing: 1px; margin: 0 0 2px; }
-      .pdf-logo-sub { font-size: 10px; color: #999; letter-spacing: 3px; text-transform: uppercase; margin: 0 0 10px; }
-      .pdf-borrower { font-size: 12px; color: #555; line-height: 1.9; }
-      .pdf-borrower strong { color: #0d4f4f; }
-      .pdf-card {
-        border: 1px solid #d0e4de;
-        border-left: 5px solid ${rec.cardBorderColor.replace('var(--success)','#1a7a4a').replace('var(--danger)','#c0392b')};
-        border-radius: 10px;
-        padding: 16px 18px;
-        background: ${rec.cardBg.replace('var(--surface)','#ffffff')};
-        margin-bottom: 18px;
-      }
-      .pdf-card-title { font-weight: 700; font-size: 15px; ${rec.cardTitleColor.replace('var(--danger)','#c0392b')} margin-bottom: 10px; }
-      .pdf-meta { font-size: 12px; color: #666; line-height: 2; margin-bottom: 12px; }
-      .pdf-meta strong { color: #1a3333; }
-      .pdf-items-label {
-        font-size: 10px; text-transform: uppercase; letter-spacing: 0.7px;
-        font-weight: 700; color: #888; margin-bottom: 8px;
-      }
-      .pdf-items-wrap { background: #f4faf7; border: 1px solid #d0e4de; border-radius: 8px; padding: 10px 14px; }
-      .pdf-items-wrap ul { list-style: none; padding: 0; margin: 0; }
-      .pdf-items-wrap ul li {
-        font-size: 12px; padding: 5px 0;
-        border-bottom: 1px solid #e0eeea;
-        display: flex; justify-content: space-between; align-items: center; gap: 6px;
-      }
-      .pdf-items-wrap ul li:last-child { border-bottom: none; }
-      .pdf-status { margin-top: 12px; }
-      .pdf-footer { margin-top: 30px; border-top: 1px solid #d0e4de; padding-top: 10px; font-size: 10px; color: #bbb; text-align: center; }
-    </style>
+  const borderColor = rec.cardBorderColor.replace('var(--success)','#1a7a4a').replace('var(--danger)','#c0392b');
+  const bgColor     = rec.cardBg.replace('var(--surface)','#ffffff');
+  const titleColor  = rec.cardTitleColor.replace('var(--danger)','#c0392b');
 
-    <div class="pdf-header">
-      <div class="pdf-logo">CHS PROJECT VITAL</div>
-      <div class="pdf-logo-sub">Virtual &bull; Inventory &bull; Tracking &bull; Logging</div>
-      <div class="pdf-borrower">
-        <strong>Borrower:</strong> ${userName} &nbsp;&nbsp;
-        <strong>ID:</strong> ${userID}<br>
-        <strong>Printed:</strong> ${printDate}
-      </div>
+  const win = window.open('', '_blank', 'width=700,height=900');
+  win.document.write(`<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Return Record — CHS VITAL</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    color: #1a3333;
+    background: white;
+    padding: 32px 28px;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+  .pdf-header {
+    border-bottom: 3px solid #0d4f4f;
+    padding-bottom: 14px;
+    margin-bottom: 22px;
+  }
+  .pdf-logo { font-size: 20px; font-weight: 900; color: #0d4f4f; letter-spacing: 1px; margin-bottom: 2px; }
+  .pdf-logo-sub { font-size: 10px; color: #999; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 10px; }
+  .pdf-borrower { font-size: 12px; color: #555; line-height: 1.9; }
+  .pdf-borrower strong { color: #0d4f4f; }
+  .pdf-card {
+    border: 1px solid #d0e4de;
+    border-left: 5px solid ${borderColor};
+    border-radius: 10px;
+    padding: 16px 18px;
+    background: ${bgColor};
+    margin-bottom: 18px;
+  }
+  .proc-badge {
+    display: inline-flex;
+    background: #f0faf6;
+    border: 1px solid #b0dcc8;
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #0d4f4f;
+    margin-bottom: 10px;
+  }
+  .pdf-card-title { font-weight: 700; font-size: 15px; color: ${titleColor || '#0d4f4f'}; margin-bottom: 10px; }
+  .pdf-meta { font-size: 12px; color: #666; line-height: 2; margin-bottom: 12px; }
+  .pdf-meta strong { color: #1a3333; }
+  .items-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.7px;
+    font-weight: 700; color: #888; margin-bottom: 8px;
+  }
+  .items-wrap { background: #f4faf7; border: 1px solid #d0e4de; border-radius: 8px; padding: 10px 14px; }
+  .items-wrap ul { list-style: none; padding: 0; margin: 0; }
+  .items-wrap ul li {
+    font-size: 12px; padding: 5px 0;
+    border-bottom: 1px solid #e0eeea;
+    display: flex; justify-content: space-between; align-items: center; gap: 6px;
+  }
+  .items-wrap ul li:last-child { border-bottom: none; }
+  .pdf-status { margin-top: 12px; }
+  .status-badge {
+    display: inline-block; font-size: 11px; font-weight: 700;
+    padding: 3px 12px; border-radius: 20px;
+  }
+  .status-returned { background: #d4f3e8; color: #1a6e4a; }
+  .pdf-footer {
+    margin-top: 28px; border-top: 1px solid #d0e4de;
+    padding-top: 10px; font-size: 10px; color: #bbb; text-align: center;
+  }
+  .print-btn {
+    display: block; margin: 0 auto 24px;
+    padding: 10px 28px; background: #0d4f4f; color: white;
+    border: none; border-radius: 8px; font-size: 14px; font-weight: 700;
+    cursor: pointer; font-family: 'DM Sans', sans-serif;
+  }
+  @media print { .print-btn { display: none !important; } }
+</style>
+</head>
+<body>
+  <button class="print-btn" onclick="window.print()">🖨 Print / Save as PDF</button>
+
+  <div class="pdf-header">
+    <div class="pdf-logo">CHS PROJECT VITAL</div>
+    <div class="pdf-logo-sub">Virtual &bull; Inventory &bull; Tracking &bull; Logging</div>
+    <div class="pdf-borrower">
+      <strong>Borrower:</strong> ${userName}&nbsp;&nbsp;<strong>ID:</strong> ${userID}<br>
+      <strong>Printed:</strong> ${printDate}
     </div>
+  </div>
 
-    <div class="pdf-card">
-      ${rec.proc ? `<div style="display:inline-flex;background:#f0faf6;border:1px solid #b0dcc8;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;color:#0d4f4f;margin-bottom:10px;">${rec.proc}</div>` : ""}
-      <div class="pdf-card-title">${rec.cardTitleLabel}</div>
-      <div class="pdf-meta">
-        ${rec.idNum    ? `<div><strong>ID Number:</strong> ${rec.idNum}</div>` : ""}
-        ${rec.course   ? `<div><strong>Course:</strong> ${rec.course}</div>` : ""}
-        ${rec.subject  ? `<div><strong>Subject:</strong> ${rec.subject}</div>` : ""}
-        <div><strong>Borrowed:</strong> ${rec.borrowDateStr}</div>
-        <div><strong>Due date:</strong> ${rec.returnDateStr}</div>
-        <div><strong>Returned on:</strong> ${rec.actualReturnStr}</div>
-        ${rec.lentBy   ? `<div><strong>Processed by:</strong> ${rec.lentBy}</div>` : ""}
-      </div>
-      <div class="pdf-items-wrap">
-        <div class="pdf-items-label">Items, Type &amp; Status</div>
-        <ul>${rec.itemEntries}</ul>
-      </div>
-      <div class="pdf-status">${rec.statusBadge}</div>
+  <div class="pdf-card">
+    ${rec.proc ? `<div class="proc-badge">${rec.proc}</div>` : ''}
+    <div class="pdf-card-title">${rec.cardTitleLabel}</div>
+    <div class="pdf-meta">
+      ${rec.idNum   ? `<div><strong>ID Number:</strong> ${rec.idNum}</div>` : ''}
+      ${rec.course  ? `<div><strong>Course:</strong> ${rec.course}</div>` : ''}
+      ${rec.subject ? `<div><strong>Subject:</strong> ${rec.subject}</div>` : ''}
+      <div><strong>Borrowed:</strong> ${rec.borrowDateStr}</div>
+      <div><strong>Due date:</strong> ${rec.returnDateStr}</div>
+      <div><strong>Returned on:</strong> ${rec.actualReturnStr}</div>
+      ${rec.lentBy  ? `<div><strong>Processed by:</strong> ${rec.lentBy}</div>` : ''}
     </div>
-
-    <div class="pdf-footer">
-      CHS Project VITAL System &nbsp;&middot;&nbsp; Return Record &nbsp;&middot;&nbsp; ${printDate}
+    <div class="items-wrap">
+      <div class="items-label">Items, Type &amp; Status</div>
+      <ul>${rec.itemEntries}</ul>
     </div>
-  `;
+    <div class="pdf-status">${rec.statusBadge}</div>
+  </div>
 
-  printArea.style.display = "block";
-  setTimeout(() => {
-    window.print();
-    setTimeout(() => { printArea.style.display = "none"; }, 600);
-  }, 120);
+  <div class="pdf-footer">
+    CHS Project VITAL System &nbsp;&middot;&nbsp; Return Record &nbsp;&middot;&nbsp; ${printDate}
+  </div>
+</body>
+</html>`);
+  win.document.close();
 }
 
 </script>
