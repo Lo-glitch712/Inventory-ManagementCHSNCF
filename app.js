@@ -28,8 +28,8 @@ function setLoading(button, isLoading) {
 }
 
 //  Register (Borrower only) 
-function register() {
-  const button = event.target;
+function register(button) {
+  if (!button) button = event && event.target;
 
   const name            = document.getElementById('name').value.trim();
   const idNumber        = document.getElementById('idNumber') ? document.getElementById('idNumber').value.trim() : '';
@@ -84,8 +84,8 @@ function register() {
 }
 
 //  Login 
-function login() {
-  const button = event.target;
+function login(button) {
+  if (!button) button = event && event.target;
 
   const email    = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value.trim();
