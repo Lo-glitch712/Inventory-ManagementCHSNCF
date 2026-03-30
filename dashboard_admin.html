@@ -262,15 +262,6 @@
  <span id="alertsCount" style="display:none;"></span>
  <span id="borrowedCount" style="display:none;"></span>
 
- <!-- TAB: By Shelf -->
- <div id="shelf-tab" class="tab-content">
- <div class="card">
- <h3> Inventory by Shelf / Location</h3>
- <p style="color:var(--text-muted);font-size:14px;margin-bottom:18px;">Items grouped by their storage location.</p>
- <div id="shelfGrid"></div>
- </div>
- </div>
-
  <!-- TAB: Add Stock -->
  <div id="addstock-tab" class="tab-content">
  <div class="card">
@@ -516,7 +507,6 @@ function updateSuggestions() {
 // Arrow Tab Navigation 
 const ADMIN_TABS = [
  { id: 'inventory-tab', label: 'Inventory' },
- { id: 'shelf-tab', label: 'By Shelf' },
  { id: 'addstock-tab', label: 'Add Stock' },
  { id: 'alerts-tab', label: 'Alerts' },
  { id: 'borrowed-tab', label: 'Borrows' },
@@ -554,7 +544,6 @@ function goToAdminTab(idx) {
  updateAdminTabNav();
  const tabId = ADMIN_TABS[_adminTabIdx].id;
  if (tabId === 'borrowed-tab') loadBorrowedItemsTracking();
- if (tabId === 'shelf-tab') renderShelfView();
  if (tabId === 'addstock-tab') renderAddStock();
  if (tabId === 'alerts-tab') renderAlerts();
  if (tabId === 'procedures-tab') renderProceduresManager();
@@ -906,9 +895,8 @@ function loadItems() {
  _invPage = 1;
  renderInvPage();
  renderAlerts();
- // Also refresh shelf/addstock views if they are currently active
+ // Refresh addstock view if currently active
  const activeTab = ADMIN_TABS[_adminTabIdx] ? ADMIN_TABS[_adminTabIdx].id : '';
- if (activeTab === 'shelf-tab') renderShelfView();
  if (activeTab === 'addstock-tab') renderAddStock();
  })
  .catch(() => showNotification("Failed to load inventory","error"));
