@@ -1,4 +1,4 @@
-const API = "https://script.google.com/macros/s/AKfycbyDnEdEN4PaSW080EHjqCdrYFa8ho4T-BaIp9uQ6rc4bZQutfbPBx8oax9wkNnWzewe/exec";
+const API = "https://script.google.com/macros/s/AKfycbzBC2scdAPq_gC9ZUZgYvYlNvnA46COG5_U8xNjSBlk3VUGpT49XutLXyf1Ds9AsMCB/exec";
 
 //  Notifications 
 function showNotification(message, type = 'info') {
