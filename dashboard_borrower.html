@@ -3,144 +3,228 @@
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>Admin Dashboard — CHS VITAL System</title>
+ <title>Borrower Dashboard — CHS VITAL System</title>
  <link rel="stylesheet" href="style.css">
+ <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
  <style>
- .modal { justify-content: center; align-items: center; padding: 20px; }
+ .borrow-card {
+ background: var(--surface);
+ border: 1px solid var(--border);
+ border-left: 4px solid var(--primary);
+ border-radius: var(--radius);
+ padding: 18px 20px;
+ margin-bottom: 14px;
+ }
+ .borrow-card.overdue { border-left-color: var(--danger); background: #fff8f8; }
+ .borrow-card-title { font-weight: 700; color: var(--primary); font-size: 15px; margin-bottom: 6px; }
+ .borrow-card.overdue .borrow-card-title { color: var(--danger); }
+ .borrow-card-meta { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; line-height: 1.7; }
 
- .filter-btn {
+ .items-group {
+ background: var(--surface-alt);
+ border: 1px solid var(--border);
+ border-radius: 8px;
+ padding: 10px 14px;
+ margin-bottom: 12px;
+ }
+ .items-group-label {
+ font-size: 11px; text-transform: uppercase; letter-spacing: 0.7px;
+ font-weight: 700; color: var(--text-muted); margin-bottom: 8px;
+ }
+ .items-group ul, .return-modal-items ul, .qr-items-summary ul {
+ list-style: none; padding: 0; margin: 0;
+ }
+ .items-group ul li, .return-modal-items ul li, .qr-items-summary ul li {
+ font-size: 14px; color: var(--text-main); padding: 4px 0;
+ border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px;
+ }
+ .items-group ul li:last-child,
+ .return-modal-items ul li:last-child,
+ .qr-items-summary ul li:last-child { border-bottom: none; }
+ .items-group ul li::before { content:"•"; color:var(--primary); font-weight:900; font-size:16px; line-height:1; }
+ .return-modal-items ul li::before { content:""; font-size:13px; }
+ .qr-items-summary ul li::before { content:""; color:var(--success); font-weight:700; }
+
+ .borrow-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+
+ /* Tap Item Selector */
+ .tap-item {
+ display: flex;
+ align-items: center;
+ gap: 12px;
+ padding: 14px 16px;
+ border: 1.5px solid var(--border);
+ border-radius: 10px;
+ background: var(--surface);
+ cursor: pointer;
+ transition: all 0.18s ease;
+ margin-bottom: 8px;
+ user-select: none;
+ }
+ .tap-item:hover:not(.tap-item-disabled) {
+ border-color: var(--primary);
+ background: #f0faf6;
+ }
+ .tap-item-selected {
+ border-color: var(--primary) !important;
+ background: #e8f6f0 !important;
+ box-shadow: 0 2px 12px rgba(13,79,79,0.10);
+ }
+ .tap-item-disabled {
+ opacity: 0.45;
+ cursor: not-allowed;
+ }
+ .tap-check {
+ width: 26px; height: 26px;
+ background: var(--primary);
+ color: white;
+ border-radius: 50%;
+ align-items: center;
+ justify-content: center;
+ font-size: 13px;
+ font-weight: 700;
+ flex-shrink: 0;
+ display: none !important; /* hidden — selection shown by card background only */
+ }
+ .tap-qty-box {
+ align-items: center;
+ gap: 6px;
+ flex-shrink: 0;
+ }
+ .qty-btn {
+ width: 30px !important; height: 30px !important;
+ border-radius: 50% !important;
+ padding: 0 !important;
+ margin: 0 !important;
+ font-size: 18px !important;
+ font-weight: 700 !important;
+ background: var(--primary) !important;
+ color: white !important;
+ border: none !important;
+ cursor: pointer;
+ display: flex !important;
+ align-items: center;
+ justify-content: center;
+ line-height: 1;
+ min-width: unset !important;
+ }
+ .qty-btn:hover { background: var(--primary-dark) !important; }
+ .qty-num {
+ min-width: 26px;
+ text-align: center;
+ font-weight: 700;
+ font-size: 15px;
+ color: var(--primary);
+ }
+
+ .qr-result-box {
+ background: var(--surface); border: 1px solid var(--border);
+ border-radius: var(--radius-lg); padding: 24px; margin-top: 20px; text-align: center;
+ }
+ .qr-result-box .qr-title { font-family:'Playfair Display',serif; font-size:18px; color:var(--primary); margin-bottom:4px; }
+ .qr-result-box .qr-subtitle { font-size:13px; color:var(--text-muted); margin-bottom:16px; }
+
+ .qr-items-summary {
+ background: var(--surface-alt); border-radius:8px; padding:12px 16px; margin:12px 0 16px; text-align:left;
+ }
+ .qr-items-summary p { font-size:11px; text-transform:uppercase; letter-spacing:0.6px; font-weight:700; color:var(--text-muted); margin-bottom:8px; }
+
+ .return-modal-items {
+ background: var(--surface-alt); border-radius:8px; padding:12px 16px; margin:12px 0 16px; text-align:left;
+ }
+ .return-modal-items p { font-size:11px; text-transform:uppercase; letter-spacing:0.6px; font-weight:700; color:var(--text-muted); margin-bottom:8px; }
+
+ /* Arrow Tab Navigation */
+ .tab-nav {
+ display: flex;
+ align-items: center;
+ gap: 0;
+ margin-bottom: 6px;
+ background: var(--surface);
+ border-radius: var(--radius);
+ box-shadow: var(--shadow-sm);
+ overflow: hidden;
+ }
+ .tab-arrow {
+ flex: 0 0 48px;
+ height: 52px;
+ background: transparent;
+ border: none;
+ font-size: 20px;
+ font-weight: 700;
+ color: var(--primary);
+ cursor: pointer;
+ transition: all 0.2s;
+ margin: 0;
+ border-radius: 0;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ width: 48px;
+ }
+ .tab-arrow:hover:not(:disabled) {
+ background: var(--surface-alt);
+ transform: none;
+ box-shadow: none;
+ }
+ .tab-arrow:disabled { opacity: 0.25; cursor: not-allowed; }
+ .tab-indicator-wrap {
+ flex: 1;
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+ justify-content: center;
+ padding: 10px 8px 8px;
+ border-left: 1px solid var(--border);
+ border-right: 1px solid var(--border);
+ }
+ .tab-label {
+ font-size: 14px;
+ font-weight: 700;
+ color: var(--primary);
+ font-family: 'DM Sans', sans-serif;
+ }
+ .tab-dots {
+ display: flex;
+ gap: 6px;
+ margin-top: 5px;
+ }
+ .tab-dot {
+ width: 7px; height: 7px;
+ border-radius: 50%;
+ background: var(--border);
+ transition: all 0.25s;
+ }
+ .tab-dot.active {
+ background: var(--primary);
+ transform: scale(1.25);
+ }
+
+ /* Items pagination */
+ .items-page-nav {
+ display: flex;
+ align-items: center;
+ justify-content: space-between;
+ margin-top: 10px;
+ gap: 8px;
+ }
+ .items-page-btn {
  padding: 7px 16px;
  font-size: 13px;
  font-weight: 600;
  border: 1.5px solid var(--border);
- border-radius: 20px;
+ border-radius: 8px;
  background: var(--surface);
- color: var(--text-muted);
+ color: var(--primary);
  cursor: pointer;
- transition: all 0.2s ease;
+ transition: all 0.2s;
  font-family: 'DM Sans', sans-serif;
- margin-top: 0;
  width: auto;
+ margin: 0;
  }
- .filter-btn:hover { border-color: var(--primary); color: var(--primary); transform: none; box-shadow: none; }
- .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-
- /* Stock badge */
- .stock-badge {
- display: inline-block;
- padding: 3px 10px;
- border-radius: 20px;
- font-size: 12px;
- font-weight: 700;
- }
- .stock-ok { background: #d4f3e8; color: #1a6e4a; }
- .stock-low { background: #fff3cd; color: #8a6400; }
- .stock-out { background: #fde8e8; color: var(--danger); }
-
- /* Type pill */
- .type-pill {
- display: inline-block;
- padding: 3px 10px;
- border-radius: 20px;
- font-size: 12px;
- font-weight: 600;
- }
- .type-consumable { background: #e8f0ff; color: #2d4fa0; }
- .type-nonconsumable { background: #f0faf6; color: #1a5a3e; }
-
- /* Action buttons in table */
- .tbl-btn {
- padding: 5px 12px !important;
- font-size: 12px !important;
- width: auto !important;
- margin: 2px !important;
- border-radius: 6px !important;
- }
-
- /* Arrow Tab Navigation */
- .tab-nav {
- display: flex; align-items: center;
- margin-bottom: 20px; background: var(--surface);
- border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden;
- }
- .tab-arrow {
- flex: 0 0 48px; height: 52px; background: transparent; border: none;
- font-size: 20px; font-weight: 700; color: var(--primary); cursor: pointer;
- transition: background 0.2s; margin: 0; border-radius: 0;
- display: flex; align-items: center; justify-content: center; width: 48px;
- }
- .tab-arrow:hover:not(:disabled) { background: var(--surface-alt); transform: none; box-shadow: none; }
- .tab-arrow:disabled { opacity: 0.25; cursor: not-allowed; }
- .tab-indicator-wrap {
- flex: 1; display: flex; flex-direction: column; align-items: center;
- justify-content: center; padding: 10px 8px 8px;
- border-left: 1px solid var(--border); border-right: 1px solid var(--border); min-width: 0;
- }
- .tab-label {
- font-size: 14px; font-weight: 700; color: var(--primary);
- font-family: 'DM Sans', sans-serif; white-space: nowrap;
- overflow: hidden; text-overflow: ellipsis; max-width: 100%;
- }
- .tab-dots { display: flex; gap: 6px; margin-top: 5px; }
- .tab-dot {
- width: 7px; height: 7px; border-radius: 50%; background: var(--border);
- transition: all 0.25s; cursor: pointer;
- }
- .tab-dot.active { background: var(--primary); transform: scale(1.3); }
-
- /* Stock unit row */
- .stock-unit-row { display: flex; gap: 10px; align-items: flex-end; }
- .stock-unit-row .stock-input { flex: 1; }
- .stock-unit-row select.unit-sel { flex: 0 0 100px; }
-
- /* Procedure tags */
- .proc-tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 8px; }
- .proc-tag {
- padding: 5px 13px; border-radius: 20px;
- background: var(--surface-alt); border: 1.5px solid var(--border);
- font-size: 12px; font-weight: 600; color: var(--text-muted);
- cursor: pointer; transition: all 0.18s; user-select: none;
- font-family: 'DM Sans', sans-serif;
- }
- .proc-tag:hover { border-color: var(--primary); color: var(--primary); background: #edf5f3; }
- .proc-tag.active { background: var(--primary); color: white; border-color: var(--primary); }
-
- /* Suggested items hint */
- #suggestedItems {
- display: none; margin-top: 14px; padding: 14px 16px;
- background: #eaf4f0; border: 1px solid #b0d9cb;
- border-left: 4px solid var(--primary); border-radius: var(--radius);
- }
- #suggestedItems .sugg-title {
- font-size: 11px; font-weight: 700; text-transform: uppercase;
- letter-spacing: 0.7px; color: var(--primary); margin-bottom: 8px;
- }
- .sugg-chip {
- display: inline-block; background: white; border: 1px solid #b0d9cb;
- border-radius: 6px; padding: 4px 10px; font-size: 12px; font-weight: 600;
- color: var(--primary); margin: 3px 3px 3px 0;
- }
-
- /* Inventory pagination */
- .pagination {
- display: flex; align-items: center; justify-content: center;
- gap: 6px; margin-top: 18px; flex-wrap: wrap;
- }
- .pg-btn {
- padding: 7px 14px; font-size: 13px; font-weight: 600;
- border: 1.5px solid var(--border); border-radius: 8px;
- background: var(--surface); color: var(--text-muted);
- cursor: pointer; transition: all 0.2s; font-family: 'DM Sans', sans-serif;
- width: auto; margin: 0;
- }
- .pg-btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); transform: none; box-shadow: none; }
- .pg-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
- .pg-btn:disabled { opacity: 0.4; cursor: not-allowed; }
- .pg-info { font-size: 13px; color: var(--text-muted); font-weight: 500; }
-
- /* Add item grid */
- .add-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
- @media (max-width: 520px) { .add-grid { grid-template-columns: 1fr; } }
+ .items-page-btn:hover:not(:disabled) { background: var(--primary); color: white; border-color: var(--primary); transform: none; box-shadow: none; }
+ .items-page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+ .items-page-info { font-size: 12px; color: var(--text-muted); font-weight: 500; text-align: center; flex: 1; }
  </style>
 </head>
 <body class="dashboard-body">
@@ -151,19 +235,18 @@
 </div>
 
 <div class="navbar">
- <h1> Admin Dashboard</h1>
+ <h1> Borrower Dashboard</h1>
  <div class="navbar-right">
- <span>Welcome, <strong id="userName"></strong> <span id="roleTag"></span></span>
+ <span>Welcome, <strong id="userName"></strong></span>
  <button class="menu-toggle" onclick="toggleMenu()">&#9776;</button>
  </div>
 </div>
 
-<!-- Side Menu -->
 <div id="sideMenu" class="side-menu">
  <button class="close-btn" onclick="toggleMenu()">&#10005;</button>
  <div class="side-menu-header">
  <strong id="sideUserName">User</strong>
- <p id="sideUserRole">Role</p>
+ <p>Borrower</p>
  </div>
  <div class="menu-content">
  <button onclick="openProfile()" class="menu-btn"> My Profile</button>
@@ -174,7 +257,7 @@
 </div>
 
 <!-- Profile Modal -->
-<div id="profileModal" class="modal">
+<div id="profileModal" class="modal" style="justify-content:center;align-items:center;padding:20px;">
  <div class="modal-content">
  <div class="modal-header">
  <h3> My Profile</h3>
@@ -182,16 +265,18 @@
  </div>
  <div class="modal-body">
  <div class="form-group"><label>Full Name</label><input type="text" id="profileName" readonly style="background:#f4f7f6;color:#777;"></div>
- <div class="form-group"><label>Email</label><input type="email" id="profileEmail"></div>
+ <div class="form-group"><label>School ID Number</label><input type="text" id="profileIdNumber" placeholder="e.g., 2024-00123"></div>
+ <div class="form-group"><label>Email</label><input type="email" id="profileEmail" readonly style="background:#f4f7f6;color:#777;"></div>
  <div class="form-group"><label>Contact Number</label><input type="tel" id="profileContact"></div>
- <div class="form-group"><label>Department</label><input type="text" id="profileDepartment"></div>
+ <div class="form-group"><label>Department / Course</label><input type="text" id="profileDepartment"></div>
+ <div class="form-group"><label>Year Level</label><input type="number" id="profileYear"></div>
  <button onclick="saveProfile()"> Save Changes</button>
  </div>
  </div>
 </div>
 
 <!-- Password Modal -->
-<div id="passwordModal" class="modal">
+<div id="passwordModal" class="modal" style="justify-content:center;align-items:center;padding:20px;">
  <div class="modal-content" style="max-width:400px;">
  <div class="modal-header">
  <h3> Change Password</h3>
@@ -206,233 +291,209 @@
  </div>
 </div>
 
-<!-- Edit Item Modal -->
-<div id="editModal" class="modal">
- <div class="modal-content" style="max-width:500px;">
+<!-- Return QR Modal -->
+<div id="returnModal" class="modal" style="justify-content:center;align-items:center;padding:20px;">
+ <div class="modal-content" style="max-width:460px;">
  <div class="modal-header">
- <h3> Edit Item</h3>
- <button class="close-btn" onclick="closeEditModal()">&#10005;</button>
+ <h3> Return QR Code</h3>
+ <button class="close-btn" onclick="closeReturnModal()">&#10005;</button>
  </div>
- <div class="modal-body">
- <input type="hidden" id="editRowIndex">
- <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;">
- <div class="form-group"><label>Item Name</label><input id="editItem" type="text"></div>
- <div class="form-group"><label>Size / Variant</label><input id="editSize" type="text"></div>
- <div class="form-group"><label>Item Code</label><input id="editCode" type="text"></div>
- <div class="form-group"><label>Stock Quantity</label><input id="editStock" type="number" min="0"></div>
- <div class="form-group">
- <label>Item Type</label>
- <select id="editType">
- <option value="Consumable">Consumable</option>
- <option value="Non-Consumable">Non-Consumable</option>
- </select>
+ <div class="modal-body" style="text-align:center;">
+ <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px;">Show this QR code to the instructor or student assistant to process your return.
+ </p>
+ <div class="return-modal-items">
+ <p>Items to Return</p>
+ <ul id="returnItemsList"></ul>
  </div>
- <div class="form-group"><label>Storage Location</label><input id="editLocation" type="text"></div>
- </div>
- <div style="display:flex;gap:10px;margin-top:8px;">
- <button onclick="saveEditItem()" style="flex:1;"> Save Changes</button>
- <button onclick="closeEditModal()" style="flex:1;background:var(--surface-alt);color:var(--text-main);border:1.5px solid var(--border);margin-top:0;">Cancel</button>
- </div>
+ <canvas id="returnQRcode" style="display:block;margin:0 auto;"></canvas>
+ <p style="color:#bbb;font-size:12px;margin-top:12px;">Stock will be restored automatically after scanning</p>
+ <button onclick="saveReturnQR()" style="width:auto;padding:10px 24px;margin-top:12px;background:var(--primary);"> Save QR Image</button>
  </div>
  </div>
 </div>
 
-<!-- Borrower Detail Modal -->
-<div id="borrowerDetailModal" class="modal">
- <div class="modal-content" style="max-width:540px;">
- <div class="modal-header">
- <h3 id="detailModalTitle">Borrower Details</h3>
- <button class="close-btn" onclick="closeDetailModal()">&#10005;</button>
- </div>
- <div class="modal-body" id="detailModalBody"></div>
- </div>
-</div>
-
-<!-- Dashboard Content -->
 <div class="dashboard-main">
+ <!-- Arrow tab navigation -->
  <div class="tab-nav" id="tabNav">
  <button class="tab-arrow" id="tabPrev" onclick="navTab(-1)" disabled></button>
  <div class="tab-indicator-wrap">
- <div class="tab-label" id="tabLabel"> Inventory</div>
+ <div class="tab-label" id="tabLabel"> Borrow Items</div>
  <div class="tab-dots" id="tabDots"></div>
  </div>
  <button class="tab-arrow" id="tabNext" onclick="navTab(1)"></button>
  </div>
- <!-- Hidden badges still updated by JS, read by updateAdminBadges() -->
- <span id="alertsCount" style="display:none;"></span>
- <span id="borrowedCount" style="display:none;"></span>
 
- <!-- TAB: Add Stock -->
- <div id="addstock-tab" class="tab-content">
+ <!-- TAB: Borrow -->
+ <div id="borrow-tab" class="tab-content active">
  <div class="card">
- <h3> Add Stock to Existing Items</h3>
- <p style="color:var(--text-muted);font-size:14px;margin-bottom:18px;">Enter the quantity to add to each item's current stock.</p>
- <div class="form-group" style="margin-bottom:16px;">
- <input id="addStockSearch" type="text" placeholder=" Search items..."
- oninput="filterAddStock()"
+ <h3> Equipment Borrowing Form</h3>
+
+ <!-- Borrower Info Section -->
+ <div style="background:var(--surface-alt);border:1px solid var(--border);border-left:4px solid var(--primary);border-radius:10px;padding:16px 18px;margin-bottom:20px;">
+ <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--primary);margin-bottom:14px;"> Borrower Information</div>
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;">
+ <div class="form-group">
+ <label>Borrower Name</label>
+ <input type="text" id="borrowerNameDisplay" readonly
+ style="background:#f4f7f6;color:#555;font-weight:600;">
+ </div>
+ <div class="form-group">
+ <label>ID Number</label>
+ <input type="text" id="borrowerIdNumber" readonly
+ style="background:#f4f7f6;color:#555;font-weight:600;">
+ </div>
+ <div class="form-group">
+ <label>Course, Year &amp; Section <span style="color:var(--danger);">*</span></label>
+ <input type="text" id="borrowerCourse" placeholder="e.g., BSN 2C">
+ </div>
+ <div class="form-group">
+ <label>Date</label>
+ <input type="date" id="borrowerDate" readonly
+ style="background:#f4f7f6;color:#555;">
+ </div>
+ </div>
+ </div>
+
+ <!-- Procedure Details Section -->
+ <div style="background:var(--surface-alt);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:10px;padding:16px 18px;margin-bottom:20px;">
+ <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--primary);margin-bottom:14px;"> Procedure Details</div>
+
+ <!-- Extra fields row -->
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;">
+ <div class="form-group">
+ <label>Procedure (Optional)</label>
+ <select id="borrowProcedure" onchange="onProcedureDropdownChange()">
+ <option value="">— Select Procedure —</option>
+ </select>
+ </div>
+ <div class="form-group">
+ <label>Subject <span style="color:var(--danger);">*</span></label>
+ <input type="text" id="borrowSubject" placeholder="e.g., NCM 101">
+ </div>
+ <div class="form-group">
+ <label>Attested By <span style="color:var(--danger);">*</span></label>
+ <select id="borrowAttestedBy">
+ <option value="">— Select —</option>
+ <option value="Clinical Instructor">Clinical Instructor</option>
+ <option value="Student Assistant">Student Assistant</option>
+ </select>
+ </div>
+ <div class="form-group">
+ <label>Room <span style="color:var(--danger);">*</span></label>
+ <input type="text" id="borrowNotes" placeholder="e.g., Room 201, Lab A">
+ </div>
+ </div>
+ </div>
+
+
+
+
+ <!-- Shelf / Location Filter -->
+ <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
+ <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--primary);"> Select Items to Borrow</div>
+ <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+ <span style="font-size:12px;color:var(--text-muted);font-weight:600;"> Shelf:</span>
+ <select id="shelfFilter" onchange="filterItems()" style="padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text-main);background:var(--surface);outline:none;cursor:pointer;">
+ <option value="">All Shelves</option>
+ </select>
+ </div>
+ </div>
+ <div class="form-group">
+ <input id="searchItems" type="text" placeholder=" Search by name..." oninput="filterItems()"
  style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text-main);background:var(--surface);outline:none;transition:border-color 0.2s;"
  onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
  </div>
- <div id="addStockGrid"></div>
+ <div id="itemsList"></div>
+ <div class="items-page-nav" id="itemsPageNav" style="display:none;">
+ <button class="items-page-btn" id="itemsPrev" onclick="itemsPageNav(-1)">← Prev</button>
+ <span class="items-page-info" id="itemsPageInfo"></span>
+ <button class="items-page-btn" id="itemsNext" onclick="itemsPageNav(1)">Next →</button>
+ </div>
+
+ <!-- Return Date -->
+ <div class="form-group" style="margin-top:20px;">
+ <label style="font-size:13px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:10px;">Expected Return Date &amp; Time
+ </label>
+ <div style="position:relative;">
+ <input type="datetime-local" id="returnDate" required
+ style="width:100%;padding:14px 16px 14px 44px;border:2px solid var(--border);border-radius:12px;font-size:15px;font-family:'DM Sans',sans-serif;color:var(--text-main);background:var(--surface);outline:none;transition:border-color 0.2s,box-shadow 0.2s;box-sizing:border-box;appearance:none;-webkit-appearance:none;"
+ onfocus="this.style.borderColor='var(--primary)';this.style.boxShadow='0 0 0 3px rgba(13,79,79,0.12)'"
+ onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+ <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;pointer-events:none;"></span>
+ </div>
+ <div id="returnDateQuick" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;"></div>
+ </div>
+
+ <!-- Confirmation Checkbox -->
+ <div style="background:#f0faf6;border:1px solid #b8e8d4;border-radius:10px;padding:14px 16px;margin-top:18px;display:flex;align-items:flex-start;gap:12px;">
+ <input type="checkbox" id="borrowConfirm"
+ style="width:18px;height:18px;margin-top:2px;accent-color:var(--primary);flex-shrink:0;cursor:pointer;">
+ <label for="borrowConfirm" style="font-size:13px;color:var(--text-main);line-height:1.6;cursor:pointer;font-weight:500;">I confirm that the information above is accurate and I agree to return all borrowed items in good condition by the due date.
+ </label>
+ </div>
+
+ <button onclick="generateQR()" style="margin-top:18px;"> Generate Borrow QR Code</button>
+
+ <div id="qrResultBox" class="qr-result-box" style="display:none;">
+ <p class="qr-title">Borrow QR Code</p>
+ <p class="qr-subtitle">Show this to the instructor or SA at the counter</p>
+ <canvas id="qrcode" style="display:block;margin:0 auto;"></canvas>
+ <div class="qr-items-summary">
+ <p>Items Selected</p>
+ <ul id="qrItemsList"></ul>
+ </div>
+ <div id="qrFormSummary" style="background:var(--surface-alt);border-radius:8px;padding:12px 16px;margin:12px 0;text-align:left;font-size:13px;color:var(--text-muted);line-height:2;"></div>
+ <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:8px;">
+ <button onclick="saveQRCode()" style="width:auto;padding:10px 22px;background:var(--success);margin-top:0;"> Save QR Image</button>
+ <button onclick="resetBorrowForm()" style="width:auto;padding:10px 22px;background:var(--surface-alt);color:var(--text-main);border:1.5px solid var(--border);margin-top:0;">↩ New Borrow</button>
+ </div>
+ </div>
  </div>
  </div>
 
- <!-- TAB: Stock Alerts -->
- <div id="alerts-tab" class="tab-content">
- <div class="card">
- <h3> Stock Alerts</h3>
- <p style="color:var(--text-muted);font-size:14px;margin-bottom:18px;">Items that are out of stock or running low (≤ 5).</p>
- <div id="alertsList"></div>
- </div>
- </div>
- <div id="inventory-tab" class="tab-content active">
- <div class="card">
- <h3> Add New Item</h3>
- <div class="add-grid">
- <div class="form-group"><label>Item Name</label><input id="item" type="text" placeholder="e.g., Stethoscope"></div>
- <div class="form-group"><label>Size / Variant</label><input id="size" type="text" placeholder="e.g., Large, Adult"></div>
- <div class="form-group"><label>Item Code</label><input id="code" type="text" placeholder="e.g., STH-001"></div>
- <div class="form-group">
- <label>Stock Quantity &amp; Unit</label>
- <div class="stock-unit-row">
- <input id="stock" type="number" placeholder="0" min="0" class="stock-input">
- <select id="stockUnit" class="unit-sel">
- <option value="pcs">pcs</option><option value="boxes">boxes</option>
- <option value="sets">sets</option><option value="rolls">rolls</option>
- <option value="pairs">pairs</option><option value="bottles">bottles</option>
- </select>
- </div>
- </div>
- <div class="form-group">
- <label>Item Type</label>
- <select id="type">
- <option value="">— Select type —</option>
- <option value="Consumable">Consumable</option>
- <option value="Non-Consumable">Non-Consumable</option>
- </select>
- </div>
- <div class="form-group"><label>Storage Location</label><input id="location" type="text" placeholder="e.g., Cabinet A1"></div>
- </div>
- <button onclick="addItem()" style="margin-top:16px;"> Add Item</button>
- </div>
-
- <div class="card">
- <h3> Inventory List</h3>
- <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;flex-wrap:wrap;">
- <input id="inventorySearch" type="text" placeholder=" Search items by name, code, or location..."
- oninput="searchAndPage()"
- style="flex:1;min-width:180px;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text-main);background:var(--surface);outline:none;transition:border-color 0.2s;"
- onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
- <span id="invTotalCount" style="font-size:13px;color:var(--text-muted);white-space:nowrap;"></span>
- </div>
- <div class="table-wrapper">
- <table id="inventoryTable"></table>
- </div>
- <div class="pagination" id="invPagination"></div>
- </div>
- </div>
-
- <!-- TAB: Borrows -->
+ <!-- TAB: My Items -->
  <div id="borrowed-tab" class="tab-content">
  <div class="card">
- <h3> Borrow Tracking</h3>
- <div id="warningContainer"></div>
- <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;align-items:center;">
- <button class="filter-btn active" onclick="setFilter('all',this)">All Borrowers</button>
- <button class="filter-btn" onclick="setFilter('borrowed',this)"> Active</button>
- <button class="filter-btn" onclick="setFilter('returned',this)"> Returned</button>
- <button class="filter-btn" onclick="setFilter('overdue',this)"> Overdue</button>
- <button id="downloadSummaryBtn" onclick="downloadReturnedSummary()"
-   style="display:none;margin-left:auto;padding:7px 16px;font-size:13px;font-weight:700;background:var(--success);color:white;border:none;border-radius:20px;cursor:pointer;font-family:'DM Sans',sans-serif;width:auto;margin-top:0;transition:all 0.2s;">
-   ⬇ Download Summary
- </button>
- </div>
- <div id="borrowerGrid"></div>
+ <h3> My Items</h3>
+ <div id="borrowedItemsList"></div>
  </div>
  </div>
 
- <!-- TAB: Procedures -->
- <div id="procedures-tab" class="tab-content">
+ <!-- TAB: Summary Sheet -->
+ <div id="summary-tab" class="tab-content">
  <div class="card">
- <h3>Procedures Manager</h3>
- <p style="color:var(--text-muted);font-size:14px;margin-bottom:18px;">Add or delete procedures. Click a procedure to manage the items listed under it.
- These procedures and their items are shown to borrowers.
+ <h3 style="margin:0 0 6px;">Return Summary Sheet</h3>
+ <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">Your complete borrow overview — active borrows, non-consumable items not yet returned, and completed returns with item types.
  </p>
-
- <!-- Add Procedure -->
- <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
- <input id="newProcName" type="text" placeholder="New procedure name..."
- style="flex:1;min-width:180px;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text-main);background:var(--surface);outline:none;transition:border-color 0.2s;"
- onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"
- onkeydown="if(event.key==='Enter') addProcedure()">
- <button onclick="addProcedure()" style="width:auto;padding:10px 22px;margin:0;">Add Procedure</button>
- </div>
-
- <!-- Procedure list -->
- <div id="proceduresManagerList"></div>
+ <div id="summaryList"></div>
  </div>
  </div>
-
- <!-- Procedure Items Edit Modal -->
- <div id="procedureModal" class="modal">
- <div class="modal-content" style="max-width:520px;">
- <div class="modal-header">
- <h3 id="procModalTitle">Edit Procedure Items</h3>
- <button class="close-btn" onclick="closeProcedureModal()">&#10005;</button>
- </div>
- <div class="modal-body">
- <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Items listed here will appear in the borrower's Procedures tab when they tap this procedure.
- </p>
- <div id="procModalItemsList" style="margin-bottom:16px;"></div>
- <!-- Add item to procedure -->
- <div style="display:flex;gap:10px;margin-top:4px;flex-wrap:wrap;">
- <input id="procNewItemInput" type="text" placeholder="Add item name (e.g., Stethoscope)..."
- style="flex:1;min-width:150px;padding:9px 13px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text-main);background:var(--surface);outline:none;transition:border-color 0.2s;"
- onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"
- onkeydown="if(event.key==='Enter') addItemToProcedure()">
- <button onclick="addItemToProcedure()" style="width:auto;padding:9px 18px;margin:0;font-size:13px;">Add Item</button>
- </div>
- <button onclick="closeProcedureModal()" style="margin-top:16px;background:var(--surface-alt);color:var(--text-main);border:1.5px solid var(--border);">Done</button>
- </div>
- </div>
- </div>
-
- <!-- TAB: Scanner -->
- <div id="scanner-tab" class="tab-content">
- <div class="card">
- <h3> QR Code Scanner</h3>
- <div class="hint-box">
- <strong>How scanning works:</strong><br>
- • <strong>First scan:</strong> Confirms borrow — stock is deducted<br>
- • <strong>Second scan (same QR):</strong> Confirms return — stock is restored
- </div>
- <p style="color:var(--text-muted);font-size:14px;margin-bottom:18px;">Open the scanner in a full-screen view for best camera performance.</p>
- <a href="scanner.html" style="display:inline-block;padding:12px 28px;background:var(--primary);color:white;border-radius:8px;font-weight:600;text-decoration:none;font-size:15px;transition:all 0.2s;"> Open Scanner</a>
- </div>
- </div>
-</div>
+ </div><!-- /dashboard-main -->
 
 <script src="app.js"></script>
 <script>
-let currentData = [];
-let allBorrowRecords = [];
-let currentFilter = 'all';
+let selectedItems = [];
+let itemNameMap = {}; // itemId → display name
+let itemTypeMap = {}; // itemId → "Consumable" | "Non-Consumable"
+let itemLocationMap = {}; // itemId → shelf/location string
 
 // Auth 
+// IMPORTANT: All localStorage keys are scoped per userID
+// so different borrower accounts never share data
+function getUserID() { return localStorage.getItem("userID") || ""; }
+function getUserName() { return localStorage.getItem("userName") || "User"; }
+function storageKey() { return `borrows_${getUserID()}`; }
+
 function checkAuth() {
- const id = localStorage.getItem("userID");
- const name = localStorage.getItem("userName");
- const role = localStorage.getItem("userRole");
+ const id = getUserID();
  if (!id) { window.location = "login.html"; return; }
+ document.getElementById("userName").textContent = getUserName();
+ document.getElementById("sideUserName").textContent = getUserName();
 
- document.getElementById("userName").textContent = name || "User";
- document.getElementById("sideUserName").textContent = name || "User";
- document.getElementById("sideUserRole").textContent = role || "";
-
- const roleColors = { "Clinical Instructor":"role-admin", "Student Assistant":"role-sa" };
- const tag = document.getElementById("roleTag");
- tag.className = "role-badge " + (roleColors[role] || "role-admin");
- tag.textContent = role || "";
+ ["profileModal","passwordModal","returnModal"].forEach(mid => {
+ const el = document.getElementById(mid);
+ if (el) el.addEventListener("click", e => { if (e.target === el) el.style.display = "none"; });
+ });
 }
 
 // Side Menu 
@@ -444,347 +505,102 @@ document.addEventListener("click", e => {
  menu.classList.remove("active");
 });
 
-// Procedure data 
-const PROCEDURES = [
- { id:'handwash', label:' Hand Washing' },
- { id:'wound', label:' Wound Care' },
- { id:'ie', label:' Internal Examination' },
- { id:'catheter', label:' Female Catheterization' },
- { id:'leopold', label:' Leopold\'s Maneuver' },
- { id:'perianal', label:' Perianal Flushing' },
- { id:'newborn', label:' Newborn Care' },
- { id:'intrapartum', label:' Intrapartum Care' },
- { id:'vitals', label:' Vital Signs' },
- { id:'injection', label:' Injection / IV' },
- { id:'ngt', label:' NGT Insertion' },
- { id:'cpr', label:' CPR / BLS' },
-];
-const PROC_ITEMS = {
- handwash: ['soap','alcohol','hand sanitizer','basin','towel','gloves','apron'],
- wound: ['gauze','bandage','dressing','iodine','antiseptic','forceps','scissors','tape','saline','cotton','syringe','gloves','basin'],
- ie: ['gloves','sterile gloves','lubricant','jelly','speculum','drape','basin','pad','underpad'],
- catheter: ['catheter','foley','urine bag','drainage bag','lubricant','jelly','sterile gloves','antiseptic','cotton','syringe','saline','basin','tape','drape'],
- leopold: ['stethoscope','doppler','fetoscope','measuring tape','tape measure','lubricant','jelly','gloves','drape'],
- perianal: ['basin','soap','cotton','gauze','gloves','towel','pad','underpad','forceps','antiseptic'],
- newborn: ['bulb syringe','suction','cord clamp','vitamin k','erythromycin','eye ointment','scale','blanket','towel','gloves','basin','thermometer','stethoscope','tape','measuring tape'],
- intrapartum: ['gloves','sterile gloves','scissors','clamp','cord clamp','basin','drape','suture','needle','syringe','iv','catheter','stethoscope','doppler','pad','underpad','gauze','cotton','antiseptic'],
- vitals: ['stethoscope','bp apparatus','thermometer','pulse oximeter','watch','penlight'],
- injection: ['syringe','needle','alcohol swab','tourniquet','iv catheter','tape','gloves','cotton'],
- ngt: ['ngt tube','syringe','tape','lubricant','tongue depressor','penlight','gloves','basin'],
- cpr: ['bvm','ambu bag','face shield','gloves','aed','suction catheter'],
-};
-let selectedAddProcs = new Set();
-
-function buildProcTags(containerId, selectedSet, onChangeCb) {
- const container = document.getElementById(containerId);
- if (!container) return;
- container.innerHTML = '';
- PROCEDURES.forEach(proc => {
- const tag = document.createElement('span');
- tag.className = 'proc-tag' + (selectedSet.has(proc.id) ? ' active' : '');
- tag.textContent = proc.label;
- tag.onclick = () => {
- if (selectedSet.has(proc.id)) { selectedSet.delete(proc.id); tag.classList.remove('active'); }
- else { selectedSet.add(proc.id); tag.classList.add('active'); }
- if (onChangeCb) onChangeCb();
- };
- container.appendChild(tag);
- });
-}
-
-function updateSuggestions() {
- const box = document.getElementById('suggestedItems');
- const chips = document.getElementById('suggChips');
- if (selectedAddProcs.size === 0) { box.style.display = 'none'; return; }
- const seen = new Set(), allItems = [];
- selectedAddProcs.forEach(pid => {
- (PROC_ITEMS[pid] || []).forEach(it => { if (!seen.has(it)) { seen.add(it); allItems.push(it); }});
- });
- box.style.display = 'block';
- chips.innerHTML = allItems.map(it => `<span class="sugg-chip"> ${it}</span>`).join('');
-}
-
+// Tabs 
 // Arrow Tab Navigation 
-const ADMIN_TABS = [
- { id: 'inventory-tab', label: 'Inventory' },
- { id: 'addstock-tab', label: 'Add Stock' },
- { id: 'alerts-tab', label: 'Alerts' },
- { id: 'borrowed-tab', label: 'Borrows' },
- { id: 'procedures-tab', label: 'Procedures' },
- { id: 'scanner-tab', label: 'Scanner' }
+const TAB_DEFS = [
+ { id: 'borrow-tab', label: 'Borrow Items' },
+ { id: 'borrowed-tab', label: 'My Items' },
+ { id: 'summary-tab', label: 'Summary Sheet' }
 ];
-let _adminTabIdx = 0;
+let _currentTabIdx = 0;
 
-function initAdminTabNav() {
+function initTabNav() {
  const dots = document.getElementById('tabDots');
- if (!dots) return;
  dots.innerHTML = '';
- ADMIN_TABS.forEach((t, i) => {
+ TAB_DEFS.forEach((t, i) => {
  const d = document.createElement('span');
  d.className = 'tab-dot' + (i === 0 ? ' active' : '');
- d.id = 'admindot_' + i;
- d.title = t.label.replace(/^\S+\s/, '');
- d.onclick = () => goToAdminTab(i);
+ d.id = 'dot_' + i;
+ d.onclick = () => goToTab(i);
+ d.style.cursor = 'pointer';
  dots.appendChild(d);
  });
- updateAdminTabNav();
- // Init modals backdrop close
- ['profileModal','passwordModal','editModal','borrowerDetailModal','procedureModal'].forEach(id => {
- const el = document.getElementById(id);
- if (el) el.addEventListener('click', e => { if (e.target === el) el.style.display = 'none'; });
- });
+ updateTabNav();
 }
 
-function navTab(dir) { goToAdminTab(_adminTabIdx + dir); }
+function navTab(dir) {
+ goToTab(_currentTabIdx + dir);
+}
 
-function goToAdminTab(idx) {
- _adminTabIdx = Math.max(0, Math.min(ADMIN_TABS.length - 1, idx));
+function goToTab(idx) {
+ _currentTabIdx = Math.max(0, Math.min(TAB_DEFS.length - 1, idx));
  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
- document.getElementById(ADMIN_TABS[_adminTabIdx].id).classList.add('active');
- updateAdminTabNav();
- const tabId = ADMIN_TABS[_adminTabIdx].id;
- if (tabId === 'borrowed-tab') loadBorrowedItemsTracking();
- if (tabId === 'addstock-tab') renderAddStock();
- if (tabId === 'alerts-tab') renderAlerts();
- if (tabId === 'procedures-tab') renderProceduresManager();
+ document.getElementById(TAB_DEFS[_currentTabIdx].id).classList.add('active');
+ updateTabNav();
+ const tabId = TAB_DEFS[_currentTabIdx].id;
+ if (tabId === 'borrowed-tab') loadBorrowedItems();
+ if (tabId === 'borrow-tab') filterItems();
+ if (tabId === 'summary-tab') loadSummarySheet();
 }
 
-function updateAdminTabNav() {
- const label = document.getElementById('tabLabel');
- const prev = document.getElementById('tabPrev');
- const next = document.getElementById('tabNext');
- if (label) label.textContent = ADMIN_TABS[_adminTabIdx].label;
- if (prev) prev.disabled = _adminTabIdx === 0;
- if (next) next.disabled = _adminTabIdx === ADMIN_TABS.length - 1;
- ADMIN_TABS.forEach((_, i) => {
- const d = document.getElementById('admindot_' + i);
- if (d) d.className = 'tab-dot' + (i === _adminTabIdx ? ' active' : '');
+function updateTabNav() {
+ document.getElementById('tabLabel').textContent = TAB_DEFS[_currentTabIdx].label;
+ document.getElementById('tabPrev').disabled = _currentTabIdx === 0;
+ document.getElementById('tabNext').disabled = _currentTabIdx === TAB_DEFS.length - 1;
+ TAB_DEFS.forEach((_, i) => {
+ const d = document.getElementById('dot_' + i);
+ if (d) d.className = 'tab-dot' + (i === _currentTabIdx ? ' active' : '');
  });
- // Show counts in label
- const ab = document.getElementById('alertsCount');
- const bb = document.getElementById('borrowedCount');
- if (_adminTabIdx === 3 && ab && ab.textContent) label.textContent = ' Alerts (' + ab.textContent + ')';
- if (_adminTabIdx === 4 && bb && bb.textContent) label.textContent = ' Borrows (' + bb.textContent + ')';
 }
 
-// backward compat
 function switchTab(tabName, btn) {
- const idx = ADMIN_TABS.findIndex(t => t.id === tabName);
- if (idx >= 0) goToAdminTab(idx);
-}
-
-// Shelf View 
-function renderShelfView() {
- const grid = document.getElementById("shelfGrid");
- if (!currentData || currentData.length === 0) {
- grid.innerHTML = "<div class='empty-state'><div class='icon'></div>No inventory items yet</div>";
- return;
- }
- // Group by location (col 6)
- const shelves = {};
- for (let i = 0; i < currentData.length; i++) {
- const row = currentData[i];
- const location = (row[6] || "Unassigned").trim();
- if (!shelves[location]) shelves[location] = [];
- shelves[location].push(row);
- }
- const sorted = Object.keys(shelves).sort();
- grid.innerHTML = "";
- const wrapper = document.createElement('div');
- wrapper.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;';
-
- sorted.forEach(loc => {
- const items = shelves[loc];
- const itemCount = items.length;
- const card = document.createElement('div');
- card.style.cssText = 'background:var(--surface);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;';
- card.innerHTML = `
- <div style="background:var(--primary);color:white;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
- <span style="font-weight:700;font-size:14px;"> ${loc}</span>
- <span style="background:rgba(255,255,255,0.2);font-size:12px;font-weight:700;padding:2px 10px;border-radius:20px;">${itemCount} item${itemCount>1?'s':''}</span>
- </div>
- <div style="padding:12px 16px;">
- ${items.map(row => {
- const stock = parseInt(row[4]) || 0;
- const type = row[5] || "";
- let stockColor = stock === 0 ? 'var(--danger)' : stock <= 5 ? 'var(--warning)' : 'var(--success)';
- return `
- <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
- <div>
- <div style="font-weight:600;font-size:14px;color:var(--primary);">${row[1]||'—'}${row[2]?' <em style="font-weight:400;font-size:12px;color:var(--text-muted);">— '+row[2]+'</em>':''}</div>
- <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${type}</div>
- </div>
- <div style="text-align:right;font-weight:700;font-size:14px;color:${stockColor};">${stock} <span style="font-size:11px;font-weight:400;color:var(--text-muted);">in stock</span></div>
- </div>`;
- }).join("")}
- </div>`;
- wrapper.appendChild(card);
- });
- grid.appendChild(wrapper);
-}
-
-// Add Stock 
-function renderAddStock() {
- const grid = document.getElementById("addStockGrid");
- if (!currentData || currentData.length === 0) {
- grid.innerHTML = "<div class='empty-state'><div class='icon'></div>No inventory items yet</div>";
- return;
- }
- grid.innerHTML = "";
- const wrapper = document.createElement('div');
- wrapper.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;';
-
- for (let i = 0; i < currentData.length; i++) {
- const row = currentData[i];
- const idx = i;
- const stock = parseInt(row[4]) || 0;
- const name = row[1] || "—";
- const size = row[2] ? ` — ${row[2]}` : "";
- const loc = row[6] || "—";
-
- const card = document.createElement('div');
- card.className = 'addstock-card';
- card.dataset.search = (name + size + loc).toLowerCase();
- card.style.cssText = 'background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:16px;transition:box-shadow 0.2s;';
- card.innerHTML = `
- <div style="font-weight:700;font-size:15px;color:var(--primary);margin-bottom:4px;">${name}<em style="font-weight:400;font-size:13px;color:var(--text-muted);">${size}</em></div>
- <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;"> ${loc}</div>
- <div style="font-size:13px;font-weight:600;color:var(--text-main);margin-bottom:14px;">Current: <span style="color:${stock<=5?'var(--danger)':'var(--success)'};">${stock}</span></div>
- <div style="display:flex;gap:8px;align-items:center;">
- <input type="number" min="1" placeholder="Qty" id="addqty_${idx}"
- style="flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;"
- onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"
- onkeydown="if(event.key==='Enter') addStockToItem(${idx}, this)">
- <button onclick="addStockToItem(${idx}, document.getElementById('addqty_${idx}'))"
- style="padding:9px 18px;background:var(--primary);color:white;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;width:auto;margin:0;">Add
- </button>
- </div>`;
- wrapper.appendChild(card);
- }
- grid.appendChild(wrapper);
-}
-
-function filterAddStock() {
- const q = document.getElementById("addStockSearch").value.toLowerCase();
- document.querySelectorAll(".addstock-card").forEach(c => {
- c.style.display = c.dataset.search.includes(q) ? "" : "none";
- });
-}
-
-function addStockToItem(rowIndex, inputEl) {
- const qty = parseInt(inputEl.value);
- if (!qty || qty < 1) { showNotification("Please enter a valid quantity","error"); return; }
-
- const currentStock = parseInt(currentData[rowIndex][4]) || 0;
- const newStock = currentStock + qty;
-
- fetch(API, { method:"POST", body: new URLSearchParams({ action:"updateItem", row:rowIndex, col:4, value:newStock }) })
- .then(r=>r.json())
- .then(data => {
- if (data.status === "success") {
- showNotification(` Added ${qty} to stock. New total: ${newStock}`,"success");
- inputEl.value = "";
- loadItems(); // Refresh inventory data
- setTimeout(() => renderAddStock(), 600);
- } else {
- showNotification("Failed to update stock","error");
- }
- })
- .catch(() => showNotification("Error updating stock","error"));
-}
-
-// Stock Alerts 
-function renderAlerts() {
- const container = document.getElementById("alertsList");
- if (!currentData || currentData.length === 0) {
- container.innerHTML = "<div class='empty-state'><div class='icon'></div>No inventory data</div>";
- return;
- }
-
- const outOfStock = [];
- const lowStock = [];
- for (let i = 0; i < currentData.length; i++) {
- const row = currentData[i];
- const stock = parseInt(row[4]) || 0;
- if (stock === 0) outOfStock.push({ row, idx: i });
- else if (stock <= 5) lowStock.push({ row, idx: i });
- }
-
- // Update badge
- const total = outOfStock.length + lowStock.length;
- const badge = document.getElementById("alertsCount");
- if (total > 0) { badge.textContent = total; badge.style.display = "inline-block"; }
- else badge.style.display = "none";
- if (typeof updateAdminTabNav === 'function') updateAdminTabNav();
-
- if (outOfStock.length === 0 && lowStock.length === 0) {
- container.innerHTML = "<div class='empty-state'><div class='icon'></div>All items have sufficient stock</div>";
- return;
- }
-
- let html = "";
-
- if (outOfStock.length > 0) {
- html += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--danger);margin-bottom:12px;"> Out of Stock (${outOfStock.length})</div>`;
- outOfStock.forEach(({ row }) => {
- html += alertCard(row, "out");
- });
- if (lowStock.length > 0) html += `<hr style="border:none;border-top:1px solid var(--border);margin:18px 0;">`;
- }
-
- if (lowStock.length > 0) {
- html += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--warning);margin-bottom:12px;"> Low Stock (${lowStock.length})</div>`;
- lowStock.forEach(({ row }) => {
- html += alertCard(row, "low");
- });
- }
-
- container.innerHTML = html;
-}
-
-function alertCard(row, type) {
- const stock = parseInt(row[4]) || 0;
- const isOut = type === "out";
- const bg = isOut ? '#fff5f5' : '#fffbea';
- const border = isOut ? 'var(--danger)' : 'var(--warning)';
- const label = isOut ? ' Out of Stock' : ` Low — only ${stock} left`;
- const labelClr = isOut ? 'var(--danger)' : '#8a6400';
- return `
- <div style="background:${bg};border:1px solid ${border};border-left:4px solid ${border};border-radius:10px;padding:14px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:12px;">
- <div>
- <div style="font-weight:700;font-size:14px;color:var(--primary);">${row[1]||'—'}${row[2]?' <em style="font-weight:400;font-size:13px;color:var(--text-muted);">— '+row[2]+'</em>':''}</div>
- <div style="font-size:12px;color:var(--text-muted);margin-top:2px;"> ${row[6]||'—'} &nbsp;|&nbsp; ${row[5]||'—'}</div>
- </div>
- <span style="font-size:12px;font-weight:700;color:${labelClr};white-space:nowrap;">${label}</span>
- </div>`;
+ const idx = TAB_DEFS.findIndex(t => t.id === tabName);
+ if (idx >= 0) goToTab(idx);
 }
 
 // Profile 
 function openProfile() {
  document.getElementById("sideMenu").classList.remove("active");
  document.getElementById("profileModal").style.display = "flex";
- fetch(API, { method:"POST", body: new URLSearchParams({ action:"getUserProfile", userID:localStorage.getItem("userID") }) })
- .then(r=>r.json()).then(data => {
+
+ fetch(API, { method:"POST", body: new URLSearchParams({ action:"getUserProfile", userID:getUserID() }) })
+ .then(r => r.json())
+ .then(data => {
  if (data.status === "success") {
  document.getElementById("profileName").value = data.name || "";
  document.getElementById("profileEmail").value = data.email || "";
  document.getElementById("profileContact").value = data.contact || "";
  document.getElementById("profileDepartment").value = data.department || "";
+ document.getElementById("profileYear").value = data.year || "";
+ if (document.getElementById("profileIdNumber"))
+ document.getElementById("profileIdNumber").value = data.idNumber || "";
+ } else {
+ showNotification("Could not load profile", "error");
  }
- });
+ })
+ .catch(() => showNotification("Error loading profile","error"));
 }
+
 function closeProfile() { document.getElementById("profileModal").style.display = "none"; }
+
 function saveProfile() {
  fetch(API, { method:"POST", body: new URLSearchParams({
- action:"updateUserProfile", userID:localStorage.getItem("userID"),
- email:document.getElementById("profileEmail").value,
- contact:document.getElementById("profileContact").value,
- department:document.getElementById("profileDepartment").value
+ action:"updateUserProfile", userID:getUserID(),
+ contact: document.getElementById("profileContact").value,
+ department: document.getElementById("profileDepartment").value,
+ year: document.getElementById("profileYear").value,
+ idNumber: document.getElementById("profileIdNumber") ? document.getElementById("profileIdNumber").value : ""
  })})
  .then(r=>r.json()).then(data => {
- if (data.status==="success") { showNotification(" Profile updated!","success"); closeProfile(); }
+ if (data.status==="success") {
+ // Update cached idNumber too
+ const newId = document.getElementById("profileIdNumber") ? document.getElementById("profileIdNumber").value : "";
+ if (newId) { localStorage.setItem("userIDNumber", newId); localStorage.setItem("borrowerIdNumber", newId); }
+ showNotification(" Profile updated!","success"); closeProfile();
+ }
  else showNotification("Failed to update profile","error");
- });
+ })
+ .catch(()=>showNotification("Error saving profile","error"));
 }
 
 // Password 
@@ -802,677 +618,1273 @@ function updatePassword() {
  if (np !== cp) { showNotification("Passwords do not match","error"); return; }
  if (np.length < 8){ showNotification("Password must be at least 8 characters","error"); return; }
  fetch(API, { method:"POST", body: new URLSearchParams({
- action:"changePassword", userID:localStorage.getItem("userID"),
+ action:"changePassword", userID:getUserID(),
  currentPassword:document.getElementById("currentPassword").value, newPassword:np
  })})
  .then(r=>r.json()).then(data => {
  if (data.status==="success") { showNotification(" Password changed!","success"); closePassword(); }
  else showNotification(data.message||"Failed to change password","error");
- });
+ })
+ .catch(()=>showNotification("Error changing password","error"));
 }
 
-// Modal backdrop close
-document.addEventListener("DOMContentLoaded", () => {
- ["profileModal","passwordModal","editModal","borrowerDetailModal"].forEach(id => {
- const el = document.getElementById(id);
- if (el) el.addEventListener("click", e => { if (e.target === el) el.style.display = "none"; });
- });
-});
+// Load Items (paginated) 
+let _allItemRows = []; // all inventory rows from server
+let _allItemRowsFull = []; // full raw rows (includes procedures field)
+let _filteredItems = []; // after search/shelf filter
+let _itemPage = 1;
+const ITEMS_PER_PAGE = 8;
 
-// Inventory search + pagination 
-let _filteredInvRows = [];
-let _invPage = 1;
-const INV_PER_PAGE = 10;
-
-function searchAndPage() { _invPage = 1; applyInvFilter(); }
-
-function applyInvFilter() {
- const q = (document.getElementById('inventorySearch')?.value || '').toLowerCase().trim();
- _filteredInvRows = currentData.filter(row =>
- [row[1],row[2],row[3],row[6]].some(v => (v||'').toString().toLowerCase().includes(q))
- );
- renderInvPage();
-}
-
-// legacy alias
-function filterInventoryTable() { applyInvFilter(); }
-
-function renderInvPage() {
- const table = document.getElementById('inventoryTable');
- const total = _filteredInvRows.length;
- const countEl = document.getElementById('invTotalCount');
- if (countEl) countEl.textContent = total ? total + ' item' + (total !== 1 ? 's' : '') : '';
- if (total === 0) {
- table.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#999;padding:30px;">No items found.</td></tr>';
- document.getElementById('invPagination').innerHTML = '';
- return;
- }
- const totalPages = Math.ceil(total / INV_PER_PAGE);
- _invPage = Math.min(_invPage, totalPages);
- const start = (_invPage - 1) * INV_PER_PAGE;
- const end = Math.min(start + INV_PER_PAGE, total);
- const pageRows = _filteredInvRows.slice(start, end);
-
- table.innerHTML = '<thead><tr><th>Item</th><th>Size</th><th>Code</th><th>Stock</th><th>Status</th><th>Type</th><th>Location</th><th>Actions</th></tr></thead><tbody></tbody>';
- const tbody = table.querySelector('tbody');
- pageRows.forEach(row => {
- const realIdx = currentData.indexOf(row);
- const stock = parseInt(row[4]) || 0;
- const unit = row[7] || 'pcs';
- const stockBadge = stock===0 ? '<span class="stock-badge stock-out">Out of Stock</span>'
- : stock<=3 ? `<span class="stock-badge stock-low">Low (${stock})</span>`
- : `<span class="stock-badge stock-ok">In Stock (${stock})</span>`;
- const typeVal = (row[5]||'').trim();
- const typePill = typeVal==='Consumable' ? '<span class="type-pill type-consumable">Consumable</span>'
- : typeVal==='Non-Consumable' ? '<span class="type-pill type-nonconsumable">Non-Consumable</span>'
- : `<span style="color:var(--text-muted);font-size:13px;">${typeVal||'—'}</span>`;
- const tr = document.createElement('tr');
- tr.innerHTML = `<td style="font-weight:600;">${row[1]||'—'}</td><td>${row[2]||'—'}</td><td><code style="font-size:12px;background:#f4f7f6;padding:2px 6px;border-radius:4px;">${row[3]||'—'}</code></td><td style="font-weight:700;color:${stock===0?'var(--danger)':stock<=3?'var(--warning)':'var(--text-main)'}">${stock} <span style="font-size:11px;font-weight:400;color:var(--text-muted);">${unit}</span></td><td>${stockBadge}</td><td>${typePill}</td><td>${row[6]||'—'}</td><td style="white-space:nowrap;"><button class="tbl-btn btn-success" onclick="openEditModal(${realIdx})" style="background:var(--primary);"> Edit</button><button class="tbl-btn btn-danger" onclick="deleteItem(${realIdx})"> Delete</button></td>`;
- tbody.appendChild(tr);
- });
- // Pagination
- const pg = document.getElementById('invPagination'); pg.innerHTML = '';
- if (totalPages <= 1) return;
- const prev = document.createElement('button'); prev.className='pg-btn'; prev.textContent='← Prev'; prev.disabled=_invPage===1;
- prev.onclick=()=>{_invPage--;renderInvPage();};
- pg.appendChild(prev);
- const ps=Math.max(1,Math.min(_invPage-2,totalPages-4)), pe=Math.min(totalPages,ps+4);
- for(let p=ps;p<=pe;p++){const b=document.createElement('button');b.className='pg-btn'+(p===_invPage?' active':'');b.textContent=p;b.onclick=(()=>{const pp=p;return()=>{_invPage=pp;renderInvPage();};})();pg.appendChild(b);}
- const info=document.createElement('span');info.className='pg-info';info.textContent=`${start+1}–${end} of ${total}`;pg.appendChild(info);
- const next=document.createElement('button');next.className='pg-btn';next.textContent='Next →';next.disabled=_invPage===totalPages;
- next.onclick=()=>{_invPage++;renderInvPage();};
- pg.appendChild(next);
-}
-
-// Inventory load 
 function loadItems() {
  fetch(API, { method:"POST", body: new URLSearchParams({ action:"getItems" }) })
  .then(r=>r.json())
  .then(data => {
- // Server already strips the header row, so data is pure data rows
- currentData = Array.isArray(data) ? data : [];
- _filteredInvRows = [...currentData];
- _invPage = 1;
- renderInvPage();
- renderAlerts();
- // Also refresh shelf/addstock views if they are currently active
- const activeTab = ADMIN_TABS[_adminTabIdx] ? ADMIN_TABS[_adminTabIdx].id : '';
- if (activeTab === 'shelf-tab') renderShelfView();
- if (activeTab === 'addstock-tab') renderAddStock();
- })
- .catch(() => showNotification("Failed to load inventory","error"));
-}
+ itemNameMap = {};
+ itemTypeMap = {};
+ itemLocationMap = {};
+ selectedItems = [];
+ _allItemRows = [];
+ _allItemRowsFull = [];
 
-// Edit Item Modal 
-function openEditModal(index) {
- const row = currentData[index];
- if (!row) return;
-
- document.getElementById("editRowIndex").value = index;
- document.getElementById("editItem").value = row[1] || "";
- document.getElementById("editSize").value = row[2] || "";
- document.getElementById("editCode").value = row[3] || "";
- document.getElementById("editStock").value = row[4] || "";
- document.getElementById("editType").value = row[5] || "Consumable";
- document.getElementById("editLocation").value = row[6] || "";
-
- document.getElementById("editModal").style.display = "flex";
-}
-
-function closeEditModal() {
- document.getElementById("editModal").style.display = "none";
-}
-
-function saveEditItem() {
- const index = document.getElementById("editRowIndex").value;
- const item = document.getElementById("editItem").value.trim();
- const size = document.getElementById("editSize").value.trim();
- const code = document.getElementById("editCode").value.trim();
- const stock = document.getElementById("editStock").value.trim();
- const type = document.getElementById("editType").value;
- const location = document.getElementById("editLocation").value.trim();
-
- if (!item) { showNotification("Item name is required","error"); return; }
- if (!code) { showNotification("Item code is required","error"); return; }
- if (stock==="") { showNotification("Stock quantity is required","error"); return; }
- if (!type) { showNotification("Please select item type","error"); return; }
- if (!location) { showNotification("Storage location is required","error"); return; }
-
- const btn = event.target;
- setLoading(btn, true);
-
- // Update each field
- const updates = [
- { col: 1, val: item },
- { col: 2, val: size },
- { col: 3, val: code },
- { col: 4, val: stock },
- { col: 5, val: type },
- { col: 6, val: location }
- ];
-
- Promise.all(updates.map(u =>
- fetch(API, { method:"POST", body: new URLSearchParams({ action:"updateItem", row:index, col:u.col, value:u.val }) })
- .then(r=>r.json())
- ))
- .then(results => {
- setLoading(btn, false);
- const allOk = results.every(r => r.status === "success");
- if (allOk) {
- showNotification(" Item updated!","success");
- closeEditModal();
- loadItems();
- } else {
- showNotification("Some fields failed to update","error");
- loadItems();
- }
- })
- .catch(() => {
- setLoading(btn, false);
- showNotification("Error updating item","error");
- });
-}
-
-function deleteItem(index) {
- const row = currentData[index];
- const name = row ? row[1] : "this item";
- if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
- fetch(API, { method:"POST", body: new URLSearchParams({ action:"deleteItem", row:index }) })
- .then(r=>r.json())
- .then(data => {
- if (data.status==="success") { showNotification("Item deleted","success"); loadItems(); }
- else showNotification("Failed to delete item","error");
- });
-}
-
-function addItem() {
- const item = document.getElementById("item").value.trim();
- const size = document.getElementById("size").value.trim();
- const code = document.getElementById("code").value.trim();
- const stock = document.getElementById("stock").value.trim();
- const unit = document.getElementById("stockUnit").value || "pcs";
- const type = document.getElementById("type").value;
- const location = document.getElementById("location").value.trim();
- if (!item) { showNotification("Please enter item name","error"); return; }
- if (!code) { showNotification("Please enter item code","error"); return; }
- if (!stock) { showNotification("Please enter stock quantity","error"); return; }
- if (isNaN(stock)||parseInt(stock)<0) { showNotification("Stock must be a valid number","error"); return; }
- if (!type) { showNotification("Please select item type","error"); return; }
- if (!location) { showNotification("Please enter storage location","error"); return; }
-
- const btn = event.target;
- setLoading(btn, true);
-
- fetch(API, { method:"POST", body: new URLSearchParams({
- action:"addItem", item, size, code, stock, unit, type, location,
- owner: localStorage.getItem("userID")
- })})
- .then(r=>r.json())
- .then(data => {
- setLoading(btn, false);
- if (data.status==="success") {
- showNotification(" Item added!","success");
- ["item","size","code","stock","location"].forEach(id => document.getElementById(id).value = "");
- document.getElementById("type").value = "";
- document.getElementById("stockUnit").value = "pcs";
- loadItems();
- } else showNotification(data.message||"Failed to add item","error");
- })
- .catch(() => { setLoading(btn, false); showNotification("Error adding item","error"); });
-}
-
-// Borrow Tracking 
-function setFilter(filter, btn) {
- currentFilter = filter;
- document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
- btn.classList.add('active');
- // Show download button only for Returned filter
- const dlBtn = document.getElementById('downloadSummaryBtn');
- if (dlBtn) dlBtn.style.display = filter === 'returned' ? 'inline-block' : 'none';
- renderBorrowerGrid();
-}
-
-function downloadReturnedSummary() {
- // Collect returned records
- const returnedRecords = allBorrowRecords.filter(r => r[6] === 'Returned');
- if (returnedRecords.length === 0) {
-   showNotification('No returned records to download', 'error');
-   return;
- }
-
- // Build CSV content
- const headers = ['Student Name','ID Number','Course','Subject','Procedure','Items','Borrow Date','Due Date','Actual Return Date','Processed By'];
- const rows = returnedRecords.map(r => {
-   const itemNames = resolveAdminItemNames(r[3]).join(' | ');
-   const borrowDate = r[4] ? new Date(r[4]).toLocaleString() : '—';
-   const dueDate = r[5] ? new Date(r[5]).toLocaleString() : '—';
-   const actualReturn = r[14] ? new Date(r[14]).toLocaleString() : '—';
-   return [
-     r[2]||'', r[10]||'', r[11]||'', r[12]||'', r[13]||'',
-     itemNames, borrowDate, dueDate, actualReturn, r[8]||''
-   ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(',');
- });
-
- const csv = [headers.join(','), ...rows].join('\n');
- const blob = new Blob([csv], { type: 'text/csv' });
- const url = URL.createObjectURL(blob);
- const a = document.createElement('a');
- a.href = url;
- a.download = `returned_summary_${new Date().toISOString().slice(0,10)}.csv`;
- a.click();
- URL.revokeObjectURL(url);
- showNotification(`Downloaded ${returnedRecords.length} returned record(s)`, 'success');
-}
-
-function loadBorrowedItemsTracking() {
- fetch(API, { method:"POST", body: new URLSearchParams({ action:"getAllBorrows" }) })
- .then(r=>r.json())
- .then(data => {
- allBorrowRecords = (!data || data.error) ? [] : data;
- renderBorrowerGrid();
- })
- .catch(() => showNotification("Failed to load borrow records","error"));
-}
-
-function renderBorrowerGrid() {
- const grid = document.getElementById("borrowerGrid");
- const warningContainer = document.getElementById("warningContainer");
- warningContainer.innerHTML = "";
- grid.innerHTML = "";
-
- if (allBorrowRecords.length === 0) {
- grid.innerHTML = "<div class='empty-state'><div class='icon'></div>No borrow records found</div>";
+ // GS getItems() already strips the header row (data.slice(1)),
+ // so data is a plain array of data rows. Empty if no items.
+ if (!Array.isArray(data) || data.length === 0) {
+ document.getElementById("itemsList").innerHTML = "<div class='empty-state'><div class='icon'></div>No items available</div>";
+ document.getElementById("itemsPageNav").style.display = "none";
  return;
  }
 
- const borrowerMap = {};
- let totalOverdue = 0;
+ populateShelfFilter(data);
 
- allBorrowRecords.forEach(record => {
- const studentId = record[1];
- const studentName = record[2] || "Unknown";
- const status = record[6];
- const returnDate = new Date(record[5]);
- const isOverdue = returnDate < new Date() && status === "Borrowed";
- if (isOverdue) totalOverdue++;
-
- const key = studentId + "||" + studentName;
- if (!borrowerMap[key]) {
- borrowerMap[key] = { studentId, studentName, records:[], activeCount:0, overdueCount:0, returnedCount:0 };
- }
- borrowerMap[key].records.push(record);
- if (status==="Borrowed" && !isOverdue) borrowerMap[key].activeCount++;
- if (isOverdue) borrowerMap[key].overdueCount++;
- if (status==="Returned") borrowerMap[key].returnedCount++;
- });
-
- if (totalOverdue > 0)
- warningContainer.innerHTML = `<div class="warning"> <strong>${totalOverdue} overdue item(s)!</strong> Please follow up with borrowers.</div>`;
-
- const totalActive = Object.values(borrowerMap).reduce((s,b)=>s+b.activeCount+b.overdueCount,0);
- const badge = document.getElementById('borrowedCount');
- if (totalActive > 0) { badge.textContent = totalActive; badge.style.display='inline-block'; }
- else badge.style.display='none';
- if (typeof updateAdminTabNav === 'function') updateAdminTabNav();
-
- const entries = Object.values(borrowerMap).filter(b => {
- if (currentFilter==='borrowed') return b.activeCount > 0 || b.overdueCount > 0;
- if (currentFilter==='returned') return b.returnedCount > 0 && b.activeCount === 0 && b.overdueCount === 0;
- if (currentFilter==='overdue') return b.overdueCount > 0;
- return true; // 'all'
- });
-
- if (entries.length === 0) {
- grid.innerHTML = "<div class='empty-state'><div class='icon'></div>No borrowers match this filter</div>";
- return;
+ // Loop starts at 0 — header already removed by server
+ // String() used on all fields because Google Sheets may return numbers instead of strings
+ for (let i = 0; i < data.length; i++) {
+ const row = data[i];
+ const itemId = String(row[0]);
+ const name = String(row[1] || "");
+ const size = String(row[2] || "");
+ const stock = parseInt(row[4]) || 0;
+ const type = String(row[5] || "");
+ const loc = String(row[6] || "");
+ itemNameMap[itemId] = size ? `${name} (${size})` : name;
+ itemTypeMap[itemId] = type;
+ itemLocationMap[itemId] = loc;
+ _allItemRows.push({ itemId, name, size, stock, type, loc, avail: stock > 0 });
+ _allItemRowsFull.push(row);
  }
 
- entries.sort((a,b) => {
- const sa = a.overdueCount>0?2:a.activeCount>0?1:0;
- const sb = b.overdueCount>0?2:b.activeCount>0?1:0;
- return sb-sa;
- });
+ _filteredItems = [..._allItemRows];
+ _itemPage = 1;
+ renderItemsPage();
+ })
+ .catch((err)=>showNotification("Failed to load items: " + (err.message||"network error"),"error"));
+}
 
- const wrapper = document.createElement('div');
- wrapper.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;';
+function renderItemsPage() {
+ const container = document.getElementById("itemsList");
+ const nav = document.getElementById("itemsPageNav");
+ const total = _filteredItems.length;
 
- entries.forEach(b => {
- const hasOverdue = b.overdueCount > 0;
- const hasActive = b.activeCount > 0;
- const totalItems = b.activeCount + b.overdueCount + b.returnedCount;
- let statusColor='var(--text-muted)', statusLabel=`${b.returnedCount} returned`, borderColor='var(--border)', bgColor='var(--surface)', pill='';
- if (hasOverdue) {
- statusColor='var(--danger)'; statusLabel=`${b.overdueCount} OVERDUE`; borderColor='var(--danger)'; bgColor='#fff5f5';
- pill=`<span style="background:#fde8e8;color:var(--danger);font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;"> OVERDUE</span>`;
- } else if (hasActive) {
- statusColor='var(--success)'; statusLabel=`${b.activeCount} active borrow${b.activeCount>1?'s':''}`; borderColor='var(--primary)'; bgColor='#f0faf6';
- pill=`<span style="background:#d4f3e8;color:var(--success);font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;">Active</span>`;
- } else {
- pill=`<span style="background:#e8f4ff;color:#1a5fa0;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;"> All Returned</span>`;
+ if (total === 0) {
+ container.innerHTML = "<div class='empty-state'><div class='icon'></div>No matching items</div>";
+ nav.style.display = "none"; return;
  }
 
- // Build a preview of items from the most recent record
- const previewRecord = b.records.find(r => r[6]==="Borrowed") || b.records[b.records.length-1];
- const previewNames = previewRecord ? resolveAdminItemNames(previewRecord[3]) : [];
- const previewText = previewNames.length > 0
- ? (previewNames.length <= 2 ? previewNames.join(", ") : `${previewNames[0]} +${previewNames.length-1} more`)
+ const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
+ _itemPage = Math.min(_itemPage, totalPages);
+ const start = (_itemPage - 1) * ITEMS_PER_PAGE;
+ const end = Math.min(start + ITEMS_PER_PAGE, total);
+ const pageRows = _filteredItems.slice(start, end);
+
+ container.innerHTML = "";
+ pageRows.forEach(({ itemId, name, size, stock, type, loc, avail }) => {
+ const typePill = type === "Consumable"
+ ? `<span style="font-size:11px;background:#e8f0ff;color:#2d4fa0;padding:2px 8px;border-radius:10px;font-weight:600;">Consumable</span>`
+ : `<span style="font-size:11px;background:#f0faf6;color:#1a5a3e;padding:2px 8px;border-radius:10px;font-weight:600;">Non-Consumable</span>`;
+ const locPill = loc
+ ? `<span style="font-size:11px;background:#f5f0e8;color:#7a5c1e;padding:2px 8px;border-radius:10px;font-weight:600;"> ${loc}</span>`
  : "";
-
- const card = document.createElement('div');
- card.style.cssText = `background:${bgColor};border:1.5px solid ${borderColor};border-radius:12px;padding:16px 18px;cursor:pointer;transition:all 0.2s ease;`;
- card.innerHTML = `
- <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;"><div style="font-size:28px;line-height:1;"></div>${pill}</div>
- <div style="font-weight:700;font-size:15px;color:var(--primary);margin-bottom:4px;">${b.studentName}</div>
- <div style="font-size:12px;color:${statusColor};font-weight:600;">${statusLabel}</div>
- ${previewText ? `<div style="font-size:12px;color:var(--text-muted);margin-top:5px;font-style:italic;"> ${previewText}</div>` : ''}
- <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${totalItems} total record${totalItems>1?'s':''}</div>
- <div style="margin-top:12px;font-size:12px;color:var(--primary-light);font-weight:600;">Tap to view details →</div>`;
- card.onmouseover = () => { card.style.transform='translateY(-3px)'; card.style.boxShadow='0 8px 24px rgba(13,79,79,0.12)'; };
- card.onmouseout = () => { card.style.transform=''; card.style.boxShadow=''; };
- card.onclick = () => openDetailModal(b);
- wrapper.appendChild(card);
+ const isSelected = selectedItems.find(i => i.id === itemId);
+ const isProcMatch = isProcedureMatch({ name, size, loc, itemId });
+ const el = document.createElement("div");
+ el.className = "tap-item" + (!avail ? " tap-item-disabled" : "") + (isSelected ? " tap-item-selected" : "");
+ el.id = `ti_${itemId}`;
+ if (avail) el.onclick = () => tapItem(itemId);
+ el.innerHTML = `
+ <div style="flex:1;">
+ <div style="font-weight:600;font-size:14px;color:var(--primary);">${name}${size ? ` <em style="color:var(--text-muted);font-weight:400;font-size:13px;">— ${size}</em>` : ""}</div>
+ <div style="display:flex;gap:8px;align-items:center;margin-top:4px;flex-wrap:wrap;">
+ ${typePill}${locPill}
+ <span style="font-size:12px;font-weight:600;color:${avail ? "var(--success)" : "var(--danger)"};">${avail ? `Stock: ${stock}` : "Out of stock"}</span>
+ </div>
+ </div>
+ <div class="tap-qty-box" id="qty_${itemId}" style="display:${isSelected ? "flex" : "none"};">
+ <button class="qty-btn" onclick="event.stopPropagation();changeQty('${itemId}',-1)">−</button>
+ <span class="qty-num" id="qtynum_${itemId}">${isSelected ? isSelected.qty : 1}</span>
+ <button class="qty-btn" onclick="event.stopPropagation();changeQty('${itemId}',1,'${stock}')">+</button>
+ </div>
+ <div class="tap-check" id="chk_${itemId}" style="display:${isSelected ? "flex" : "none"};"></div>`;
+ container.appendChild(el);
  });
 
- grid.appendChild(wrapper);
+ // Update pagination nav
+ nav.style.display = totalPages > 1 ? "flex" : "none";
+ document.getElementById("itemsPrev").disabled = _itemPage === 1;
+ document.getElementById("itemsNext").disabled = _itemPage === totalPages;
+ document.getElementById("itemsPageInfo").textContent =
+ `${start + 1}–${end} of ${total} items (page ${_itemPage}/${totalPages})`;
 }
 
-// Resolve item IDs to names from inventory 
-function resolveAdminItemNames(rawItems) {
+function itemsPageNav(dir) {
+ _itemPage = Math.max(1, Math.min(Math.ceil(_filteredItems.length / ITEMS_PER_PAGE), _itemPage + dir));
+ renderItemsPage();
+ document.getElementById("itemsList").scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function tapItem(itemId) {
+ const existing = selectedItems.find(i=>i.id===itemId);
+ const el = document.getElementById(`ti_${itemId}`);
+ const qtyEl = document.getElementById(`qty_${itemId}`);
+ const chkEl = document.getElementById(`chk_${itemId}`);
+ if (existing) {
+ selectedItems = selectedItems.filter(i=>i.id!==itemId);
+ if (el) el.classList.remove("tap-item-selected");
+ if (qtyEl) qtyEl.style.display = "none";
+ if (chkEl) chkEl.style.display = "none";
+ } else {
+ selectedItems.push({ id: itemId, name: itemNameMap[itemId], qty: 1 });
+ if (el) el.classList.add("tap-item-selected");
+ if (qtyEl) qtyEl.style.display = "flex";
+ if (chkEl) chkEl.style.display = "flex";
+ }
+}
+
+function changeQty(itemId, delta, maxStock) {
+ const item = selectedItems.find(i=>i.id===itemId);
+ if (!item) return;
+ const max = maxStock ? parseInt(maxStock) : 999;
+ item.qty = Math.min(max, Math.max(1, item.qty + delta));
+ const qn = document.getElementById(`qtynum_${itemId}`);
+ if (qn) qn.textContent = item.qty;
+}
+
+function filterItems() {
+ const q = (document.getElementById("searchItems")?.value || "").toLowerCase();
+ const shelf = (document.getElementById("shelfFilter")?.value || "").toLowerCase();
+ let filtered = _allItemRows.filter(row => {
+   const text = (row.name + " " + row.size + " " + row.loc).toLowerCase();
+   const textMatch = !q || text.includes(q);
+   const shelfMatch = !shelf || String(row.loc).toLowerCase() === shelf;
+   return textMatch && shelfMatch;
+ });
+ // If a procedure is selected, sort matching items to top
+ if (_activeProcedureItems && _activeProcedureItems.length > 0) {
+   filtered.sort((a, b) => {
+     const aMatch = isProcedureMatch(a);
+     const bMatch = isProcedureMatch(b);
+     if (aMatch && !bMatch) return -1;
+     if (!aMatch && bMatch) return 1;
+     return 0;
+   });
+ }
+ _filteredItems = filtered;
+ _itemPage = 1;
+ renderItemsPage();
+}
+
+function isProcedureMatch(row) {
+ if (!_activeProcedureItems || _activeProcedureItems.length === 0) return false;
+ const nameStr = (row.name + ' ' + row.size).toLowerCase();
+ return _activeProcedureItems.some(keyword => nameStr.includes(keyword));
+}
+
+// Procedures Tab (reads from Google Sheet via API)
+let _currentProcedure = null;
+let _loadedProcedures = [];
+
+function loadProcedures() {
+ fetch(API, { method:'POST', body: new URLSearchParams({ action:'getProcedures' }) })
+ .then(r => r.json())
+ .then(data => {
+   _loadedProcedures = (data.status === 'success' && Array.isArray(data.procedures)) ? data.procedures : [];
+   populateProcedureDropdown();
+ })
+ .catch(() => { _loadedProcedures = []; });
+}
+
+function renderProceduresList() {
+ const container = document.getElementById("proceduresList");
+ if (!container) return;
+
+ if (_loadedProcedures.length === 0) {
+ container.innerHTML = "<div class='empty-state'><div class='icon'></div>No procedures set up yet.<br><small style='color:var(--text-muted);font-size:12px;'>The admin will add procedures in the Admin Dashboard.</small></div>";
+ return;
+ }
+
+ container.innerHTML = _loadedProcedures.map(proc => `
+ <div onclick="openProcedureDetail('${proc.id}')"
+ style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);cursor:pointer;margin-bottom:10px;transition:all 0.18s;"
+ onmouseover="this.style.borderColor='var(--primary)';this.style.background='#f0faf6'"
+ onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--surface)'">
+ <div>
+ <div style="font-weight:700;color:var(--primary);font-size:14px;">${proc.label}</div>
+ <div style="font-size:12px;color:var(--text-muted);margin-top:3px;">${proc.items.length} item${proc.items.length!==1?'s':''} required</div>
+ </div>
+ <span style="font-size:20px;color:var(--primary);">›</span>
+ </div>`).join('');
+}
+
+function populateProcedureDropdown() {
+ const sel = document.getElementById("borrowProcedure");
+ if (!sel) return;
+ const current = sel.value;
+ sel.innerHTML = '<option value="">— Select Procedure —</option>';
+ _loadedProcedures.forEach(proc => {
+ const itemCount = proc.items.length;
+ const opt = document.createElement("option");
+ opt.value = proc.label;
+ opt.textContent = `${proc.label} (${itemCount} item${itemCount!==1?'s':''})`;
+ sel.appendChild(opt);
+ });
+ if (current) sel.value = current;
+}
+
+function openProcedureDetail(procId) {
+ const proc = _loadedProcedures.find(p => p.id === procId);
+ if (!proc) return;
+ _currentProcedure = proc;
+ document.getElementById("procedureDetailTitle").textContent = proc.label;
+ document.getElementById("procedureItemsList").innerHTML = proc.items.length
+ ? `<ul style="list-style:none;padding:0;margin:0;">${proc.items.map(item => `
+ <li style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
+ <span style="color:var(--primary);font-weight:900;font-size:16px;">•</span>
+ <span style="font-size:14px;color:var(--text-main);font-weight:500;">${item}</span>
+ </li>`).join('')}</ul>`
+ : "<p style='color:var(--text-muted);font-size:13px;'>No items listed for this procedure.</p>";
+ document.getElementById("procedureDetail").style.display = "block";
+ document.getElementById("procedureDetail").scrollIntoView({ behavior:"smooth", block:"nearest" });
+}
+
+function closeProcedureDetail() {
+ document.getElementById("procedureDetail").style.display = "none";
+ _currentProcedure = null;
+}
+
+function applyProcedureItems() {
+ if (!_currentProcedure) return;
+ const items = _currentProcedure.items || [];
+ if (!items.length) { showNotification("No items to add", "error"); return; }
+
+ let added = 0;
+ items.forEach(itemName => {
+ const row = _allItemRows.find(r =>
+ itemNameMap[r.itemId].toLowerCase().includes(itemName.toLowerCase())
+ );
+ if (!row || !row.avail) return;
+ if (!selectedItems.find(s => s.id === row.itemId)) {
+ selectedItems.push({ id: row.itemId, name: itemNameMap[row.itemId], qty: 1 });
+ added++;
+ }
+ });
+
+ if (added > 0) {
+ showNotification(`Added ${added} item${added!==1?'s':''} from "${_currentProcedure.label}" to your borrow form`, "success");
+ // Set procedure dropdown value
+ const procSel = document.getElementById("borrowProcedure");
+ if (procSel) {
+ // Try to find matching option
+ const opt = [...procSel.options].find(o => o.value === _currentProcedure.label);
+ if (opt) procSel.value = _currentProcedure.label;
+ }
+ goToTab(0);
+ filterItems();
+ } else {
+ showNotification("Items already added or out of stock", "error");
+ }
+}
+
+// Called when procedure dropdown changes — highlight matching items
+let _activeProcedureItems = [];
+let _procedureAutoSelectedIds = []; // track which items were auto-selected by procedure
+
+function onProcedureDropdownChange() {
+ const val = document.getElementById("borrowProcedure").value;
+
+ // Deselect previously auto-selected items before switching
+ _procedureAutoSelectedIds.forEach(id => {
+   selectedItems = selectedItems.filter(i => i.id !== id);
+ });
+ _procedureAutoSelectedIds = [];
+ _activeProcedureItems = [];
+
+ if (val) {
+   const proc = _loadedProcedures.find(p => p.label === val);
+   if (proc) {
+     _currentProcedure = proc;
+     _activeProcedureItems = (proc.items || []).map(s => s.toLowerCase());
+
+     // Auto-select all matching available items
+     let autoAdded = 0;
+     _allItemRows.forEach(row => {
+       if (!row.avail) return;
+       if (isProcedureMatch(row)) {
+         if (!selectedItems.find(s => s.id === row.itemId)) {
+           selectedItems.push({ id: row.itemId, name: itemNameMap[row.itemId], qty: 1 });
+           _procedureAutoSelectedIds.push(row.itemId);
+           autoAdded++;
+         }
+       }
+     });
+
+     if (autoAdded > 0) {
+       showNotification(`Auto-selected ${autoAdded} item${autoAdded !== 1 ? 's' : ''} for "${proc.label}" — adjust quantities as needed`, 'success');
+     } else {
+       showNotification(`No matching available items found for "${proc.label}"`, 'info');
+     }
+   }
+ } else {
+   _currentProcedure = null;
+ }
+
+ _itemPage = 1;
+ filterItems();
+}
+
+// Shelf / Location Filter Population 
+function populateShelfFilter(data) {
+ const sel = document.getElementById("shelfFilter");
+ if (!sel) return;
+ const locations = new Set();
+ for (let i = 0; i < data.length; i++) {
+ const loc = String(data[i][6] || "").trim();
+ if (loc) locations.add(loc);
+ }
+ // Keep current "All Shelves" option then add sorted unique locations
+ sel.innerHTML = '<option value="">All Shelves</option>';
+ [...locations].sort().forEach(loc => {
+ sel.innerHTML += `<option value="${loc}">${loc}</option>`;
+ });
+}
+
+// Init borrow form fields 
+function initBorrowForm() {
+ const nameEl = document.getElementById("borrowerNameDisplay");
+ const dateEl = document.getElementById("borrowerDate");
+ if (nameEl) nameEl.value = getUserName();
+ if (dateEl) {
+ const now = new Date();
+ dateEl.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+ }
+ // Pre-fill ID Number from localStorage (readonly, like name)
+ const storedId = localStorage.getItem("userIDNumber") || localStorage.getItem("borrowerIdNumber") || "";
+ const idEl = document.getElementById("borrowerIdNumber");
+ if (idEl && storedId) idEl.value = storedId;
+ // Pre-fill course/section
+ const storedCourse = localStorage.getItem("borrowerCourse") || "";
+ if (storedCourse) document.getElementById("borrowerCourse").value = storedCourse;
+}
+
+// Generate QR 
+function generateQR() {
+ // Form field validation
+ const idNumber = document.getElementById("borrowerIdNumber").value.trim();
+ const course = document.getElementById("borrowerCourse").value.trim();
+ const procedure = document.getElementById("borrowProcedure").value;
+ const confirmed = document.getElementById("borrowConfirm").checked;
+
+ const subject = document.getElementById("borrowSubject").value.trim();
+ const attestedBy = document.getElementById("borrowAttestedBy").value;
+ const notes = document.getElementById("borrowNotes").value.trim();
+
+ if (!idNumber) { showNotification("Your ID Number is missing. Please update your profile.","error"); return; }
+ if (!course) { showNotification("Please enter your Course, Year & Section","error"); return; }
+ if (!subject) { showNotification("Please enter the Subject","error"); return; }
+ if (!attestedBy) { showNotification("Please select who is Attesting","error"); return; }
+ if (!notes) { showNotification("Please enter the Room","error"); return; }
+ if (!confirmed) { showNotification("Please confirm the borrowing agreement","error"); return; }
+
+ if (selectedItems.length === 0) { showNotification("Please select at least one item","error"); return; }
+ const rd = document.getElementById("returnDate").value;
+ if (!rd) { showNotification("Please set a return date and time","error"); return; }
+
+ // Save course for convenience next time
+ localStorage.setItem("borrowerCourse", course);
+
+ // Build items string with quantity: "id:qty,id:qty"
+ const itemsWithQty = selectedItems.map(i=>`${i.id}:${i.qty}`).join(",");
+ const itemNamesList = selectedItems.map(i=> i.qty > 1 ? `${i.name} ×${i.qty}` : i.name);
+ const itemTypes = selectedItems.map(i=> itemTypeMap[i.id] || "").join(",");
+
+ const borrowRecord = {
+ student: getUserID(),
+ studentName: getUserName(),
+ idNumber,
+ course,
+ subject,
+ procedure,
+ attestedBy,
+ notes,
+ items: itemsWithQty,
+ itemTypes,
+ itemNames: itemNamesList.join(", "),
+ itemList: itemNamesList,
+ returnDate: rd,
+ borrowDate: new Date().toISOString()
+ };
+
+ // Minimal QR payload — only what the scanner needs to process the transaction
+ const qrPayload = JSON.stringify({
+ s: borrowRecord.student,          // student userID
+ n: borrowRecord.studentName,      // student name
+ id: idNumber,
+ c: course,
+ sb: subject,
+ pr: procedure,
+ i: borrowRecord.items,            // item ids:qty
+ rd: borrowRecord.returnDate
+ });
+
+ saveBorrowToStorage(borrowRecord);
+
+ QRCode.toCanvas(document.getElementById("qrcode"), qrPayload, {
+ width: 320,
+ margin: 3,
+ errorCorrectionLevel: 'L',
+ color: { dark: '#0d4f4f', light: '#FFFFFF' }
+ });
+
+ document.getElementById("qrItemsList").innerHTML =
+ itemNamesList.map(n=>`<li>${n}</li>`).join("");
+
+ // Show form summary under QR
+ const summaryEl = document.getElementById("qrFormSummary");
+ if (summaryEl) {
+ summaryEl.innerHTML = [
+ course ? `<div> <strong>Course:</strong> ${course}</div>` : '',
+ idNumber ? `<div> <strong>ID:</strong> ${idNumber}</div>` : '',
+ subject ? `<div> <strong>Subject:</strong> ${subject}</div>` : '',
+ procedure ? `<div> <strong>Procedure:</strong> ${procedure}</div>` : '',
+ attestedBy? `<div> <strong>Attested by:</strong> ${attestedBy}</div>` : '',
+ notes ? `<div> <strong>Room:</strong> ${notes}</div>` : ''
+ ].filter(Boolean).join("");
+ }
+
+ document.getElementById("qrResultBox").style.display = "block";
+ document.getElementById("qrResultBox").scrollIntoView({ behavior:"smooth", block:"nearest" });
+
+ showNotification(" QR Code generated! Show it to the instructor.","success");
+}
+
+function saveQRCode() {
+ const a = document.createElement("a");
+ a.download = "borrow-qr.png";
+ a.href = document.getElementById("qrcode").toDataURL();
+ a.click();
+}
+
+function resetBorrowForm() {
+ selectedItems = [];
+ _activeProcedureItems = [];
+ _procedureAutoSelectedIds = [];
+ _currentProcedure = null;
+ document.getElementById("searchItems").value = "";
+ document.getElementById("returnDate").value = "";
+ document.getElementById("qrResultBox").style.display = "none";
+ const procSel = document.getElementById("borrowProcedure");
+ if (procSel) procSel.value = "";
+
+ document.getElementById("borrowSubject").value = "";
+ document.getElementById("borrowAttestedBy").value = "";
+ document.getElementById("borrowNotes").value = "";
+ document.getElementById("borrowConfirm").checked = false;
+ // Re-render paginated items (clears selection visually)
+ _filteredItems = [..._allItemRows];
+ _itemPage = 1;
+ renderItemsPage();
+ // Reset quick date buttons
+ const qd = document.getElementById("returnDateQuick");
+ if (qd) qd.querySelectorAll("button").forEach(b => {
+ b.classList.remove("qd-active");
+ b.style.background = "var(--surface)";
+ b.style.color = "var(--text-muted)";
+ b.style.borderColor = "var(--border)";
+ });
+}
+
+// localStorage (per-user scoped) 
+function saveBorrowToStorage(record) {
+ const existing = JSON.parse(localStorage.getItem(storageKey())||"[]");
+ record.localId = Date.now();
+ existing.unshift(record);
+ localStorage.setItem(storageKey(), JSON.stringify(existing.slice(0,30)));
+}
+
+function getLocalBorrows() {
+ return JSON.parse(localStorage.getItem(storageKey())||"[]");
+}
+
+// My Borrows 
+function loadBorrowedItems() {
+ // Fetch server-side status to cross-reference
+ fetch(API, { method:"POST", body: new URLSearchParams({ action:"getBorrowedItems", student:getUserID() }) })
+ .then(r=>r.json())
+ .then(serverData => renderBorrowedItems(serverData))
+ .catch(()=>renderBorrowedItems(null));
+}
+
+function renderBorrowedItems(serverData) {
+ const container = document.getElementById("borrowedItemsList");
+ container.innerHTML = "";
+
+ // Build set of item IDs currently marked as "Borrowed" on server
+ // Also build a set of record keys (student+items normalized) that are still Borrowed
+ const serverBorrowedKeys = new Set();
+ const serverBorrowedItems = new Set();
+ if (serverData && Array.isArray(serverData) && !serverData.error) {
+ serverData.forEach(record => {
+ const status = record.length>=7 ? record[6] : record[5];
+ const items = record.length>=7 ? record[3] : record[2];
+ if (status==="Borrowed") {
+ const normKey = items.split(",").map(s=>s.split(":")[0].trim()).sort().join(",");
+ serverBorrowedKeys.add(normKey);
+ items.split(",").forEach(id => serverBorrowedItems.add(id.trim()));
+ }
+ });
+ }
+
+ const localBorrows = getLocalBorrows();
+ let hasAny = false;
+
+ // Show local borrow records — only those still "Borrowed" on server
+ localBorrows.forEach(record => {
+ // Check if this local record is still active on server
+ const normKey = (record.items||"").split(",").map(s=>s.split(":")[0].trim()).sort().join(",");
+ // If server has any data, verify the record is still borrowed; skip if returned
+ if (serverData && Array.isArray(serverData) && !serverData.error) {
+ if (!serverBorrowedKeys.has(normKey)) return; // already returned or not found
+ }
+
+ const returnDate = new Date(record.returnDate);
+ const isOverdue = returnDate < new Date();
+ const itemNames = record.itemList && record.itemList.length
+ ? record.itemList
+ : (record.itemNames ? record.itemNames.split(", ") : ["Unknown item"]);
+
+ const qrPayload = JSON.stringify({
+ s: record.student,
+ n: record.studentName,
+ id: record.idNumber || "",
+ c: record.course || "",
+ sb: record.subject || "",
+ pr: record.procedure || "",
+ i: record.items,
+ rd: record.returnDate
+ });
+
+ hasAny = true;
+ container.innerHTML += buildBorrowCard({ itemNames, itemTypes: record.itemTypes || "", returnDate, isOverdue, qrPayload });
+ });
+
+ // Fallback: server records if no local data (logged in from different device)
+ if (!hasAny && serverData && Array.isArray(serverData)) {
+ serverData.forEach(record => {
+ const status = record.length>=7 ? record[6] : record[5];
+ const rawItems = record.length>=7 ? record[3] : record[2];
+ const returnDateV = record.length>=7 ? record[5] : record[4];
+ if (status!=="Borrowed") return;
+
+ const itemNames = resolveItemNames(rawItems);
+ const returnDate = new Date(returnDateV);
+ const isOverdue = returnDate < new Date();
+ const qrPayload = JSON.stringify({
+ s: getUserID(),
+ n: getUserName(),
+ i: rawItems,
+ rd: returnDateV
+ });
+
+ hasAny = true;
+ container.innerHTML += buildBorrowCard({ itemNames, itemTypes: record[9] ? String(record[9]) : "", returnDate, isOverdue, qrPayload });
+ });
+ }
+
+ if (!hasAny)
+ container.innerHTML = "<div class='empty-state'><div class='icon'></div>No items currently borrowed</div>";
+}
+
+function buildBorrowCard({ itemNames, itemTypes, returnDate, isOverdue, qrPayload }) {
+ // Filter out consumables from return display and QR payload
+ let parsedPayload = {};
+ try { parsedPayload = JSON.parse(qrPayload); } catch(e) {}
+
+ // Determine which items are non-consumable (for return)
+ const typeList = (parsedPayload.itemTypes || "").split(",").map(t=>t.trim());
+ const allItemNames = Array.isArray(itemNames) ? itemNames : [itemNames];
+
+ // Filter: keep only non-consumable entries for return
+ const returnableNames = allItemNames.filter((_, idx) => typeList[idx] !== "Consumable");
+ const hasReturnables = returnableNames.length > 0;
+
+ // Build a filtered QR payload for return (only non-consumable item IDs)
+ let returnQRPayload = qrPayload;
+ // support both short-key (new) and long-key (old) payloads
+ const rawItemsField = parsedPayload.i || parsedPayload.items || "";
+ if (rawItemsField) {
+ const itemEntries = rawItemsField.split(",").map(s=>s.trim()).filter(Boolean);
+ const filteredEntries = itemEntries.filter((_, idx) => typeList[idx] !== "Consumable");
+ if (filteredEntries.length > 0) {
+   // Re-emit in slim format
+   const filteredPayload = {
+     s:  parsedPayload.s  || parsedPayload.student     || '',
+     n:  parsedPayload.n  || parsedPayload.studentName || '',
+     id: parsedPayload.id || parsedPayload.idNumber    || '',
+     c:  parsedPayload.c  || parsedPayload.course      || '',
+     sb: parsedPayload.sb || parsedPayload.subject     || '',
+     pr: parsedPayload.pr || parsedPayload.procedure   || '',
+     i:  filteredEntries.join(","),
+     rd: parsedPayload.rd || parsedPayload.returnDate  || ''
+   };
+   returnQRPayload = JSON.stringify(filteredPayload);
+ }
+ }
+
+ const single = allItemNames.length === 1;
+ const titleText = single ? allItemNames[0] : `${allItemNames.length} Items Borrowed`;
+
+ const groupHTML = !single ? `
+ <div class="items-group">
+ <div class="items-group-label">Items in this borrow</div>
+ <ul>${allItemNames.map((n,i)=>`<li>${n}${typeList[i]==='Consumable'?' <em style="font-size:11px;color:#2d4fa0;">(consumable)</em>':''}</li>`).join("")}</ul>
+ </div>` : "";
+
+ const cardId = 'card_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+ window._returnQRStore = window._returnQRStore || {};
+ window._returnQRStore[cardId] = { itemNames: returnableNames.length ? returnableNames : allItemNames, qrPayload: returnQRPayload };
+
+ const returnBtn = hasReturnables
+ ? `<button onclick="event.stopPropagation();showReturnQRById('${cardId}')"
+ style="width:auto;padding:10px 20px;background:var(--primary);margin-top:0;font-size:13px;">Return Item${returnableNames.length>1?'s':''}
+ </button>`
+ : `<div style="font-size:13px;color:var(--text-muted);font-style:italic;"> All consumable items — no return needed</div>`;
+
+ // extract fields — support both short-key (new) and long-key (old) QR formats
+ const cardProc   = (parsedPayload && (parsedPayload.pr || parsedPayload.procedure)) || "";
+ const cardCourse = (parsedPayload && (parsedPayload.c  || parsedPayload.course))    || "";
+ const cardIdNum  = (parsedPayload && (parsedPayload.id || parsedPayload.idNumber))  || "";
+
+ const procBadge = cardProc ? `
+ <div style="display:inline-flex;align-items:center;gap:6px;background:#f0faf6;border:1px solid #b0dcc8;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px;">
+ ${cardProc}
+ </div>` : "";
+
+ const cardMeta = [
+ cardIdNum ? `<p><strong> ID:</strong> ${cardIdNum}</p>` : "",
+ cardCourse ? `<p><strong> Course:</strong> ${cardCourse}</p>` : ""
+ ].filter(Boolean).join("");
+
+ return `
+ <div class="borrow-card ${isOverdue?'overdue':''}" onclick="showReturnQRById('${cardId}')" style="cursor:pointer;transition:box-shadow 0.18s,transform 0.18s;" onmouseover="this.style.boxShadow='0 6px 24px rgba(13,79,79,0.15)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''">
+ <div style="font-size:11px;color:var(--text-muted);font-weight:600;margin-bottom:6px;letter-spacing:0.3px;"> Tap to show Return QR</div>
+ ${procBadge}
+ <div class="borrow-card-title">${isOverdue?' OVERDUE — ':''}${titleText}</div>
+ <div class="borrow-card-meta">
+ ${cardMeta}
+ <p><strong>Return by:</strong> ${returnDate.toLocaleString()}</p>
+ ${isOverdue?'<p style="color:var(--danger);font-weight:600;">Please return immediately!</p>':''}
+ </div>
+ ${groupHTML}
+ <div class="borrow-actions">${returnBtn}</div>
+ </div>`;
+}
+
+// Return QR Modal 
+function closeReturnModal() { document.getElementById("returnModal").style.display="none"; }
+
+function showReturnQRById(cardId) {
+ const stored = (window._returnQRStore||{})[cardId];
+ if (!stored) { showNotification("Data not found. Please reload.","error"); return; }
+ showReturnQR(stored.itemNames, stored.qrPayload);
+}
+
+function showReturnQR(itemNames, qrPayload) {
+ document.getElementById("returnModal").style.display = "flex";
+ document.getElementById("returnItemsList").innerHTML =
+ itemNames.map(n=>`<li>${n}</li>`).join("");
+
+ // Recreate canvas to avoid stale render
+ const modal = document.getElementById("returnModal");
+ const oldCanvas = document.getElementById("returnQRcode");
+ const parent = oldCanvas.parentElement;
+ oldCanvas.remove();
+ const canvas = document.createElement("canvas");
+ canvas.id = "returnQRcode";
+ canvas.style.cssText = "display:block;margin:0 auto;";
+
+ // Insert before the save button
+ const saveBtn = parent.querySelector('button');
+ parent.insertBefore(canvas, saveBtn || null);
+
+ setTimeout(()=>{
+ try {
+ QRCode.toCanvas(canvas, qrPayload, { width: 320, margin: 3, errorCorrectionLevel: 'L', color: { dark: '#0d4f4f', light: '#ffffff' } });
+ } catch(e) {
+ showNotification("Error generating QR","error");
+ }
+ }, 60);
+}
+
+function saveReturnQR() {
+ const canvas = document.getElementById("returnQRcode");
+ if (!canvas) return;
+ const a = document.createElement("a");
+ a.download = "return-qr.png";
+ a.href = canvas.toDataURL();
+ a.click();
+}
+
+// History 
+function loadBorrowHistory() {
+ const container = document.getElementById("historyList");
+ container.innerHTML = "<div class='empty-state'><div class='icon'>⏳</div>Loading history...</div>";
+
+ fetch(API, { method:"POST", body: new URLSearchParams({ action:"getBorrowHistory", student:getUserID() }) })
+ .then(r => {
+ if (!r.ok) throw new Error("HTTP " + r.status);
+ return r.json();
+ })
+ .then(data => {
+ container.innerHTML = "";
+
+ if (!data || data.length === 0 || data.error) {
+ container.innerHTML = "<div class='empty-state'><div class='icon'></div>No borrow history yet</div>";
+ return;
+ }
+
+ // Sort newest first
+ const sorted = [...data].reverse();
+
+ sorted.forEach(record => {
+ // Handle variable record formats
+ let status, rawItems, borrowDateV, returnDateV;
+ if (record.length >= 7) {
+ status = record[6];
+ rawItems = record[3];
+ borrowDateV = record[4];
+ returnDateV = record[5];
+ } else {
+ status = record[5];
+ rawItems = record[2];
+ borrowDateV = record[3];
+ returnDateV = record[4];
+ }
+
+ if (!rawItems) return; // skip empty records
+
+ const itemNames = resolveItemNames(rawItems);
+ const single = itemNames.length === 1;
+ const titleText = single ? itemNames[0] : `${itemNames.length} items`;
+ // procedure stored in col 13, idNumber col 10, course col 11
+ const recProc = record.length > 13 ? (record[13] || "") : "";
+ const recCourse = record.length > 11 ? (record[11] || "") : "";
+ const recIdNum = record.length > 10 ? (record[10] || "") : "";
+
+ const badge = status === "Returned"
+ ? `<span class="status-badge status-returned"> Returned</span>`
+ : `<span class="status-badge status-borrowed">Borrowed</span>`;
+
+ const groupHTML = !single ? `
+ <div class="items-group" style="margin:8px 0;">
+ <div class="items-group-label">Items</div>
+ <ul>${itemNames.map(n=>`<li>${n}</li>`).join("")}</ul>
+ </div>` : "";
+
+ const procBadge = recProc ? `
+ <div style="display:inline-flex;align-items:center;gap:6px;background:#f0faf6;border:1px solid #b0dcc8;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px;">
+ ${recProc}
+ </div>` : "";
+
+ const metaExtra = [
+ recIdNum ? `<p><strong>ID:</strong> ${recIdNum}</p>` : "",
+ recCourse ? `<p><strong>Course:</strong> ${recCourse}</p>` : ""
+ ].filter(Boolean).join("");
+
+ let borrowDateStr = "—", returnDateStr = "—";
+ try { borrowDateStr = new Date(borrowDateV).toLocaleString(); } catch(e){}
+ try { returnDateStr = new Date(returnDateV).toLocaleString(); } catch(e){}
+
+ container.innerHTML += `
+ <div class="borrow-card">
+ ${procBadge}
+ <div class="borrow-card-title">${titleText}</div>
+ ${groupHTML}
+ <div class="borrow-card-meta">
+ ${metaExtra}
+ <p><strong>Borrowed:</strong> ${borrowDateStr}</p>
+ <p><strong>Return date:</strong> ${returnDateStr}</p>
+ </div>
+ ${badge}
+ </div>`;
+ });
+
+ if (container.innerHTML === "") {
+ container.innerHTML = "<div class='empty-state'><div class='icon'></div>No history yet</div>";
+ }
+ })
+ .catch(err => {
+ console.error("History error:", err);
+ container.innerHTML = "<div class='empty-state' style='color:var(--danger);'> Failed to load history. Please try again.</div>";
+ });
+}
+
+// Resolve item IDs → names 
+function resolveItemNames(rawItems) {
  if (!rawItems) return ["Unknown item"];
- return String(rawItems).split(",").map(entry => {
- const id = entry.split(":")[0].trim();
- const qty = parseInt(entry.split(":")[1]) || 1;
- let name = null;
- for (let i = 0; i < currentData.length; i++) {
- if (String(currentData[i][0]) === id) {
- const n = currentData[i][1] || "";
- const s = currentData[i][2] || "";
- name = s ? `${n} (${s})` : n;
- break;
+ const parts = String(rawItems).split(",").map(s => s.trim()).filter(Boolean);
+ return parts.map(part => {
+ // Support both "id" and "id:qty" formats
+ const [idPart, qtyPart] = part.split(":");
+ const id = idPart.trim();
+ const qty = parseInt(qtyPart) || 1;
+ let name;
+ if (/^\d+$/.test(id)) {
+ name = itemNameMap[id] || `Item #${id}`;
+ } else {
+ name = id; // already a name string
  }
- }
- if (!name) name = "Item #" + id;
  return qty > 1 ? `${name} ×${qty}` : name;
  });
 }
 
-function openDetailModal(borrower) {
- document.getElementById("detailModalTitle").textContent = ` ${borrower.studentName}`;
- const body = document.getElementById("detailModalBody");
-
- const active = borrower.records.filter(r => r[6] === "Borrowed");
- const returned = borrower.records.filter(r => r[6] === "Returned");
- let html = "";
-
- // Borrower summary header 
- // Try to extract idNumber/course/procedure from latest record's QR metadata
- // These are stored in borrow records if the new QR format was used
- const latestRecord = [...borrower.records].reverse()[0];
- let idNum = "", course = "", procedure = "", subject = "";
- try {
- // Attempt to parse stored QR payload if present (col index varies)
- // Fields may be embedded directly in newer records
- // We surface what we can find
- const rec = latestRecord;
- if (rec && rec.length > 10) {
- idNum = rec[10] || "";
- course = rec[11] || "";
- subject = rec[12] || "";
- procedure = rec[13] || "";
- }
- } catch(e) {}
-
- const infoRows = [
- idNum ? `<div> <strong>ID Number:</strong> ${idNum}</div>` : '',
- course ? `<div> <strong>Course/Section:</strong> ${course}</div>` : '',
- subject ? `<div> <strong>Subject:</strong> ${subject}</div>` : '',
- procedure ? `<div> <strong>Procedure:</strong> ${procedure}</div>` : '',
- ].filter(Boolean).join("");
-
- if (infoRows) {
- html += `
- <div style="background:var(--surface-alt);border:1px solid var(--border);border-left:4px solid var(--primary);border-radius:10px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:var(--text-muted);line-height:2.1;">
- <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--primary);margin-bottom:8px;"> Borrower Info</div>
- ${infoRows}
- </div>`;
- }
-
- // Active / Overdue borrows 
- if (active.length > 0) {
- html += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--text-muted);margin-bottom:10px;"> Currently Borrowed</div>`;
- active.forEach(r => {
- const returnDate = new Date(r[5]);
- const isOverdue = returnDate < new Date();
- const daysOver = isOverdue ? Math.floor((new Date() - returnDate) / 86400000) : 0;
- const itemNames = resolveAdminItemNames(r[3]);
-
- // Try to get per-record metadata
- let rProc = "", rCourse = "", rId = "";
- if (r.length > 10) { rId = r[10]||""; rCourse = r[11]||""; rProc = r[13]||""; }
-
- html += `
- <div style="background:${isOverdue?'#fff5f5':'#f0faf6'};border:1px solid ${isOverdue?'#f5c6c6':'#b8e8d4'};border-left:4px solid ${isOverdue?'var(--danger)':'var(--success)'};border-radius:10px;padding:14px 16px;margin-bottom:10px;">
- <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;font-weight:600;"> Borrowed Items</div>
- <ul style="list-style:none;padding:0;margin:0 0 10px 0;">
- ${itemNames.map(n=>`<li style="font-size:14px;font-weight:600;color:var(--primary);padding:3px 0;border-bottom:1px solid rgba(0,0,0,0.06);"> ${n}</li>`).join("")}
- </ul>
- <div style="font-size:12px;color:var(--text-muted);line-height:2.1;">
- ${rId ? `<div> <strong>ID:</strong> ${rId}</div>` : ''}
- ${rCourse ? `<div> <strong>Course:</strong> ${rCourse}</div>` : ''}
- ${rProc ? `<div> <strong>Procedure:</strong> ${rProc}</div>` : ''}
- <div> <strong>Borrowed:</strong> ${new Date(r[4]).toLocaleString()}</div>
- <div>⏰ <strong>Return by:</strong> <span style="color:${isOverdue?'var(--danger)':'inherit'};font-weight:${isOverdue?'700':'400'};">${returnDate.toLocaleString()}</span></div>
- ${isOverdue?`<div style="color:var(--danger);font-weight:700;"> ${daysOver} day${daysOver>1?'s':''} overdue!</div>`:''}
- ${r[8]?`<div> <strong>Lent by:</strong> ${r[8]}</div>`:''}
- </div>
- <span class="status-badge ${isOverdue?'status-overdue':'status-borrowed'}" style="margin-top:8px;">${isOverdue?' Overdue':'Borrowed'}</span>
- </div>`;
- });
- }
-
- // Returned borrows 
- if (returned.length > 0) {
- if (active.length > 0) html += `<hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">`;
- html += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--text-muted);margin-bottom:10px;"> Returned Items</div>`;
- returned.forEach(r => {
- const itemNames = resolveAdminItemNames(r[3]);
- let rProc = "", rCourse = "", rId = "";
- if (r.length > 10) { rId = r[10]||""; rCourse = r[11]||""; rProc = r[13]||""; }
- html += `
- <div style="background:#f4f7f6;border:1px solid var(--border);border-left:4px solid var(--success);border-radius:10px;padding:14px 16px;margin-bottom:10px;">
- <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;font-weight:600;"> Items Returned</div>
- <ul style="list-style:none;padding:0;margin:0 0 10px 0;">
- ${itemNames.map(n=>`<li style="font-size:14px;font-weight:600;color:var(--primary);padding:3px 0;border-bottom:1px solid rgba(0,0,0,0.06);"> ${n}</li>`).join("")}
- </ul>
- <div style="font-size:12px;color:var(--text-muted);line-height:2.1;">
- ${rId ? `<div> <strong>ID:</strong> ${rId}</div>` : ''}
- ${rCourse ? `<div> <strong>Course:</strong> ${rCourse}</div>` : ''}
- ${rProc ? `<div> <strong>Procedure:</strong> ${rProc}</div>` : ''}
- <div> <strong>Borrowed:</strong> ${new Date(r[4]).toLocaleString()}</div>
- <div> <strong>Due date:</strong> ${new Date(r[5]).toLocaleString()}</div>
- ${r[8]?`<div> <strong>Lent by:</strong> ${r[8]}</div>`:''}
- </div>
- <span class="status-badge status-returned" style="margin-top:8px;"> Returned</span>
- </div>`;
- });
- }
-
- if (!html) html = "<div class='empty-state'><div class='icon'></div>No records found</div>";
- body.innerHTML = html;
- document.getElementById("borrowerDetailModal").style.display = "flex";
-}
-
-function closeDetailModal() { document.getElementById("borrowerDetailModal").style.display = "none"; }
-
-// ── Procedures Manager (synced to Google Sheet) ───────────────────────────────
-let _cachedProcs = null; // in-memory cache so UI stays snappy
-let _editingProcId = null;
-
-// Fetch from Google Sheet, fall back to built-in list if sheet is empty
-function fetchProcedures(callback) {
- fetch(API, { method:'POST', body: new URLSearchParams({ action:'getProcedures' }) })
- .then(r => r.json())
+// Overdue check 
+function checkOverdueItems() {
+ fetch(API, { method:"POST", body: new URLSearchParams({ action:"getOverdueItems", student:getUserID() }) })
+ .then(r=>r.json())
  .then(data => {
- if (data.status === 'success' && Array.isArray(data.procedures)) {
- if (data.procedures.length === 0) {
- // First-time setup: seed from built-in list and save
- _cachedProcs = PROCEDURES.map(p => ({
- id: p.id,
- label: p.label.replace(/^\s*\S+\s*/, '').trim(),
- items: (PROC_ITEMS[p.id] || []).slice()
- }));
- persistProcedures(_cachedProcs, () => callback(_cachedProcs));
- } else {
- _cachedProcs = data.procedures;
- syncProceduresArray(_cachedProcs);
- callback(_cachedProcs);
- }
- } else {
- showNotification('Could not load procedures: ' + (data.message||''), 'error');
- callback(_cachedProcs || []);
+ if (data && data.hasOverdue && data.overdueCount > 0) {
+ const list = data.items.map(i=>{
+ const name = resolveItemNames(String(i.itemName||i.itemId||""))[0];
+ return `${name} (${i.daysOverdue}d)`;
+ }).join(", ");
+ showNotification(` Overdue: ${list}`,"error");
  }
  })
- .catch(err => {
- showNotification('Network error loading procedures', 'error');
- callback(_cachedProcs || []);
- });
+ .catch(()=>{});
 }
 
-// Save full procedures array to Google Sheet
-function persistProcedures(procs, done) {
- fetch(API, {
- method: 'POST',
- body: new URLSearchParams({ action:'saveProcedures', procedures: JSON.stringify(procs) })
- })
- .then(r => r.json())
- .then(data => {
- if (data.status === 'success') {
- _cachedProcs = procs;
- syncProceduresArray(procs);
- if (done) done();
- } else {
- showNotification('Failed to save: ' + (data.message||''), 'error');
- }
- })
- .catch(() => showNotification('Network error saving procedures', 'error'));
-}
-
-function syncProceduresArray(procs) {
- PROCEDURES.length = 0;
- procs.forEach(p => PROCEDURES.push({ id: p.id, label: p.label }));
-}
-
-function renderProceduresManager() {
- const container = document.getElementById('proceduresManagerList');
- if (!container) return;
- container.innerHTML = "<div class='empty-state' style='padding:20px;'><div class='icon'></div>Loading procedures...</div>";
-
- fetchProcedures(procs => {
- if (procs.length === 0) {
- container.innerHTML = "<div class='empty-state'><div class='icon'></div>No procedures yet. Add one above.</div>";
- return;
- }
- container.innerHTML = procs.map(p => `
- <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);margin-bottom:10px;gap:10px;">
- <div style="flex:1;min-width:0;">
- <div style="font-weight:700;color:var(--primary);font-size:14px;">${p.label}</div>
- <div style="font-size:12px;color:var(--text-muted);margin-top:3px;">${p.items.length} item${p.items.length!==1?'s':''}: ${p.items.slice(0,4).join(', ')}${p.items.length>4?' …':''}</div>
- </div>
- <div style="display:flex;gap:8px;flex-shrink:0;">
- <button onclick="openProcedureModal('${p.id}')"
- style="width:auto;padding:7px 16px;margin:0;font-size:12px;font-weight:600;background:var(--primary);color:white;border:none;border-radius:7px;cursor:pointer;">Edit Items
- </button>
- <button onclick="deleteProcedure('${p.id}')"
- style="width:auto;padding:7px 14px;margin:0;font-size:12px;font-weight:600;background:#fde8e8;color:var(--danger);border:1.5px solid #f5c6c6;border-radius:7px;cursor:pointer;">Delete
- </button>
- </div>
- </div>`).join('');
- });
-}
-
-function addProcedure() {
- const input = document.getElementById('newProcName');
- const name = (input.value || '').trim();
- if (!name) { showNotification('Please enter a procedure name', 'error'); return; }
-
- const procs = (_cachedProcs || []).slice();
- const id = 'proc_' + Date.now();
- procs.push({ id, label: name, items: [] });
- input.value = '';
- persistProcedures(procs, () => {
- renderProceduresManager();
- showNotification('Procedure added and saved', 'success');
- });
-}
-
-function deleteProcedure(procId) {
- if (!confirm('Delete this procedure? This cannot be undone.')) return;
- const procs = (_cachedProcs || []).filter(p => p.id !== procId);
- persistProcedures(procs, () => {
- renderProceduresManager();
- showNotification('Procedure deleted', 'success');
- });
-}
-
-function openProcedureModal(procId) {
- _editingProcId = procId;
- const proc = (_cachedProcs || []).find(p => p.id === procId);
- if (!proc) return;
- document.getElementById('procModalTitle').textContent = 'Items for: ' + proc.label;
- renderProcModalItems(proc);
- document.getElementById('procedureModal').style.display = 'flex';
-}
-
-function closeProcedureModal() {
- document.getElementById('procedureModal').style.display = 'none';
- _editingProcId = null;
-}
-
-function renderProcModalItems(proc) {
- const container = document.getElementById('procModalItemsList');
- if (!proc.items || proc.items.length === 0) {
- container.innerHTML = "<p style='color:var(--text-muted);font-size:13px;font-style:italic;'>No items yet. Add one below.</p>";
- return;
- }
- container.innerHTML = proc.items.map((item, idx) => `
- <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface-alt);margin-bottom:7px;">
- <span style="font-size:14px;color:var(--text-main);font-weight:500;">${item}</span>
- <button onclick="removeProcItem(${idx})"
- style="width:26px;height:26px;border-radius:50%;background:#fde8e8;color:var(--danger);border:1px solid #f5c6c6;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;margin:0;min-width:unset;line-height:1;">
- &times;
- </button>
- </div>`).join('');
-}
-
-function addItemToProcedure() {
- const input = document.getElementById('procNewItemInput');
- const name = (input.value || '').trim();
- if (!name) { showNotification('Please enter an item name', 'error'); return; }
-
- const procs = (_cachedProcs || []).slice();
- const proc = procs.find(p => p.id === _editingProcId);
- if (!proc) return;
- if (proc.items.includes(name)) { showNotification('Item already in list', 'error'); return; }
- proc.items.push(name);
- input.value = '';
- persistProcedures(procs, () => {
- renderProcModalItems(proc);
- showNotification('Item added and saved', 'success');
- });
-}
-
-function removeProcItem(idx) {
- const procs = (_cachedProcs || []).slice();
- const proc = procs.find(p => p.id === _editingProcId);
- if (!proc) return;
- proc.items.splice(idx, 1);
- persistProcedures(procs, () => renderProcModalItems(proc));
-}
-
+// Init 
 checkAuth();
 loadItems();
-initAdminTabNav();
-setTimeout(renderAlerts, 1200);
+checkOverdueItems();
+initBorrowForm();
+initTabNav();
+// Pre-load procedures so the dropdown is ready immediately
+loadProcedures();
+setInterval(checkOverdueItems, 5*60*1000);
+
+// Quick Return Date Buttons 
+function initQuickDates() {
+ const container = document.getElementById("returnDateQuick");
+ if (!container) return;
+
+ const options = [
+ { label: "3 hrs", hours: 3 },
+ { label: "6 hrs", hours: 6 },
+ { label: "1 day", hours: 24 },
+ { label: "2 days", hours: 48 },
+ { label: "1 week", hours: 168 }
+ ];
+
+ options.forEach(opt => {
+ const btn = document.createElement("button");
+ btn.textContent = opt.label;
+ btn.style.cssText = "padding:6px 14px;font-size:12px;font-weight:600;border:1.5px solid var(--border);border-radius:20px;background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all 0.2s;font-family:'DM Sans',sans-serif;width:auto;margin:0;";
+ btn.onmouseover = () => { btn.style.borderColor='var(--primary)'; btn.style.color='var(--primary)'; };
+ btn.onmouseout = () => {
+ if (!btn.classList.contains('qd-active')) { btn.style.borderColor='var(--border)'; btn.style.color='var(--text-muted)'; }
+ };
+ btn.onclick = () => {
+ const now = new Date();
+ now.setHours(now.getHours() + opt.hours);
+ // Format to datetime-local value: YYYY-MM-DDTHH:MM
+ const pad = n => String(n).padStart(2,'0');
+ const val = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+ document.getElementById("returnDate").value = val;
+ // Highlight active button
+ container.querySelectorAll("button").forEach(b => {
+ b.classList.remove('qd-active');
+ b.style.background = 'var(--surface)';
+ b.style.color = 'var(--text-muted)';
+ b.style.borderColor = 'var(--border)';
+ });
+ btn.classList.add('qd-active');
+ btn.style.background = 'var(--primary)';
+ btn.style.color = 'white';
+ btn.style.borderColor = 'var(--primary)';
+ };
+ container.appendChild(btn);
+ });
+}
+initQuickDates();
+
+// ── Summary Sheet ────────────────────────────────────────────────────────────
+// Stored locally per-user: summaries_<userID>
+// Each entry: { id, borrowDate, procedure, items: [{name, qty, type, returned, consumed, lost, notes}], savedAt }
+
+function summaryKey() { return `summaries_${getUserID()}`; }
+function getSummaries() { return JSON.parse(localStorage.getItem(summaryKey()) || "[]"); }
+function saveSummaries(arr) { localStorage.setItem(summaryKey(), JSON.stringify(arr)); }
+
+// Stores per-record data for PDF generation — populated each time loadSummarySheet runs
+let _pdfRecords = [];
+
+function loadSummarySheet() {
+ const container = document.getElementById("summaryList");
+ if (!container) return;
+ _pdfRecords = []; // reset each load
+ container.innerHTML = "<div class='empty-state'><div class='icon'></div>Loading...</div>";
+
+ fetch(API, { method:"POST", body: new URLSearchParams({ action:"getBorrowHistory", student:getUserID() }) })
+ .then(r => r.json())
+ .then(data => {
+   container.innerHTML = "";
+   if (!Array.isArray(data) || data.length === 0 || data.error) {
+     container.innerHTML = "<div class='empty-state'><div class='icon'></div>No records yet.</div>";
+     return;
+   }
+
+   // Split records
+   const allRecords = [...data].reverse();
+   const borrowedRecords = allRecords.filter(r => (r[6]||r[5]) === "Borrowed");
+   const returnedRecords = allRecords.filter(r => (r[6]||r[5]) === "Returned");
+
+   // Build "Not Returned" = items in borrowed records that are non-consumable
+   // (consumables are never returned, so we track non-consumables not yet back)
+   const notReturnedItems = [];
+   borrowedRecords.forEach(record => {
+     const rawItems = record[3] || record[2] || "";
+     const typeStr = record[9] || "";
+     const typeList = typeStr.split(",").map(t => t.trim());
+     const returnDate = new Date(record[5] || record[4]);
+     const isOverdue = returnDate < new Date();
+     rawItems.split(",").forEach((entry, idx) => {
+       const id = entry.split(":")[0].trim();
+       const qty = parseInt(entry.split(":")[1]) || 1;
+       const type = typeList[idx] || "Non-Consumable";
+       if (type !== "Consumable") {
+         const name = itemNameMap[id] || `Item #${id}`;
+         notReturnedItems.push({ name: qty > 1 ? `${name} ×${qty}` : name, type, isOverdue, returnDate });
+       }
+     });
+   });
+
+   let html = "";
+
+   // ── SECTION 1: CURRENTLY BORROWED ────────────────────────────────
+   html += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--primary);margin:0 0 12px;">📋 Currently Borrowed (${borrowedRecords.length})</div>`;
+   if (borrowedRecords.length === 0) {
+     html += `<div class='empty-state' style='margin-bottom:20px;'><div class='icon'></div>No active borrows</div>`;
+   } else {
+     borrowedRecords.forEach(record => {
+       const rawItems = record[3] || record[2] || "";
+       const typeStr = record[9] || "";
+       const typeList = typeStr.split(",").map(t => t.trim());
+       const returnDate = new Date(record[5] || record[4]);
+       const isOverdue = returnDate < new Date();
+       const recProc = record[13] || "";
+       const recCourse = record[11] || "";
+       const recIdNum = record[10] || "";
+       let borrowDateStr = "—";
+       try { borrowDateStr = new Date(record[4] || record[3]).toLocaleString(); } catch(e){}
+       let returnDateStr = "—";
+       try { returnDateStr = returnDate.toLocaleString(); } catch(e){}
+
+       // Build per-item rows with type
+       const itemEntries = rawItems.split(",").map((entry, idx) => {
+         const id = entry.split(":")[0].trim();
+         const qty = parseInt(entry.split(":")[1]) || 1;
+         const type = typeList[idx] || "Non-Consumable";
+         const name = itemNameMap[id] ? (qty > 1 ? `${itemNameMap[id]} ×${qty}` : itemNameMap[id]) : `Item #${id}`;
+         const typeColor = type === "Consumable" ? "#2d4fa0" : "#1a5a3e";
+         const typeBg = type === "Consumable" ? "#e8f0ff" : "#f0faf6";
+         return `<li style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);">
+           <span style="font-size:13px;font-weight:500;">${name}</span>
+           <span style="font-size:11px;background:${typeBg};color:${typeColor};padding:2px 8px;border-radius:10px;font-weight:600;">${type}</span>
+         </li>`;
+       }).join("");
+
+       html += `<div class="borrow-card ${isOverdue ? 'overdue' : ''}" style="margin-bottom:12px;">
+         ${recProc ? `<div style="display:inline-flex;background:#f0faf6;border:1px solid #b0dcc8;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px;">${recProc}</div>` : ""}
+         <div class="borrow-card-title">${isOverdue ? "⚠️ OVERDUE — " : ""}Active Borrow</div>
+         <div class="borrow-card-meta">
+           ${recIdNum ? `<p><strong>ID:</strong> ${recIdNum}</p>` : ""}
+           ${recCourse ? `<p><strong>Course:</strong> ${recCourse}</p>` : ""}
+           <p><strong>Borrowed:</strong> ${borrowDateStr}</p>
+           <p><strong>Return by:</strong> <span style="color:${isOverdue?'var(--danger)':'inherit'};font-weight:${isOverdue?700:400};">${returnDateStr}</span></p>
+         </div>
+         <div class="items-group"><div class="items-group-label">Items &amp; Type</div><ul style="list-style:none;padding:0;margin:0;">${itemEntries}</ul></div>
+         <span class="status-badge status-borrowed">Borrowed</span>
+       </div>`;
+     });
+   }
+
+   html += `<hr style="border:none;border-top:1.5px solid var(--border);margin:20px 0;">`;
+
+   // ── SECTION 2: NOT RETURNED (non-consumables still out) ───────────
+   html += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--danger);margin:0 0 12px;">⚠️ Not Yet Returned — Non-Consumable Items (${notReturnedItems.length})</div>`;
+   if (notReturnedItems.length === 0) {
+     html += `<div class='empty-state' style='margin-bottom:20px;'><div class='icon'>✅</div>All non-consumable items returned!</div>`;
+   } else {
+     html += `<div style="background:#fff5f5;border:1px solid #f5c6c6;border-left:4px solid var(--danger);border-radius:10px;padding:14px 16px;margin-bottom:16px;">
+       <ul style="list-style:none;padding:0;margin:0;">
+         ${notReturnedItems.map(item => `<li style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f5c6c6;">
+           <span style="font-size:13px;font-weight:600;color:var(--danger);">⚠ ${item.name}</span>
+           <span style="font-size:11px;color:${item.isOverdue?'var(--danger)':'var(--text-muted)'};">${item.isOverdue ? 'OVERDUE' : 'Due ' + item.returnDate.toLocaleDateString()}</span>
+         </li>`).join("")}
+       </ul>
+       <p style="font-size:12px;color:var(--danger);margin-top:10px;font-weight:600;">Please return these items to the counter immediately.</p>
+     </div>`;
+   }
+
+   html += `<hr style="border:none;border-top:1.5px solid var(--border);margin:20px 0;">`;
+
+   // ── SECTION 3: RETURNED ───────────────────────────────────────────
+   html += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--success);margin:0 0 12px;">✅ Returned (${returnedRecords.length})</div>`;
+   if (returnedRecords.length === 0) {
+     html += `<div class='empty-state' style='margin-bottom:20px;'><div class='icon'></div>No returned records yet</div>`;
+   } else {
+     returnedRecords.forEach(record => {
+       const rawItems = record[3] || record[2] || "";
+       const typeStr = record[9] || "";
+       const typeList = typeStr.split(",").map(t => t.trim());
+       const recProc = record[13] || "";
+       const recCourse = record[11] || "";
+       const recIdNum = record[10] || "";
+       const recSubject = record[12] || "";
+       const lentBy = record[8] || "";
+       const actualReturn = record[14] || "";
+       // record[15] = comma-separated "id:qty" of items NOT returned (set by scanner partial return)
+       const notReturnedStr = record[15] || "";
+       const notReturnedMap = {};
+       if (notReturnedStr) {
+         notReturnedStr.split(",").forEach(e => {
+           const parts = e.split(":");
+           if (parts[0]) notReturnedMap[parts[0].trim()] = parseInt(parts[1]) || 1;
+         });
+       }
+
+       let borrowDateStr="—", returnDateStr="—", actualReturnStr="—";
+       try { borrowDateStr = new Date(record[4]||record[3]).toLocaleString(); } catch(e){}
+       try { returnDateStr = new Date(record[5]||record[4]).toLocaleString(); } catch(e){}
+       try { if (actualReturn) actualReturnStr = new Date(actualReturn).toLocaleString(); } catch(e){}
+
+       // Build per-item rows with type & per-item return status
+       let hasNotReturned = false;
+       const itemEntries = rawItems.split(",").map((entry, idx) => {
+         const id = entry.split(":")[0].trim();
+         const qty = parseInt(entry.split(":")[1]) || 1;
+         const type = typeList[idx] || "Non-Consumable";
+         const name = itemNameMap[id] ? (qty > 1 ? `${itemNameMap[id]} ×${qty}` : itemNameMap[id]) : `Item #${id}`;
+         const typeColor = type === "Consumable" ? "#2d4fa0" : "#1a5a3e";
+         const typeBg = type === "Consumable" ? "#e8f0ff" : "#f0faf6";
+         const isNotReturned = type !== "Consumable" && notReturnedMap.hasOwnProperty(id);
+         if (isNotReturned) hasNotReturned = true;
+         let retStatus;
+         if (type === "Consumable") {
+           retStatus = `<span style="font-size:11px;background:#f5f0ff;color:#6b21a8;padding:2px 8px;border-radius:10px;font-weight:600;">Consumed</span>`;
+         } else if (isNotReturned) {
+           retStatus = `<span style="font-size:11px;background:#fde8e8;color:#c0392b;padding:2px 8px;border-radius:10px;font-weight:700;">⚠ Not Returned</span>`;
+         } else {
+           retStatus = `<span style="font-size:11px;background:#d4f3e8;color:#1a6e4a;padding:2px 8px;border-radius:10px;font-weight:600;">✓ Returned</span>`;
+         }
+         return `<li style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);gap:8px;">
+           <span style="font-size:13px;font-weight:500;">${name}</span>
+           <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+             <span style="font-size:11px;background:${typeBg};color:${typeColor};padding:2px 8px;border-radius:10px;font-weight:600;">${type}</span>
+             ${retStatus}
+           </div>
+         </li>`;
+       }).join("");
+
+       const cardBorderColor = hasNotReturned ? "var(--danger)" : "var(--success)";
+       const cardBg = hasNotReturned ? "#fff8f8" : "var(--surface)";
+       const cardTitleLabel = hasNotReturned ? "⚠ Partial Return — Item(s) Not Returned" : "Return Record";
+       const cardTitleColor = hasNotReturned ? "color:var(--danger);" : "";
+       const statusBadge = hasNotReturned
+         ? `<span class="status-badge" style="background:#fde8e8;color:#c0392b;margin-top:6px;">⚠ Partial Return</span>`
+         : `<span class="status-badge status-returned">✅ Returned</span>`;
+
+       // Store record data for PDF generation, keyed by index
+       const recIdx = _pdfRecords.length;
+       _pdfRecords.push({
+         proc: recProc, idNum: recIdNum, course: recCourse, subject: recSubject,
+         borrowDateStr, returnDateStr, actualReturnStr, lentBy,
+         itemEntries, hasNotReturned, cardTitleLabel, cardBorderColor, cardBg, cardTitleColor, statusBadge
+       });
+
+       html += `<div class="borrow-card" style="border-left-color:${cardBorderColor};background:${cardBg};margin-bottom:12px;">
+         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;">
+           <div style="flex:1;">
+             ${recProc ? `<div style="display:inline-flex;background:#f0faf6;border:1px solid #b0dcc8;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px;">${recProc}</div>` : ""}
+             <div class="borrow-card-title" style="${cardTitleColor}">${cardTitleLabel}</div>
+           </div>
+           <button onclick="downloadRecordPDF(${recIdx})" class="no-print"
+             style="width:auto;padding:6px 13px;font-size:12px;font-weight:700;background:var(--primary);color:white;border:none;border-radius:8px;cursor:pointer;white-space:nowrap;flex-shrink:0;margin:0;">
+             ⬇ PDF
+           </button>
+         </div>
+         <div class="borrow-card-meta">
+           ${recIdNum ? `<p><strong>ID:</strong> ${recIdNum}</p>` : ""}
+           ${recCourse ? `<p><strong>Course:</strong> ${recCourse}</p>` : ""}
+           ${recSubject ? `<p><strong>Subject:</strong> ${recSubject}</p>` : ""}
+           <p><strong>Borrowed:</strong> ${borrowDateStr}</p>
+           <p><strong>Due date:</strong> ${returnDateStr}</p>
+           <p><strong>Returned on:</strong> ${actualReturnStr}</p>
+           ${lentBy ? `<p><strong>Processed by:</strong> ${lentBy}</p>` : ""}
+         </div>
+         <div class="items-group"><div class="items-group-label">Items, Type &amp; Status</div><ul style="list-style:none;padding:0;margin:0;">${itemEntries}</ul></div>
+         ${statusBadge}
+       </div>`;
+     });
+   }
+
+   container.innerHTML = html;
+ })
+ .catch(() => {
+   container.innerHTML = "<div class='empty-state' style='color:var(--danger);'>Failed to load records. Please try again.</div>";
+ });
+}
+
+// ── Download Record as PDF (per return card) ──────────────────────────────────
+function downloadRecordPDF(idx) {
+  const rec = _pdfRecords[idx];
+  if (!rec) { showNotification("Record not found", "error"); return; }
+
+  const userName  = localStorage.getItem("userName")  || "—";
+  const userID    = localStorage.getItem("userIDNumber") || localStorage.getItem("userID") || "—";
+  const printDate = new Date().toLocaleString();
+
+  const borderColor = rec.cardBorderColor.replace('var(--success)','#1a7a4a').replace('var(--danger)','#c0392b');
+  const bgColor     = rec.cardBg.replace('var(--surface)','#ffffff');
+  const titleColor  = rec.cardTitleColor.replace('var(--danger)','#c0392b');
+
+  const win = window.open('', '_blank', 'width=700,height=900');
+  win.document.write(`<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Return Record — CHS VITAL</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    color: #1a3333;
+    background: white;
+    padding: 32px 28px;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+  .pdf-header {
+    border-bottom: 3px solid #0d4f4f;
+    padding-bottom: 14px;
+    margin-bottom: 22px;
+  }
+  .pdf-logo { font-size: 20px; font-weight: 900; color: #0d4f4f; letter-spacing: 1px; margin-bottom: 2px; }
+  .pdf-logo-sub { font-size: 10px; color: #999; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 10px; }
+  .pdf-borrower { font-size: 12px; color: #555; line-height: 1.9; }
+  .pdf-borrower strong { color: #0d4f4f; }
+  .pdf-card {
+    border: 1px solid #d0e4de;
+    border-left: 5px solid ${borderColor};
+    border-radius: 10px;
+    padding: 16px 18px;
+    background: ${bgColor};
+    margin-bottom: 18px;
+  }
+  .proc-badge {
+    display: inline-flex;
+    background: #f0faf6;
+    border: 1px solid #b0dcc8;
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #0d4f4f;
+    margin-bottom: 10px;
+  }
+  .pdf-card-title { font-weight: 700; font-size: 15px; color: ${titleColor || '#0d4f4f'}; margin-bottom: 10px; }
+  .pdf-meta { font-size: 12px; color: #666; line-height: 2; margin-bottom: 12px; }
+  .pdf-meta strong { color: #1a3333; }
+  .items-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.7px;
+    font-weight: 700; color: #888; margin-bottom: 8px;
+  }
+  .items-wrap { background: #f4faf7; border: 1px solid #d0e4de; border-radius: 8px; padding: 10px 14px; }
+  .items-wrap ul { list-style: none; padding: 0; margin: 0; }
+  .items-wrap ul li {
+    font-size: 12px; padding: 5px 0;
+    border-bottom: 1px solid #e0eeea;
+    display: flex; justify-content: space-between; align-items: center; gap: 6px;
+  }
+  .items-wrap ul li:last-child { border-bottom: none; }
+  .pdf-status { margin-top: 12px; }
+  .status-badge {
+    display: inline-block; font-size: 11px; font-weight: 700;
+    padding: 3px 12px; border-radius: 20px;
+  }
+  .status-returned { background: #d4f3e8; color: #1a6e4a; }
+  .pdf-footer {
+    margin-top: 28px; border-top: 1px solid #d0e4de;
+    padding-top: 10px; font-size: 10px; color: #bbb; text-align: center;
+  }
+  .print-btn {
+    display: block; margin: 0 auto 24px;
+    padding: 10px 28px; background: #0d4f4f; color: white;
+    border: none; border-radius: 8px; font-size: 14px; font-weight: 700;
+    cursor: pointer; font-family: 'DM Sans', sans-serif;
+  }
+  @media print { .print-btn { display: none !important; } }
+</style>
+</head>
+<body>
+  <button class="print-btn" onclick="window.print()">🖨 Print / Save as PDF</button>
+
+  <div class="pdf-header">
+    <div class="pdf-logo">CHS PROJECT VITAL</div>
+    <div class="pdf-logo-sub">Virtual &bull; Inventory &bull; Tracking &bull; Logging</div>
+    <div class="pdf-borrower">
+      <strong>Borrower:</strong> ${userName}&nbsp;&nbsp;<strong>ID:</strong> ${userID}<br>
+      <strong>Printed:</strong> ${printDate}
+    </div>
+  </div>
+
+  <div class="pdf-card">
+    ${rec.proc ? `<div class="proc-badge">${rec.proc}</div>` : ''}
+    <div class="pdf-card-title">${rec.cardTitleLabel}</div>
+    <div class="pdf-meta">
+      ${rec.idNum   ? `<div><strong>ID Number:</strong> ${rec.idNum}</div>` : ''}
+      ${rec.course  ? `<div><strong>Course:</strong> ${rec.course}</div>` : ''}
+      ${rec.subject ? `<div><strong>Subject:</strong> ${rec.subject}</div>` : ''}
+      <div><strong>Borrowed:</strong> ${rec.borrowDateStr}</div>
+      <div><strong>Due date:</strong> ${rec.returnDateStr}</div>
+      <div><strong>Returned on:</strong> ${rec.actualReturnStr}</div>
+      ${rec.lentBy  ? `<div><strong>Processed by:</strong> ${rec.lentBy}</div>` : ''}
+    </div>
+    <div class="items-wrap">
+      <div class="items-label">Items, Type &amp; Status</div>
+      <ul>${rec.itemEntries}</ul>
+    </div>
+    <div class="pdf-status">${rec.statusBadge}</div>
+  </div>
+
+  <div class="pdf-footer">
+    CHS Project VITAL System &nbsp;&middot;&nbsp; Return Record &nbsp;&middot;&nbsp; ${printDate}
+  </div>
+</body>
+</html>`);
+  win.document.close();
+}
+
 </script>
 
 </body>
