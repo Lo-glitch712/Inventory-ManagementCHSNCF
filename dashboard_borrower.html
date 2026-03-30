@@ -338,8 +338,9 @@
  style="background:#f4f7f6;color:#555;font-weight:600;">
  </div>
  <div class="form-group">
- <label>ID Number <span style="color:var(--danger);">*</span></label>
- <input type="text" id="borrowerIdNumber" placeholder="e.g., 2024-00123">
+ <label>ID Number</label>
+ <input type="text" id="borrowerIdNumber" readonly
+ style="background:#f4f7f6;color:#555;font-weight:600;">
  </div>
  <div class="form-group">
  <label>Course, Year &amp; Section <span style="color:var(--danger);">*</span></label>
@@ -366,20 +367,19 @@
  </select>
  </div>
  <div class="form-group">
- <label>Subject</label>
+ <label>Subject <span style="color:var(--danger);">*</span></label>
  <input type="text" id="borrowSubject" placeholder="e.g., NCM 101">
  </div>
  <div class="form-group">
- <label>Attested By</label>
+ <label>Attested By <span style="color:var(--danger);">*</span></label>
  <select id="borrowAttestedBy">
  <option value="">— Select —</option>
  <option value="Clinical Instructor">Clinical Instructor</option>
  <option value="Student Assistant">Student Assistant</option>
- <option value="Lab Coordinator">Lab Coordinator</option>
  </select>
  </div>
  <div class="form-group">
- <label>Room</label>
+ <label>Room <span style="color:var(--danger);">*</span></label>
  <input type="text" id="borrowNotes" placeholder="e.g., Room 201, Lab A">
  </div>
  </div>
@@ -985,11 +985,13 @@ function initBorrowForm() {
  const now = new Date();
  dateEl.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
  }
- // Pre-fill from localStorage
+ // Pre-fill ID Number from localStorage (readonly, like name)
+ const storedId = localStorage.getItem("userIDNumber") || localStorage.getItem("borrowerIdNumber") || "";
+ const idEl = document.getElementById("borrowerIdNumber");
+ if (idEl && storedId) idEl.value = storedId;
+ // Pre-fill course/section
  const storedCourse = localStorage.getItem("borrowerCourse") || "";
- const storedId = localStorage.getItem("borrowerIdNumber") || localStorage.getItem("userIDNumber") || "";
  if (storedCourse) document.getElementById("borrowerCourse").value = storedCourse;
- if (storedId) document.getElementById("borrowerIdNumber").value = storedId;
 }
 
 // Generate QR 
@@ -1000,21 +1002,23 @@ function generateQR() {
  const procedure = document.getElementById("borrowProcedure").value;
  const confirmed = document.getElementById("borrowConfirm").checked;
 
- if (!idNumber) { showNotification("Please enter your ID Number","error"); return; }
+ const subject = document.getElementById("borrowSubject").value.trim();
+ const attestedBy = document.getElementById("borrowAttestedBy").value;
+ const notes = document.getElementById("borrowNotes").value.trim();
+
+ if (!idNumber) { showNotification("Your ID Number is missing. Please update your profile.","error"); return; }
  if (!course) { showNotification("Please enter your Course, Year & Section","error"); return; }
+ if (!subject) { showNotification("Please enter the Subject","error"); return; }
+ if (!attestedBy) { showNotification("Please select who is Attesting","error"); return; }
+ if (!notes) { showNotification("Please enter the Room","error"); return; }
  if (!confirmed) { showNotification("Please confirm the borrowing agreement","error"); return; }
 
  if (selectedItems.length === 0) { showNotification("Please select at least one item","error"); return; }
  const rd = document.getElementById("returnDate").value;
  if (!rd) { showNotification("Please set a return date and time","error"); return; }
 
- // Save course/id for convenience next time
+ // Save course for convenience next time
  localStorage.setItem("borrowerCourse", course);
- localStorage.setItem("borrowerIdNumber", idNumber);
-
- const subject = document.getElementById("borrowSubject").value;
- const attestedBy = document.getElementById("borrowAttestedBy").value;
- const notes = document.getElementById("borrowNotes").value.trim();
 
  // Build items string with quantity: "id:qty,id:qty"
  const itemsWithQty = selectedItems.map(i=>`${i.id}:${i.qty}`).join(",");
