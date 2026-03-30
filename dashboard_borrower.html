@@ -822,19 +822,13 @@ let _currentProcedure = null;
 let _loadedProcedures = [];
 
 function loadProcedures() {
- const container = document.getElementById("proceduresList");
- if (!container) return;
- container.innerHTML = "<div class='empty-state' style='padding:20px;'><div class='icon'></div>Loading procedures...</div>";
- document.getElementById("procedureDetail").style.display = "none";
-
  fetch(API, { method:'POST', body: new URLSearchParams({ action:'getProcedures' }) })
  .then(r => r.json())
  .then(data => {
- _loadedProcedures = (data.status === 'success' && Array.isArray(data.procedures)) ? data.procedures : [];
- renderProceduresList();
- populateProcedureDropdown();
+   _loadedProcedures = (data.status === 'success' && Array.isArray(data.procedures)) ? data.procedures : [];
+   populateProcedureDropdown();
  })
- .catch(() => { _loadedProcedures = []; renderProceduresList(); });
+ .catch(() => { _loadedProcedures = []; });
 }
 
 function renderProceduresList() {
