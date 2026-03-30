@@ -225,6 +225,21 @@
  .items-page-btn:hover:not(:disabled) { background: var(--primary); color: white; border-color: var(--primary); transform: none; box-shadow: none; }
  .items-page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
  .items-page-info { font-size: 12px; color: var(--text-muted); font-weight: 500; text-align: center; flex: 1; }
+
+ /* ── Print / PDF styles ── */
+ @media print {
+   body > *:not(#summaryPrintArea) { display: none !important; }
+   #summaryPrintArea {
+     display: block !important;
+     position: static !important;
+     font-family: 'DM Sans', sans-serif;
+     color: #1a3333;
+     max-width: 680px;
+     margin: 0 auto;
+     padding: 20px;
+   }
+   .no-print { display: none !important; }
+ }
  </style>
 </head>
 <body class="dashboard-body">
@@ -470,12 +485,18 @@
  <!-- TAB: Summary Sheet -->
  <div id="summary-tab" class="tab-content">
  <div class="card">
- <h3>Return Summary Sheet</h3>
+ <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:6px;">
+   <h3 style="margin:0;">Return Summary Sheet</h3>
+   <button onclick="downloadSummaryPDF()" style="width:auto;padding:9px 18px;font-size:13px;background:var(--primary);color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;">
+     &#8659; Download PDF
+   </button>
+ </div>
  <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">Your complete borrow overview — active borrows, non-consumable items not yet returned, and completed returns with item types.
  </p>
  <div id="summaryList"></div>
  </div>
  </div>
+ <div id="summaryPrintArea" style="display:none;"></div>
 
 </div><!-- /dashboard-main -->
 
@@ -1665,12 +1686,23 @@ function loadSummarySheet() {
        const recSubject = record[12] || "";
        const lentBy = record[8] || "";
        const actualReturn = record[14] || "";
+       // record[15] = comma-separated "id:qty" of items NOT returned (set by scanner partial return)
+       const notReturnedStr = record[15] || "";
+       const notReturnedMap = {};
+       if (notReturnedStr) {
+         notReturnedStr.split(",").forEach(e => {
+           const parts = e.split(":");
+           if (parts[0]) notReturnedMap[parts[0].trim()] = parseInt(parts[1]) || 1;
+         });
+       }
+
        let borrowDateStr="—", returnDateStr="—", actualReturnStr="—";
        try { borrowDateStr = new Date(record[4]||record[3]).toLocaleString(); } catch(e){}
        try { returnDateStr = new Date(record[5]||record[4]).toLocaleString(); } catch(e){}
        try { if (actualReturn) actualReturnStr = new Date(actualReturn).toLocaleString(); } catch(e){}
 
-       // Build per-item rows with type
+       // Build per-item rows with type & per-item return status
+       let hasNotReturned = false;
        const itemEntries = rawItems.split(",").map((entry, idx) => {
          const id = entry.split(":")[0].trim();
          const qty = parseInt(entry.split(":")[1]) || 1;
@@ -1678,9 +1710,16 @@ function loadSummarySheet() {
          const name = itemNameMap[id] ? (qty > 1 ? `${itemNameMap[id]} ×${qty}` : itemNameMap[id]) : `Item #${id}`;
          const typeColor = type === "Consumable" ? "#2d4fa0" : "#1a5a3e";
          const typeBg = type === "Consumable" ? "#e8f0ff" : "#f0faf6";
-         const retStatus = type === "Consumable"
-           ? `<span style="font-size:11px;background:#f5f0ff;color:#6b21a8;padding:2px 8px;border-radius:10px;font-weight:600;">Consumed</span>`
-           : `<span style="font-size:11px;background:#d4f3e8;color:#1a6e4a;padding:2px 8px;border-radius:10px;font-weight:600;">✓ Returned</span>`;
+         const isNotReturned = type !== "Consumable" && notReturnedMap.hasOwnProperty(id);
+         if (isNotReturned) hasNotReturned = true;
+         let retStatus;
+         if (type === "Consumable") {
+           retStatus = `<span style="font-size:11px;background:#f5f0ff;color:#6b21a8;padding:2px 8px;border-radius:10px;font-weight:600;">Consumed</span>`;
+         } else if (isNotReturned) {
+           retStatus = `<span style="font-size:11px;background:#fde8e8;color:#c0392b;padding:2px 8px;border-radius:10px;font-weight:700;">⚠ Not Returned</span>`;
+         } else {
+           retStatus = `<span style="font-size:11px;background:#d4f3e8;color:#1a6e4a;padding:2px 8px;border-radius:10px;font-weight:600;">✓ Returned</span>`;
+         }
          return `<li style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);gap:8px;">
            <span style="font-size:13px;font-weight:500;">${name}</span>
            <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
@@ -1690,9 +1729,17 @@ function loadSummarySheet() {
          </li>`;
        }).join("");
 
-       html += `<div class="borrow-card" style="border-left-color:var(--success);margin-bottom:12px;">
+       const cardBorderColor = hasNotReturned ? "var(--danger)" : "var(--success)";
+       const cardBg = hasNotReturned ? "#fff8f8" : "var(--surface)";
+       const cardTitleLabel = hasNotReturned ? "⚠ Partial Return — Item(s) Not Returned" : "Return Record";
+       const cardTitleColor = hasNotReturned ? "color:var(--danger);" : "";
+       const statusBadge = hasNotReturned
+         ? `<span class="status-badge" style="background:#fde8e8;color:#c0392b;margin-top:6px;">⚠ Partial Return</span>`
+         : `<span class="status-badge status-returned">✅ Returned</span>`;
+
+       html += `<div class="borrow-card" style="border-left-color:${cardBorderColor};background:${cardBg};margin-bottom:12px;">
          ${recProc ? `<div style="display:inline-flex;background:#f0faf6;border:1px solid #b0dcc8;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px;">${recProc}</div>` : ""}
-         <div class="borrow-card-title">Return Record</div>
+         <div class="borrow-card-title" style="${cardTitleColor}">${cardTitleLabel}</div>
          <div class="borrow-card-meta">
            ${recIdNum ? `<p><strong>ID:</strong> ${recIdNum}</p>` : ""}
            ${recCourse ? `<p><strong>Course:</strong> ${recCourse}</p>` : ""}
@@ -1703,7 +1750,7 @@ function loadSummarySheet() {
            ${lentBy ? `<p><strong>Processed by:</strong> ${lentBy}</p>` : ""}
          </div>
          <div class="items-group"><div class="items-group-label">Items, Type &amp; Status</div><ul style="list-style:none;padding:0;margin:0;">${itemEntries}</ul></div>
-         <span class="status-badge status-returned">✅ Returned</span>
+         ${statusBadge}
        </div>`;
      });
    }
@@ -1714,6 +1761,66 @@ function loadSummarySheet() {
    container.innerHTML = "<div class='empty-state' style='color:var(--danger);'>Failed to load records. Please try again.</div>";
  });
 }
+
+// ── Download Summary as PDF ───────────────────────────────────────────────────
+function downloadSummaryPDF() {
+  const summaryContent = document.getElementById("summaryList");
+  if (!summaryContent || summaryContent.innerHTML.includes("Loading") || summaryContent.innerHTML.trim() === "") {
+    showNotification("Please wait for the summary to load first", "error");
+    return;
+  }
+
+  const userName  = localStorage.getItem("userName")  || "—";
+  const userID    = localStorage.getItem("userIDNumber") || localStorage.getItem("userID") || "—";
+  const userEmail = localStorage.getItem("userEmail") || "—";
+  const printDate = new Date().toLocaleString();
+
+  const printArea = document.getElementById("summaryPrintArea");
+  printArea.innerHTML = `
+    <style>
+      #summaryPrintArea { font-family: 'DM Sans', sans-serif; color: #1a3333; max-width: 680px; margin: 0 auto; padding: 24px; }
+      .pdf-header { border-bottom: 3px solid #0d4f4f; padding-bottom: 14px; margin-bottom: 20px; }
+      .pdf-title { font-size: 22px; font-weight: 900; color: #0d4f4f; letter-spacing: 1px; margin: 0 0 2px; }
+      .pdf-sub { font-size: 11px; color: #888; letter-spacing: 3px; text-transform: uppercase; margin: 0 0 10px; }
+      .pdf-meta { font-size: 13px; color: #444; line-height: 1.9; }
+      .pdf-meta strong { color: #0d4f4f; }
+      .borrow-card { border: 1px solid #d0e4de; border-left: 4px solid #0d4f4f; border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; background: #f9fdfb; page-break-inside: avoid; }
+      .borrow-card-title { font-weight: 700; font-size: 14px; color: #0d4f4f; margin-bottom: 4px; }
+      .borrow-card-meta p { font-size: 12px; color: #666; margin: 2px 0; line-height: 1.8; }
+      .items-group { background: #f0faf6; border: 1px solid #d0e4de; border-radius: 6px; padding: 8px 12px; margin: 8px 0; }
+      .items-group-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.7px; font-weight: 700; color: #888; margin-bottom: 6px; }
+      .items-group ul { list-style: none; padding: 0; margin: 0; }
+      .items-group ul li { font-size: 12px; padding: 4px 0; border-bottom: 1px solid #e0eeea; display: flex; justify-content: space-between; align-items: center; }
+      .items-group ul li:last-child { border-bottom: none; }
+      .status-badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; margin-top: 6px; }
+      .status-returned { background: #d4f3e8; color: #1a6e4a; }
+      .status-borrowed { background: #e8f6ff; color: #1a5fa0; }
+      .empty-state { color: #aaa; font-size: 13px; text-align: center; padding: 20px 0; }
+      .pdf-footer { margin-top: 28px; border-top: 1px solid #d0e4de; padding-top: 12px; font-size: 11px; color: #aaa; text-align: center; }
+    </style>
+    <div class="pdf-header">
+      <div class="pdf-title">CHS PROJECT VITAL</div>
+      <div class="pdf-sub">Virtual &bull; Inventory &bull; Tracking &bull; Logging</div>
+      <div class="pdf-meta">
+        <strong>Borrower:</strong> ${userName}<br>
+        <strong>ID Number:</strong> ${userID}<br>
+        <strong>Email:</strong> ${userEmail}<br>
+        <strong>Generated:</strong> ${printDate}
+      </div>
+    </div>
+    ${summaryContent.innerHTML}
+    <div class="pdf-footer">
+      CHS Project VITAL System &nbsp;&middot;&nbsp; Borrow Summary Report &nbsp;&middot;&nbsp; ${printDate}
+    </div>
+  `;
+
+  printArea.style.display = "block";
+  setTimeout(() => {
+    window.print();
+    setTimeout(() => { printArea.style.display = "none"; }, 600);
+  }, 120);
+}
+
 </script>
 
 </body>
