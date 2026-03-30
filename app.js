@@ -1,4 +1,4 @@
-const API = "https://script.google.com/macros/s/AKfycbzBC2scdAPq_gC9ZUZgYvYlNvnA46COG5_U8xNjSBlk3VUGpT49XutLXyf1Ds9AsMCB/exec";
+const API = "https://script.google.com/macros/s/AKfycbybwGXfrHhP6IkGJb39Gej_kbQZSxK6SfzFpsgqNdp5zMq-gF1_Qp1mXFui0KzKOxq_/exec";
 
 //  Notifications 
 function showNotification(message, type = 'info') {
@@ -15,6 +15,7 @@ function showNotification(message, type = 'info') {
 
 //  Loading State 
 function setLoading(button, isLoading) {
+  if (!button) return;
   if (isLoading) {
     button.disabled = true;
     button.setAttribute('data-original-text', button.textContent);
@@ -25,6 +26,14 @@ function setLoading(button, isLoading) {
     button.textContent = button.getAttribute('data-original-text') || 'Submit';
     button.style.opacity = '1';
   }
+}
+
+// GAS-safe fetch — GET with query params to avoid redirect issues
+function gasFetch(params) {
+  return fetch(API + '?' + new URLSearchParams(params).toString(), {
+    method: 'GET',
+    redirect: 'follow'
+  }).then(res => res.json());
 }
 
 //  Register (Borrower only) 
@@ -63,11 +72,7 @@ function register(button) {
 
   setLoading(button, true);
 
-  fetch(API, {
-    method: 'POST',
-    body: new URLSearchParams({ action: 'register', role, name, idNumber, department, year, contact, email, password })
-  })
-  .then(res => res.json())
+  gasFetch({ action: 'register', role, name, idNumber, department, year, contact, email, password })
   .then(data => {
     setLoading(button, false);
     if (data.status === 'success') {
@@ -95,11 +100,7 @@ function login(button) {
 
   setLoading(button, true);
 
-  fetch(API, {
-    method: 'POST',
-    body: new URLSearchParams({ action: 'login', email, password })
-  })
-  .then(res => res.json())
+  gasFetch({ action: 'login', email, password })
   .then(data => {
     setLoading(button, false);
     if (data.status === 'success') {
@@ -131,11 +132,8 @@ function logout() {
   const userRole = localStorage.getItem('userRole')  || '';
   const email    = localStorage.getItem('userEmail') || '';
 
-  // Fire-and-forget logout log — don't block the UI
-  fetch(API, {
-    method: 'POST',
-    body: new URLSearchParams({ action: 'logout', userID, userName, userRole, email })
-  }).catch(() => {});
+  // Fire-and-forget logout log
+  gasFetch({ action: 'logout', userID, userName, userRole, email }).catch(() => {});
 
   localStorage.clear();
   showNotification('Logged out successfully', 'success');
