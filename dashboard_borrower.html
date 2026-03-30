@@ -1039,26 +1039,25 @@ function generateQR() {
  borrowDate: new Date().toISOString()
  };
 
+ // Minimal QR payload — only what the scanner needs to process the transaction
  const qrPayload = JSON.stringify({
- student: borrowRecord.student,
- studentName: borrowRecord.studentName,
- idNumber,
- course,
- subject,
- procedure,
- attestedBy,
- notes,
- items: borrowRecord.items,
- itemTypes: borrowRecord.itemTypes,
- itemNames: borrowRecord.itemNames,
- returnDate: borrowRecord.returnDate,
- borrowDate: borrowRecord.borrowDate
+ s: borrowRecord.student,          // student userID
+ n: borrowRecord.studentName,      // student name
+ id: idNumber,
+ c: course,
+ sb: subject,
+ pr: procedure,
+ i: borrowRecord.items,            // item ids:qty
+ rd: borrowRecord.returnDate
  });
 
  saveBorrowToStorage(borrowRecord);
 
  QRCode.toCanvas(document.getElementById("qrcode"), qrPayload, {
- width:260, margin:10, color:{ dark:'#0d4f4f', light:'#FFFFFF' }
+ width: 320,
+ margin: 3,
+ errorCorrectionLevel: 'L',
+ color: { dark: '#0d4f4f', light: '#FFFFFF' }
  });
 
  document.getElementById("qrItemsList").innerHTML =
@@ -1179,13 +1178,14 @@ function renderBorrowedItems(serverData) {
  : (record.itemNames ? record.itemNames.split(", ") : ["Unknown item"]);
 
  const qrPayload = JSON.stringify({
- student: record.student,
- studentName: record.studentName,
- items: record.items,
- itemTypes: record.itemTypes || "",
- itemNames: record.itemNames,
- returnDate: record.returnDate,
- action: "return"
+ s: record.student,
+ n: record.studentName,
+ id: record.idNumber || "",
+ c: record.course || "",
+ sb: record.subject || "",
+ pr: record.procedure || "",
+ i: record.items,
+ rd: record.returnDate
  });
 
  hasAny = true;
@@ -1204,12 +1204,10 @@ function renderBorrowedItems(serverData) {
  const returnDate = new Date(returnDateV);
  const isOverdue = returnDate < new Date();
  const qrPayload = JSON.stringify({
- student: getUserID(),
- studentName: getUserName(),
- items: rawItems,
- itemNames: itemNames.join(", "),
- returnDate: returnDateV,
- action: "return"
+ s: getUserID(),
+ n: getUserName(),
+ i: rawItems,
+ rd: returnDateV
  });
 
  hasAny = true;
@@ -1236,15 +1234,24 @@ function buildBorrowCard({ itemNames, itemTypes, returnDate, isOverdue, qrPayloa
 
  // Build a filtered QR payload for return (only non-consumable item IDs)
  let returnQRPayload = qrPayload;
- if (parsedPayload.items) {
- const itemEntries = parsedPayload.items.split(",").map(s=>s.trim()).filter(Boolean);
+ // support both short-key (new) and long-key (old) payloads
+ const rawItemsField = parsedPayload.i || parsedPayload.items || "";
+ if (rawItemsField) {
+ const itemEntries = rawItemsField.split(",").map(s=>s.trim()).filter(Boolean);
  const filteredEntries = itemEntries.filter((_, idx) => typeList[idx] !== "Consumable");
  if (filteredEntries.length > 0) {
- const filteredPayload = Object.assign({}, parsedPayload, {
- items: filteredEntries.join(","),
- itemNames: returnableNames.join(", ")
- });
- returnQRPayload = JSON.stringify(filteredPayload);
+   // Re-emit in slim format
+   const filteredPayload = {
+     s:  parsedPayload.s  || parsedPayload.student     || '',
+     n:  parsedPayload.n  || parsedPayload.studentName || '',
+     id: parsedPayload.id || parsedPayload.idNumber    || '',
+     c:  parsedPayload.c  || parsedPayload.course      || '',
+     sb: parsedPayload.sb || parsedPayload.subject     || '',
+     pr: parsedPayload.pr || parsedPayload.procedure   || '',
+     i:  filteredEntries.join(","),
+     rd: parsedPayload.rd || parsedPayload.returnDate  || ''
+   };
+   returnQRPayload = JSON.stringify(filteredPayload);
  }
  }
 
@@ -1267,10 +1274,10 @@ function buildBorrowCard({ itemNames, itemTypes, returnDate, isOverdue, qrPayloa
  </button>`
  : `<div style="font-size:13px;color:var(--text-muted);font-style:italic;"> All consumable items — no return needed</div>`;
 
- // extract procedure/course/id from parsed QR payload
- const cardProc = (parsedPayload && parsedPayload.procedure) ? parsedPayload.procedure : "";
- const cardCourse = (parsedPayload && parsedPayload.course) ? parsedPayload.course : "";
- const cardIdNum = (parsedPayload && parsedPayload.idNumber) ? parsedPayload.idNumber : "";
+ // extract fields — support both short-key (new) and long-key (old) QR formats
+ const cardProc   = (parsedPayload && (parsedPayload.pr || parsedPayload.procedure)) || "";
+ const cardCourse = (parsedPayload && (parsedPayload.c  || parsedPayload.course))    || "";
+ const cardIdNum  = (parsedPayload && (parsedPayload.id || parsedPayload.idNumber))  || "";
 
  const procBadge = cardProc ? `
  <div style="display:inline-flex;align-items:center;gap:6px;background:#f0faf6;border:1px solid #b0dcc8;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px;">
@@ -1326,7 +1333,7 @@ function showReturnQR(itemNames, qrPayload) {
 
  setTimeout(()=>{
  try {
- QRCode.toCanvas(canvas, qrPayload, { width:260, margin:8, color:{ dark:'#0d4f4f', light:'#ffffff' } });
+ QRCode.toCanvas(canvas, qrPayload, { width: 320, margin: 3, errorCorrectionLevel: 'L', color: { dark: '#0d4f4f', light: '#ffffff' } });
  } catch(e) {
  showNotification("Error generating QR","error");
  }
