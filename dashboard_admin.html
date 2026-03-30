@@ -154,7 +154,7 @@
  <h1> Admin Dashboard</h1>
  <div class="navbar-right">
  <span>Welcome, <strong id="userName"></strong> <span id="roleTag"></span></span>
- <button class="menu-toggle" onclick="toggleMenu()"></button>
+ <button class="menu-toggle" onclick="toggleMenu()">&#9776;</button>
  </div>
 </div>
 
@@ -322,15 +322,6 @@
  </div>
  <div class="form-group"><label>Storage Location</label><input id="location" type="text" placeholder="e.g., Cabinet A1"></div>
  </div>
- <!-- Procedure picker -->
- <div class="form-group" style="margin-top:8px;">
- <label>Used in Procedures <span style="font-weight:400;color:var(--text-muted);font-size:12px;">(select all that apply)</span></label>
- <div class="proc-tags" id="addProcTags"></div>
- </div>
- <div id="suggestedItems">
- <div class="sugg-title"> Common items for this procedure</div>
- <div id="suggChips"></div>
- </div>
  <button onclick="addItem()" style="margin-top:16px;"> Add Item</button>
  </div>
 
@@ -355,11 +346,15 @@
  <div class="card">
  <h3> Borrow Tracking</h3>
  <div id="warningContainer"></div>
- <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
+ <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;align-items:center;">
  <button class="filter-btn active" onclick="setFilter('all',this)">All Borrowers</button>
  <button class="filter-btn" onclick="setFilter('borrowed',this)"> Active</button>
  <button class="filter-btn" onclick="setFilter('returned',this)"> Returned</button>
  <button class="filter-btn" onclick="setFilter('overdue',this)"> Overdue</button>
+ <button id="downloadSummaryBtn" onclick="downloadReturnedSummary()"
+   style="display:none;margin-left:auto;padding:7px 16px;font-size:13px;font-weight:700;background:var(--success);color:white;border:none;border-radius:20px;cursor:pointer;font-family:'DM Sans',sans-serif;width:auto;margin-top:0;transition:all 0.2s;">
+   ⬇ Download Summary
+ </button>
  </div>
  <div id="borrowerGrid"></div>
  </div>
@@ -543,8 +538,6 @@ function initAdminTabNav() {
  dots.appendChild(d);
  });
  updateAdminTabNav();
- // Init procedure tags
- buildProcTags('addProcTags', selectedAddProcs, updateSuggestions);
  // Init modals backdrop close
  ['profileModal','passwordModal','editModal','borrowerDetailModal','procedureModal'].forEach(id => {
  const el = document.getElementById(id);
@@ -871,17 +864,12 @@ function renderInvPage() {
  const end = Math.min(start + INV_PER_PAGE, total);
  const pageRows = _filteredInvRows.slice(start, end);
 
- table.innerHTML = '<thead><tr><th>Item</th><th>Size</th><th>Code</th><th>Stock</th><th>Status</th><th>Type</th><th>Location</th><th>Procedures</th><th>Actions</th></tr></thead><tbody></tbody>';
+ table.innerHTML = '<thead><tr><th>Item</th><th>Size</th><th>Code</th><th>Stock</th><th>Status</th><th>Type</th><th>Location</th><th>Actions</th></tr></thead><tbody></tbody>';
  const tbody = table.querySelector('tbody');
  pageRows.forEach(row => {
  const realIdx = currentData.indexOf(row);
  const stock = parseInt(row[4]) || 0;
  const unit = row[7] || 'pcs';
- // Procedures badges (col 8)
- const procIds = row[8] ? String(row[8]).split(',').map(p=>p.trim()).filter(Boolean) : [];
- const procHTML = procIds.length
- ? procIds.map(pid => { const p = PROCEDURES.find(x=>x.id===pid); return p ? `<span style="display:inline-block;background:#e8f4ff;color:#1a5fa0;border-radius:20px;padding:1px 7px;font-size:11px;font-weight:600;margin:1px;">${p.label.split(' ').slice(1).join(' ')}</span>` : ''; }).join('')
- : '<span style="color:var(--text-muted);font-size:12px;">—</span>';
  const stockBadge = stock===0 ? '<span class="stock-badge stock-out">Out of Stock</span>'
  : stock<=3 ? `<span class="stock-badge stock-low">Low (${stock})</span>`
  : `<span class="stock-badge stock-ok">In Stock (${stock})</span>`;
@@ -890,7 +878,7 @@ function renderInvPage() {
  : typeVal==='Non-Consumable' ? '<span class="type-pill type-nonconsumable">Non-Consumable</span>'
  : `<span style="color:var(--text-muted);font-size:13px;">${typeVal||'—'}</span>`;
  const tr = document.createElement('tr');
- tr.innerHTML = `<td style="font-weight:600;">${row[1]||'—'}</td><td>${row[2]||'—'}</td><td><code style="font-size:12px;background:#f4f7f6;padding:2px 6px;border-radius:4px;">${row[3]||'—'}</code></td><td style="font-weight:700;color:${stock===0?'var(--danger)':stock<=3?'var(--warning)':'var(--text-main)'}">${stock} <span style="font-size:11px;font-weight:400;color:var(--text-muted);">${unit}</span></td><td>${stockBadge}</td><td>${typePill}</td><td>${row[6]||'—'}</td><td>${procHTML}</td><td style="white-space:nowrap;"><button class="tbl-btn btn-success" onclick="openEditModal(${realIdx})" style="background:var(--primary);"> Edit</button><button class="tbl-btn btn-danger" onclick="deleteItem(${realIdx})"> Delete</button></td>`;
+ tr.innerHTML = `<td style="font-weight:600;">${row[1]||'—'}</td><td>${row[2]||'—'}</td><td><code style="font-size:12px;background:#f4f7f6;padding:2px 6px;border-radius:4px;">${row[3]||'—'}</code></td><td style="font-weight:700;color:${stock===0?'var(--danger)':stock<=3?'var(--warning)':'var(--text-main)'}">${stock} <span style="font-size:11px;font-weight:400;color:var(--text-muted);">${unit}</span></td><td>${stockBadge}</td><td>${typePill}</td><td>${row[6]||'—'}</td><td style="white-space:nowrap;"><button class="tbl-btn btn-success" onclick="openEditModal(${realIdx})" style="background:var(--primary);"> Edit</button><button class="tbl-btn btn-danger" onclick="deleteItem(${realIdx})"> Delete</button></td>`;
  tbody.appendChild(tr);
  });
  // Pagination
@@ -918,6 +906,10 @@ function loadItems() {
  _invPage = 1;
  renderInvPage();
  renderAlerts();
+ // Also refresh shelf/addstock views if they are currently active
+ const activeTab = ADMIN_TABS[_adminTabIdx] ? ADMIN_TABS[_adminTabIdx].id : '';
+ if (activeTab === 'shelf-tab') renderShelfView();
+ if (activeTab === 'addstock-tab') renderAddStock();
  })
  .catch(() => showNotification("Failed to load inventory","error"));
 }
@@ -1012,8 +1004,6 @@ function addItem() {
  const unit = document.getElementById("stockUnit").value || "pcs";
  const type = document.getElementById("type").value;
  const location = document.getElementById("location").value.trim();
- const procs = Array.from(selectedAddProcs).join(",");
-
  if (!item) { showNotification("Please enter item name","error"); return; }
  if (!code) { showNotification("Please enter item code","error"); return; }
  if (!stock) { showNotification("Please enter stock quantity","error"); return; }
@@ -1026,7 +1016,7 @@ function addItem() {
 
  fetch(API, { method:"POST", body: new URLSearchParams({
  action:"addItem", item, size, code, stock, unit, type, location,
- procedures: procs, owner: localStorage.getItem("userID")
+ owner: localStorage.getItem("userID")
  })})
  .then(r=>r.json())
  .then(data => {
@@ -1036,9 +1026,6 @@ function addItem() {
  ["item","size","code","stock","location"].forEach(id => document.getElementById(id).value = "");
  document.getElementById("type").value = "";
  document.getElementById("stockUnit").value = "pcs";
- selectedAddProcs.clear();
- buildProcTags('addProcTags', selectedAddProcs, updateSuggestions);
- updateSuggestions();
  loadItems();
  } else showNotification(data.message||"Failed to add item","error");
  })
@@ -1050,7 +1037,42 @@ function setFilter(filter, btn) {
  currentFilter = filter;
  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
  btn.classList.add('active');
+ // Show download button only for Returned filter
+ const dlBtn = document.getElementById('downloadSummaryBtn');
+ if (dlBtn) dlBtn.style.display = filter === 'returned' ? 'inline-block' : 'none';
  renderBorrowerGrid();
+}
+
+function downloadReturnedSummary() {
+ // Collect returned records
+ const returnedRecords = allBorrowRecords.filter(r => r[6] === 'Returned');
+ if (returnedRecords.length === 0) {
+   showNotification('No returned records to download', 'error');
+   return;
+ }
+
+ // Build CSV content
+ const headers = ['Student Name','ID Number','Course','Subject','Procedure','Items','Borrow Date','Due Date','Actual Return Date','Processed By'];
+ const rows = returnedRecords.map(r => {
+   const itemNames = resolveAdminItemNames(r[3]).join(' | ');
+   const borrowDate = r[4] ? new Date(r[4]).toLocaleString() : '—';
+   const dueDate = r[5] ? new Date(r[5]).toLocaleString() : '—';
+   const actualReturn = r[14] ? new Date(r[14]).toLocaleString() : '—';
+   return [
+     r[2]||'', r[10]||'', r[11]||'', r[12]||'', r[13]||'',
+     itemNames, borrowDate, dueDate, actualReturn, r[8]||''
+   ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(',');
+ });
+
+ const csv = [headers.join(','), ...rows].join('\n');
+ const blob = new Blob([csv], { type: 'text/csv' });
+ const url = URL.createObjectURL(blob);
+ const a = document.createElement('a');
+ a.href = url;
+ a.download = `returned_summary_${new Date().toISOString().slice(0,10)}.csv`;
+ a.click();
+ URL.revokeObjectURL(url);
+ showNotification(`Downloaded ${returnedRecords.length} returned record(s)`, 'success');
 }
 
 function loadBorrowedItemsTracking() {
@@ -1349,7 +1371,6 @@ function persistProcedures(procs, done) {
 function syncProceduresArray(procs) {
  PROCEDURES.length = 0;
  procs.forEach(p => PROCEDURES.push({ id: p.id, label: p.label }));
- buildProcTags('addProcTags', selectedAddProcs, updateSuggestions);
 }
 
 function renderProceduresManager() {
