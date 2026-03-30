@@ -348,18 +348,31 @@ function showConfirmReturnModal(data) {
 
 function validateReturnCounts() {
  const count = parseInt(document.getElementById("ret_item_count").value) || 0;
- let warning = "";
+ let errorMsg = "";
+ const missingList = [];
+
  for (let i = 0; i < count; i++) {
- const type = document.getElementById(`ret_type_${i}`)?.value || "";
- if (type === "Consumable") continue;
- const maxQty = parseInt(document.getElementById(`ret_qty_${i}`).value) || 0;
- const actual = parseInt(document.getElementById(`ret_count_${i}`)?.value) || 0;
- const name = document.getElementById(`ret_name_${i}`)?.value || `Item ${i+1}`;
- if (actual > maxQty) { warning = `"${name}" cannot exceed borrowed quantity (${maxQty}).`; break; }
+   const type = document.getElementById(`ret_type_${i}`)?.value || "";
+   if (type === "Consumable") continue;
+   const maxQty = parseInt(document.getElementById(`ret_qty_${i}`)?.value) || 0;
+   const actual = parseInt(document.getElementById(`ret_count_${i}`)?.value);
+   const name   = document.getElementById(`ret_name_${i}`)?.value || `Item ${i+1}`;
+   if (!isNaN(actual)) {
+     if (actual > maxQty) { errorMsg = `"${name}" cannot exceed ${maxQty}.`; break; }
+     if (actual < maxQty) missingList.push(`${name}: ${maxQty - actual} missing`);
+   }
  }
+
  const wEl = document.getElementById("confirmSummaryWarning");
- wEl.textContent = warning;
- wEl.style.display = warning ? "block" : "none";
+ if (errorMsg) {
+   wEl.innerHTML = `⚠ ${errorMsg}`;
+   wEl.style.cssText = "display:block;background:#fff5f5;border:1px solid #f5c6c6;border-radius:8px;padding:10px 14px;margin:12px 0;font-size:13px;color:#c0392b;font-weight:600;";
+ } else if (missingList.length > 0) {
+   wEl.innerHTML = `⚠ <strong>Items short:</strong> ${missingList.join(" &nbsp;·&nbsp; ")}<br><small style="font-weight:400;">You can still confirm — missing items will be flagged in the record.</small>`;
+   wEl.style.cssText = "display:block;background:#fff9e6;border:1px solid #ffc107;border-radius:8px;padding:10px 14px;margin:12px 0;font-size:13px;color:#856404;font-weight:600;";
+ } else {
+   wEl.style.display = "none";
+ }
 }
 
 function closeConfirmModal() {
@@ -376,69 +389,124 @@ function confirmAndProcessReturn() {
 
  const count = parseInt(document.getElementById("ret_item_count").value) || 0;
 
- // Validate
+ // ── Step 1: Gather item counts ──────────────────────────────────────────────
+ const summaryItems = [];
+ const missingItems = [];
+
  for (let i = 0; i < count; i++) {
- const type = document.getElementById(`ret_type_${i}`)?.value || "";
- if (type === "Consumable") continue;
- const maxQty = parseInt(document.getElementById(`ret_qty_${i}`).value) || 0;
- const actual = parseInt(document.getElementById(`ret_count_${i}`)?.value);
- if (actual === null || actual === undefined || isNaN(actual)) {
- showNotification("Please enter count for all items", "error"); return;
- }
- if (actual > maxQty) {
- showNotification(`Count for "${document.getElementById(`ret_name_${i}`).value}" exceeds borrowed qty`, "error");
- return;
- }
+   const id     = document.getElementById(`ret_id_${i}`)?.value   || "";
+   const type   = document.getElementById(`ret_type_${i}`)?.value  || "";
+   const name   = document.getElementById(`ret_name_${i}`)?.value  || `Item ${i+1}`;
+   const maxQty = parseInt(document.getElementById(`ret_qty_${i}`)?.value) || 0;
+
+   let actual;
+   if (type === "Consumable") {
+     actual = 0; // consumables are never returned
+   } else {
+     actual = parseInt(document.getElementById(`ret_count_${i}`)?.value);
+     if (actual === null || actual === undefined || isNaN(actual)) {
+       showNotification(`Please enter the returned count for "${name}"`, "error"); return;
+     }
+     if (actual > maxQty) {
+       showNotification(`"${name}" count cannot exceed borrowed quantity (${maxQty})`, "error"); return;
+     }
+   }
+
+   summaryItems.push({ id, name, type, qty: maxQty, returned: actual });
+   if (type !== "Consumable" && actual < maxQty) {
+     missingItems.push({ name, missing: maxQty - actual });
+   }
  }
 
- // Gather summary data for print
- const summaryItems = [];
- for (let i = 0; i < count; i++) {
- const type = document.getElementById(`ret_type_${i}`)?.value || "";
- const name = document.getElementById(`ret_name_${i}`)?.value || `Item ${i+1}`;
- const qty = parseInt(document.getElementById(`ret_qty_${i}`)?.value) || 0;
- const actual = type === "Consumable" ? 0 : (parseInt(document.getElementById(`ret_count_${i}`)?.value) || 0);
- summaryItems.push({ name, type, qty, returned: actual });
+ // ── Step 2: If items are missing, warn and require confirmation ─────────────
+ const warnEl = document.getElementById("confirmSummaryWarning");
+ if (missingItems.length > 0 && !_missingItemsAcknowledged) {
+   const missingText = missingItems.map(m =>
+     `• ${m.name}: ${m.missing} not returned`
+   ).join("<br>");
+   warnEl.innerHTML = `
+     <strong>⚠ Missing Items Detected!</strong><br>${missingText}<br><br>
+     These items will be marked as <strong>not returned</strong> in the record.
+     Stock will only be restored for items actually returned.<br><br>
+     <button onclick="acknowledgeMissingAndConfirm()"
+       style="background:#c0392b;color:white;border:none;border-radius:8px;padding:9px 18px;
+              font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-right:8px;">
+       Confirm Anyway — Mark as Partial Return
+     </button>
+     <button onclick="document.getElementById('confirmSummaryWarning').style.display='none';_missingItemsAcknowledged=false;"
+       style="background:white;color:#333;border:1.5px solid #ccc;border-radius:8px;padding:9px 18px;
+              font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">
+       Go Back & Recount
+     </button>`;
+   warnEl.style.display = "block";
+   _missingItemsAcknowledged = false;
+   return; // stop — wait for admin decision
  }
+
+ // Reset flag and hide warning
+ _missingItemsAcknowledged = false;
+ warnEl.style.display = "none";
 
  document.getElementById("confirmReturnModal").classList.remove("open");
  _pendingReturnData = null;
 
+ // ── Step 3: Build items string with ACTUAL returned quantities only ──────────
+ // Only non-consumable items with qty > 0 get stock restored
+ const actualItemsStr = summaryItems
+   .filter(it => it.type !== "Consumable" && it.returned > 0)
+   .map(it => `${it.id}:${it.returned}`)
+   .join(",");
+
+ // If nothing was actually returned (all lost), still mark record as returned
+ // but pass original items so the record closes; stock restore will be 0
+ const itemsForAPI = actualItemsStr || data.items;
+
  // Process return via API
  showResult("return", `
  <div class="borrow-header">Processing Return...</div>
- <div class="borrow-info"><p><strong>Borrower:</strong> ${data.studentName}</p></div>`);
+ <div class="borrow-info"><p><strong>Borrower:</strong> ${data.studentName || data.n}</p></div>`);
 
  fetch(API, {
- method: "POST",
- body: new URLSearchParams({
- action: "returnItem", student: data.student,
- studentName: data.studentName, items: data.items
- })
+   method: "POST",
+   body: new URLSearchParams({
+     action: "returnItem",
+     student: data.student || data.s,
+     studentName: data.studentName || data.n,
+     items: itemsForAPI
+   })
  })
  .then(r => r.json())
  .then(response => {
- if (response.status === "success") {
- showResult("success", `
- <div class="borrow-header">Return Confirmed!</div>
- <div class="borrow-info">
- <p><strong>Borrower:</strong> ${data.studentName}</p>
- </div>
- <div style="margin-top:12px;padding:12px;background:#d4f3e8;border-radius:8px;color:#1a6e4a;font-weight:600;">Stock has been restored
- </div>`);
-
- // Render summary sheet and prompt print
- renderAndPrintSummary(data, summaryItems);
- resetScanner(4000);
- } else {
- showNotification(response.message || "Return failed", "error");
- clearResult(); isProcessing = false; resumeScanner();
- }
+   if (response.status === "success") {
+     const hasMissing = missingItems.length > 0;
+     showResult("success", `
+       <div class="borrow-header">${hasMissing ? "⚠ Partial Return Recorded" : "✅ Return Confirmed!"}</div>
+       <div class="borrow-info">
+         <p><strong>Borrower:</strong> ${data.studentName || data.n}</p>
+         ${hasMissing ? `<p style="color:#c0392b;font-weight:600;">Missing: ${missingItems.map(m=>m.name).join(", ")}</p>` : ""}
+       </div>
+       <div style="margin-top:12px;padding:12px;background:${hasMissing?'#fff3cd':'#d4f3e8'};border-radius:8px;
+                   color:${hasMissing?'#856404':'#1a6e4a'};font-weight:600;">
+         ${hasMissing ? "Partial stock restored — missing items flagged" : "Stock has been restored"}
+       </div>`);
+     renderAndPrintSummary(data, summaryItems);
+     resetScanner(5000);
+   } else {
+     showNotification(response.message || "Return failed", "error");
+     clearResult(); isProcessing = false; resumeScanner();
+   }
  })
  .catch(err => {
- showNotification("Error processing return: " + err.message, "error");
- clearResult(); isProcessing = false; resumeScanner();
+   showNotification("Error processing return: " + err.message, "error");
+   clearResult(); isProcessing = false; resumeScanner();
  });
+}
+
+// Flag set when admin acknowledges missing items and clicks "Confirm Anyway"
+let _missingItemsAcknowledged = false;
+function acknowledgeMissingAndConfirm() {
+ _missingItemsAcknowledged = true;
+ confirmAndProcessReturn();
 }
 
 // Build and print summary sheet
