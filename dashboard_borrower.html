@@ -717,23 +717,15 @@ function renderItemsPage() {
  : "";
  const isSelected = selectedItems.find(i => i.id === itemId);
  const isProcMatch = isProcedureMatch({ name, size, loc, itemId });
- const procHighlight = isProcMatch
-   ? `<span style="font-size:11px;background:#fff3cd;color:#856404;border:1px solid #ffc107;padding:2px 8px;border-radius:10px;font-weight:700;">⭐ Recommended</span>`
-   : '';
  const el = document.createElement("div");
  el.className = "tap-item" + (!avail ? " tap-item-disabled" : "") + (isSelected ? " tap-item-selected" : "");
  el.id = `ti_${itemId}`;
  if (avail) el.onclick = () => tapItem(itemId);
- if (isProcMatch && avail && !isSelected) {
-   el.style.borderColor = '#ffc107';
-   el.style.background = '#fffdf0';
-   el.style.boxShadow = '0 2px 10px rgba(255,193,7,0.2)';
- }
  el.innerHTML = `
  <div style="flex:1;">
  <div style="font-weight:600;font-size:14px;color:var(--primary);">${name}${size ? ` <em style="color:var(--text-muted);font-weight:400;font-size:13px;">— ${size}</em>` : ""}</div>
  <div style="display:flex;gap:8px;align-items:center;margin-top:4px;flex-wrap:wrap;">
- ${typePill}${locPill}${procHighlight}
+ ${typePill}${locPill}
  <span style="font-size:12px;font-weight:600;color:${avail ? "var(--success)" : "var(--danger)"};">${avail ? `Stock: ${stock}` : "Out of stock"}</span>
  </div>
  </div>
@@ -924,23 +916,49 @@ function applyProcedureItems() {
 
 // Called when procedure dropdown changes — highlight matching items
 let _activeProcedureItems = [];
+let _procedureAutoSelectedIds = []; // track which items were auto-selected by procedure
+
 function onProcedureDropdownChange() {
  const val = document.getElementById("borrowProcedure").value;
+
+ // Deselect previously auto-selected items before switching
+ _procedureAutoSelectedIds.forEach(id => {
+   selectedItems = selectedItems.filter(i => i.id !== id);
+ });
+ _procedureAutoSelectedIds = [];
  _activeProcedureItems = [];
+
  if (val) {
    const proc = _loadedProcedures.find(p => p.label === val);
    if (proc) {
      _currentProcedure = proc;
      _activeProcedureItems = (proc.items || []).map(s => s.toLowerCase());
+
+     // Auto-select all matching available items
+     let autoAdded = 0;
+     _allItemRows.forEach(row => {
+       if (!row.avail) return;
+       if (isProcedureMatch(row)) {
+         if (!selectedItems.find(s => s.id === row.itemId)) {
+           selectedItems.push({ id: row.itemId, name: itemNameMap[row.itemId], qty: 1 });
+           _procedureAutoSelectedIds.push(row.itemId);
+           autoAdded++;
+         }
+       }
+     });
+
+     if (autoAdded > 0) {
+       showNotification(`Auto-selected ${autoAdded} item${autoAdded !== 1 ? 's' : ''} for "${proc.label}" — adjust quantities as needed`, 'success');
+     } else {
+       showNotification(`No matching available items found for "${proc.label}"`, 'info');
+     }
    }
  } else {
    _currentProcedure = null;
  }
+
  _itemPage = 1;
  filterItems();
- if (val && _activeProcedureItems.length > 0) {
-   showNotification(`Showing highlighted items for "${val}" — select quantities and borrow`, 'info');
- }
 }
 
 // Shelf / Location Filter Population 
@@ -1074,6 +1092,9 @@ function saveQRCode() {
 
 function resetBorrowForm() {
  selectedItems = [];
+ _activeProcedureItems = [];
+ _procedureAutoSelectedIds = [];
+ _currentProcedure = null;
  document.getElementById("searchItems").value = "";
  document.getElementById("returnDate").value = "";
  document.getElementById("qrResultBox").style.display = "none";
