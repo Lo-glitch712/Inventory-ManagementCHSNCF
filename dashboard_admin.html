@@ -397,6 +397,38 @@
  </div>
  </div>
 
+ <!-- TAB: Monthly Summary -->
+ <div id="summary-tab" class="tab-content">
+ <div class="card">
+ <h3> Monthly Summary</h3>
+
+ <!-- Month/Year picker -->
+ <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:20px;">
+ <div style="display:flex;gap:8px;align-items:center;">
+ <select id="summaryMonth" onchange="renderMonthlySummary()"
+ style="padding:9px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text-main);background:var(--surface);outline:none;width:auto;cursor:pointer;">
+ <option value="0">January</option><option value="1">February</option>
+ <option value="2">March</option><option value="3">April</option>
+ <option value="4">May</option><option value="5">June</option>
+ <option value="6">July</option><option value="7">August</option>
+ <option value="8">September</option><option value="9">October</option>
+ <option value="10">November</option><option value="11">December</option>
+ </select>
+ <select id="summaryYear" onchange="renderMonthlySummary()"
+ style="padding:9px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text-main);background:var(--surface);outline:none;width:auto;cursor:pointer;">
+ </select>
+ </div>
+ <button onclick="downloadMonthlySummary()"
+ style="padding:9px 20px;font-size:13px;font-weight:700;background:var(--success);color:white;border:none;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;width:auto;margin:0;transition:all 0.2s;">
+ ⬇ Download CSV
+ </button>
+ </div>
+
+ <!-- Summary content renders here -->
+ <div id="summaryContent"></div>
+ </div>
+ </div>
+
  <!-- TAB: Scanner -->
  <div id="scanner-tab" class="tab-content">
  <div class="card">
@@ -506,12 +538,13 @@ function updateSuggestions() {
 
 // Arrow Tab Navigation 
 const ADMIN_TABS = [
- { id: 'inventory-tab', label: 'Inventory' },
- { id: 'addstock-tab', label: 'Add Stock' },
- { id: 'alerts-tab', label: 'Alerts' },
- { id: 'borrowed-tab', label: 'Borrows' },
- { id: 'procedures-tab', label: 'Procedures' },
- { id: 'scanner-tab', label: 'Scanner' }
+ { id: 'inventory-tab', label: ' Inventory' },
+ { id: 'addstock-tab', label: ' Add Stock' },
+ { id: 'alerts-tab', label: ' Alerts' },
+ { id: 'borrowed-tab', label: ' Borrows' },
+ { id: 'summary-tab', label: ' Monthly Summary' },
+ { id: 'procedures-tab', label: ' Procedures' },
+ { id: 'scanner-tab', label: ' Scanner' }
 ];
 let _adminTabIdx = 0;
 
@@ -547,6 +580,7 @@ function goToAdminTab(idx) {
  if (tabId === 'addstock-tab') renderAddStock();
  if (tabId === 'alerts-tab') renderAlerts();
  if (tabId === 'procedures-tab') renderProceduresManager();
+ if (tabId === 'summary-tab') renderMonthlySummary();
 }
 
 function updateAdminTabNav() {
@@ -1468,9 +1502,326 @@ function removeProcItem(idx) {
  persistProcedures(procs, () => renderProcModalItems(proc));
 }
 
+// ── Monthly Summary ───────────────────────────────────────────────────────────
+
+function initSummaryDatePicker() {
+ const now = new Date();
+ const monthSel = document.getElementById('summaryMonth');
+ const yearSel = document.getElementById('summaryYear');
+ if (!monthSel || !yearSel) return;
+
+ monthSel.value = now.getMonth();
+
+ // Populate years: 3 years back to current
+ yearSel.innerHTML = '';
+ for (let y = now.getFullYear() - 3; y <= now.getFullYear(); y++) {
+ const opt = document.createElement('option');
+ opt.value = y; opt.textContent = y;
+ if (y === now.getFullYear()) opt.selected = true;
+ yearSel.appendChild(opt);
+ }
+}
+
+function renderMonthlySummary() {
+ const monthSel = document.getElementById('summaryMonth');
+ const yearSel  = document.getElementById('summaryYear');
+ const content  = document.getElementById('summaryContent');
+ if (!monthSel || !yearSel || !content) return;
+
+ const month = parseInt(monthSel.value);
+ const year  = parseInt(yearSel.value);
+
+ // Determine start/end of the selected month
+ const monthStart = new Date(year, month, 1);
+ const monthEnd   = new Date(year, month + 1, 0, 23, 59, 59);
+
+ const monthName = monthSel.options[monthSel.selectedIndex].text;
+
+ // Filter borrow records to this month (borrow date in range)
+ const monthRecords = allBorrowRecords.filter(r => {
+ const bd = new Date(r[4]);
+ return bd >= monthStart && bd <= monthEnd;
+ });
+
+ if (!currentData || currentData.length === 0) {
+ content.innerHTML = "<div class='empty-state'><div class='icon'></div>Inventory data not loaded yet</div>";
+ return;
+ }
+
+ // ── Aggregate borrow/return stats ─────────────────────────────────────────
+ // For each borrow record, extract items borrowed and types
+ const itemStats = {}; // keyed by inventory ID
+
+ // Build a lookup: inventory id → row
+ const invLookup = {};
+ currentData.forEach(row => { invLookup[String(row[0])] = row; });
+
+ monthRecords.forEach(record => {
+ const rawItems  = String(record[3] || '');
+ const typeList  = String(record[9] || '').split(',');
+ const status    = record[6];
+ const isReturned = status === 'Returned';
+
+ rawItems.split(',').forEach((entry, idx) => {
+ const parts = entry.trim().split(':');
+ const id  = parts[0].trim();
+ const qty = parseInt(parts[1]) || 1;
+ if (!id) return;
+
+ if (!itemStats[id]) {
+  const invRow = invLookup[id] || null;
+  itemStats[id] = {
+  id,
+  name:    invRow ? (invRow[1] + (invRow[2] ? ' (' + invRow[2] + ')' : '')) : ('Item #' + id),
+  type:    invRow ? (invRow[5] || '') : (typeList[idx] || ''),
+  unit:    invRow ? (invRow[7] || 'pcs') : 'pcs',
+  currentStock: invRow ? (parseInt(invRow[4]) || 0) : 0,
+  borrowed: 0,
+  returned: 0,
+  consumed: 0, // Consumable returned = consumed (not restored)
+  lost:     0  // Non-consumable borrowed but not returned
+  };
+ }
+
+ const itype = (typeList[idx] || itemStats[id].type || '').trim();
+ itemStats[id].type = itype || itemStats[id].type;
+ itemStats[id].borrowed += qty;
+ if (isReturned) itemStats[id].returned += qty;
+ });
+ });
+
+ // Calculate consumed/lost
+ Object.values(itemStats).forEach(s => {
+ if (s.type === 'Consumable') {
+ // Consumable items are "used/consumed" when borrowed (regardless of "return")
+ s.consumed = s.borrowed;
+ } else {
+ // Non-consumable: lost = borrowed - returned (active borrows still out)
+ const stillOut = s.borrowed - s.returned;
+ s.lost = stillOut < 0 ? 0 : stillOut;
+ }
+ });
+
+ // Overview totals
+ const totalBorrowed = monthRecords.length;
+ const totalReturned = monthRecords.filter(r => r[6] === 'Returned').length;
+ const totalActive   = totalBorrowed - totalReturned;
+
+ const consumable    = Object.values(itemStats).filter(s => s.type === 'Consumable');
+ const nonConsumable = Object.values(itemStats).filter(s => s.type === 'Non-Consumable');
+ const unknown       = Object.values(itemStats).filter(s => s.type !== 'Consumable' && s.type !== 'Non-Consumable');
+
+ // ── Build HTML ─────────────────────────────────────────────────────────────
+ let html = '';
+
+ // Overview bar
+ html += `
+ <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:20px;">
+ ${statBox('Total Transactions', totalBorrowed, '#e8f4f0', 'var(--primary)')}
+ ${statBox('Returned', totalReturned, '#d4f3e8', 'var(--success)')}
+ ${statBox('Active / Overdue', totalActive, totalActive>0?'#fff8e1':'#f0faf6', totalActive>0?'var(--warning)':'var(--text-muted)')}
+ ${statBox('Consumable Items', consumable.length, '#e8f0ff', '#2d4fa0')}
+ ${statBox('Non-Consumable Items', nonConsumable.length, '#f0faf6', 'var(--success)')}
+ </div>`;
+
+ if (monthRecords.length === 0) {
+ html += `<div class='empty-state' style='padding:30px;'><div class='icon'></div>No borrow records for ${monthName} ${year}</div>`;
+ content.innerHTML = html;
+ return;
+ }
+
+ // ── Section 1: Borrow / Return Overview ───────────────────────────────────
+ html += `
+ <div style="margin-bottom:24px;">
+ <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--primary);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--primary);">
+ Borrow &amp; Return Overview — ${monthName} ${year}
+ </div>
+ <div class="table-wrapper">
+ <table>
+ <thead><tr>
+ <th>Item</th><th>Type</th><th>Times Borrowed</th><th>Times Returned</th><th>Still Out</th>
+ </tr></thead>
+ <tbody>`;
+
+ const allItems = [...consumable, ...nonConsumable, ...unknown].sort((a,b)=>b.borrowed-a.borrowed);
+
+ if (allItems.length === 0) {
+ html += `<tr><td colspan="5" style="text-align:center;color:#999;padding:20px;">No individual item records for this month</td></tr>`;
+ } else {
+ allItems.forEach(s => {
+  const stillOut = s.borrowed - s.returned;
+  const stillOutClr = stillOut > 0 ? 'color:var(--warning);font-weight:700;' : 'color:var(--text-muted);';
+  const typePill = s.type === 'Consumable'
+  ? '<span style="background:#e8f0ff;color:#2d4fa0;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">Consumable</span>'
+  : s.type === 'Non-Consumable'
+  ? '<span style="background:#f0faf6;color:var(--success);padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">Non-Consumable</span>'
+  : `<span style="color:var(--text-muted);font-size:12px;">${s.type||'—'}</span>`;
+  html += `<tr>
+  <td style="font-weight:600;">${s.name}</td>
+  <td>${typePill}</td>
+  <td style="text-align:center;font-weight:600;">${s.borrowed}</td>
+  <td style="text-align:center;">${s.returned}</td>
+  <td style="text-align:center;${stillOutClr}">${stillOut > 0 ? stillOut : '—'}</td>
+ </tr>`;
+ });
+ }
+
+ html += `</tbody></table></div></div>`;
+
+ // ── Section 2: Consumable Items ───────────────────────────────────────────
+ html += `
+ <div style="margin-bottom:24px;">
+ <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#2d4fa0;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #b8d0ff;">
+ Consumable Items — Usage Summary
+ </div>`;
+
+ if (consumable.length === 0) {
+ html += `<div style="color:var(--text-muted);font-size:14px;padding:16px 0;font-style:italic;">No consumable item records for this month.</div>`;
+ } else {
+ html += `
+ <div class="table-wrapper">
+ <table>
+ <thead><tr>
+ <th>Item</th>
+ <th title="Current stock in inventory">Available Stock</th>
+ <th title="Times borrowed/used this month">Used / Consumed</th>
+ <th title="Estimated stock at start of month = current + consumed">Est. Start-of-Month Stock</th>
+ </tr></thead>
+ <tbody>`;
+ consumable.sort((a,b)=>b.consumed-a.consumed).forEach(s => {
+  const estStart = s.currentStock + s.consumed;
+  html += `<tr>
+  <td style="font-weight:600;">${s.name}</td>
+  <td style="text-align:center;">${s.currentStock} <span style="font-size:11px;color:var(--text-muted);">${s.unit}</span></td>
+  <td style="text-align:center;font-weight:700;color:#2d4fa0;">${s.consumed} <span style="font-size:11px;color:var(--text-muted);">${s.unit}</span></td>
+  <td style="text-align:center;color:var(--text-muted);">${estStart} <span style="font-size:11px;">${s.unit}</span></td>
+ </tr>`;
+ });
+ html += `</tbody></table></div>
+ <p style="font-size:12px;color:var(--text-muted);margin-top:8px;font-style:italic;">
+ * Est. Start-of-Month Stock = Current Available + Consumed this month (approximation)
+ </p>`;
+ }
+ html += `</div>`;
+
+ // ── Section 3: Non-Consumable Items ───────────────────────────────────────
+ html += `
+ <div>
+ <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--success);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #b0d9cb;">
+ Non-Consumable Items — Availability &amp; Loss Tracking
+ </div>`;
+
+ if (nonConsumable.length === 0) {
+ html += `<div style="color:var(--text-muted);font-size:14px;padding:16px 0;font-style:italic;">No non-consumable item records for this month.</div>`;
+ } else {
+ html += `
+ <div class="table-wrapper">
+ <table>
+ <thead><tr>
+ <th>Item</th>
+ <th>Available Stock</th>
+ <th>Times Borrowed</th>
+ <th>Times Returned</th>
+ <th>Not Yet Returned</th>
+ </tr></thead>
+ <tbody>`;
+ nonConsumable.sort((a,b)=>b.lost-a.lost).forEach(s => {
+  const lostClr = s.lost > 0 ? 'color:var(--danger);font-weight:700;' : 'color:var(--text-muted);';
+  html += `<tr>
+  <td style="font-weight:600;">${s.name}</td>
+  <td style="text-align:center;">${s.currentStock} <span style="font-size:11px;color:var(--text-muted);">${s.unit}</span></td>
+  <td style="text-align:center;">${s.borrowed}</td>
+  <td style="text-align:center;">${s.returned}</td>
+  <td style="text-align:center;${lostClr}">${s.lost > 0 ? s.lost : '—'}</td>
+ </tr>`;
+ });
+ html += `</tbody></table></div>
+ <p style="font-size:12px;color:var(--text-muted);margin-top:8px;font-style:italic;">
+ * "Not Yet Returned" includes active borrows + any unreturned items from this month.
+ </p>`;
+ }
+ html += `</div>`;
+
+ content.innerHTML = html;
+}
+
+function statBox(label, value, bg, color) {
+ return `
+ <div style="background:${bg};border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:14px 16px;text-align:center;">
+ <div style="font-size:22px;font-weight:800;color:${color};line-height:1;">${value}</div>
+ <div style="font-size:12px;color:var(--text-muted);margin-top:4px;font-weight:500;">${label}</div>
+ </div>`;
+}
+
+function downloadMonthlySummary() {
+ const monthSel = document.getElementById('summaryMonth');
+ const yearSel  = document.getElementById('summaryYear');
+ if (!monthSel || !yearSel) return;
+
+ const month = parseInt(monthSel.value);
+ const year  = parseInt(yearSel.value);
+ const monthName = monthSel.options[monthSel.selectedIndex].text;
+
+ const monthStart = new Date(year, month, 1);
+ const monthEnd   = new Date(year, month + 1, 0, 23, 59, 59);
+
+ const monthRecords = allBorrowRecords.filter(r => {
+ const bd = new Date(r[4]);
+ return bd >= monthStart && bd <= monthEnd;
+ });
+
+ const invLookup = {};
+ currentData.forEach(row => { invLookup[String(row[0])] = row; });
+
+ const itemStats = {};
+ monthRecords.forEach(record => {
+ const rawItems = String(record[3] || '');
+ const typeList = String(record[9] || '').split(',');
+ const isReturned = record[6] === 'Returned';
+ rawItems.split(',').forEach((entry, idx) => {
+  const parts = entry.trim().split(':');
+  const id = parts[0].trim();
+  const qty = parseInt(parts[1]) || 1;
+  if (!id) return;
+  if (!itemStats[id]) {
+  const invRow = invLookup[id] || null;
+  itemStats[id] = {
+   id, name: invRow ? (invRow[1] + (invRow[2] ? ' (' + invRow[2] + ')' : '')) : ('Item #' + id),
+   type: invRow ? (invRow[5] || '') : (typeList[idx] || ''),
+   unit: invRow ? (invRow[7] || 'pcs') : 'pcs',
+   currentStock: invRow ? (parseInt(invRow[4]) || 0) : 0,
+   borrowed: 0, returned: 0
+  };
+  }
+  itemStats[id].borrowed += qty;
+  if (isReturned) itemStats[id].returned += qty;
+ });
+ });
+
+ const rows = [['Month', 'Item', 'Type', 'Available Stock', 'Unit', 'Times Borrowed', 'Times Returned', 'Not Yet Returned / Consumed']];
+ Object.values(itemStats).forEach(s => {
+ const stillOut = Math.max(0, s.borrowed - s.returned);
+ rows.push([
+  `${monthName} ${year}`, s.name, s.type, s.currentStock, s.unit,
+  s.borrowed, s.returned, stillOut
+ ]);
+ });
+
+ const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+ const blob = new Blob([csv], { type: 'text/csv' });
+ const url  = URL.createObjectURL(blob);
+ const a    = document.createElement('a');
+ a.href = url;
+ a.download = `monthly_summary_${monthName}_${year}.csv`;
+ a.click();
+ URL.revokeObjectURL(url);
+ showNotification(`Downloaded summary for ${monthName} ${year}`, 'success');
+}
+
 checkAuth();
 loadItems();
 initAdminTabNav();
+initSummaryDatePicker();
 setTimeout(renderAlerts, 1200);
 </script>
 

@@ -15,9 +15,20 @@
 
   <div class="auth-card">
     <h2>Create Account</h2>
-    <p class="subtitle">Student borrower registration</p>
+    <p class="subtitle">Register for the CHS VITAL System</p>
 
-    <div class="hint-box">
+    <!-- Role selector -->
+    <div class="form-group">
+      <label for="roleSelect">Account Type</label>
+      <select id="roleSelect" onchange="handleRoleChange(this.value)" required>
+        <option value="">— Select your role —</option>
+        <option value="Borrower">Borrower (Student)</option>
+        <option value="CI Borrower">Clinical Instructor</option>
+      </select>
+    </div>
+
+    <!-- Email hint: shown conditionally -->
+    <div id="emailHintBox" class="hint-box" style="display:none;">
       Use your school email: <strong>yourname@gbox.ncf.edu.ph</strong>
     </div>
 
@@ -26,9 +37,10 @@
       <input id="name" type="text" placeholder="e.g., Juan dela Cruz" autocomplete="name" required>
     </div>
 
-    <div class="form-group">
+    <!-- Student-only: ID Number -->
+    <div class="form-group" id="fieldIdNumber">
       <label for="idNumber">School ID Number</label>
-      <input id="idNumber" type="text" placeholder="e.g., 2024-00123" required>
+      <input id="idNumber" type="text" placeholder="e.g., 2024-00123">
       <small style="color:var(--text-muted);font-size:12px;margin-top:4px;display:block;">
         Your school-issued student ID number
       </small>
@@ -39,9 +51,10 @@
       <input id="department" type="text" placeholder="e.g., Nursing, Medicine" required>
     </div>
 
-    <div class="form-group">
+    <!-- Student-only: Year Level -->
+    <div class="form-group" id="fieldYear">
       <label for="year">Year Level</label>
-      <input id="year" type="number" placeholder="e.g., 1, 2, 3, 4" min="1" max="6" required>
+      <input id="year" type="number" placeholder="e.g., 1, 2, 3, 4" min="1" max="6">
     </div>
 
     <div class="form-group">
@@ -50,9 +63,9 @@
     </div>
 
     <div class="form-group">
-      <label for="email">School Email</label>
+      <label for="email" id="emailLabel">School Email</label>
       <input id="email" type="email" placeholder="yourname@gbox.ncf.edu.ph" autocomplete="email" required>
-      <small style="color:var(--text-muted);font-size:12px;margin-top:4px;display:block;">
+      <small id="emailHint" style="color:var(--text-muted);font-size:12px;margin-top:4px;display:block;">
         Must end with @gbox.ncf.edu.ph
       </small>
     </div>
@@ -75,5 +88,54 @@
   </div>
 
   <script src="app.js"></script>
+  <script>
+    function handleRoleChange(role) {
+      const isCI = role === 'CI Borrower';
+      const isStudent = role === 'Borrower';
+
+      // ID Number field: hidden for CI
+      document.getElementById('fieldIdNumber').style.display = isCI ? 'none' : '';
+      const idInput = document.getElementById('idNumber');
+      idInput.required = isStudent;
+      if (isCI) idInput.value = '';
+
+      // Year Level field: hidden for CI
+      document.getElementById('fieldYear').style.display = isCI ? 'none' : '';
+      const yearInput = document.getElementById('year');
+      yearInput.required = isStudent;
+      if (isCI) yearInput.value = '';
+
+      // Email: hint + validation changes
+      const emailInput = document.getElementById('email');
+      const emailHint = document.getElementById('emailHint');
+      const emailHintBox = document.getElementById('emailHintBox');
+      const emailLabel = document.getElementById('emailLabel');
+
+      if (isCI) {
+        emailLabel.textContent = 'Email Address';
+        emailInput.placeholder = 'e.g., yourname@gmail.com';
+        emailHint.textContent = 'Any valid email address accepted';
+        emailHintBox.style.display = 'none';
+      } else if (isStudent) {
+        emailLabel.textContent = 'School Email';
+        emailInput.placeholder = 'yourname@gbox.ncf.edu.ph';
+        emailHint.textContent = 'Must end with @gbox.ncf.edu.ph';
+        emailHintBox.style.display = '';
+      } else {
+        emailLabel.textContent = 'Email Address';
+        emailInput.placeholder = 'you@example.com';
+        emailHint.textContent = '';
+        emailHintBox.style.display = 'none';
+      }
+    }
+
+    // Init: hide conditional fields until role is chosen
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('fieldIdNumber').style.display = 'none';
+      document.getElementById('fieldYear').style.display = 'none';
+      document.getElementById('emailHintBox').style.display = 'none';
+      document.getElementById('emailHint').textContent = '';
+    });
+  </script>
 </body>
 </html>

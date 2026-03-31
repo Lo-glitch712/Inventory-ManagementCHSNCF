@@ -36,29 +36,40 @@ function gasFetch(params) {
   }).then(res => res.json());
 }
 
-//  Register (Borrower only) 
+//  Register (Borrower & CI Borrower) 
 function register(button) {
   if (!button) button = event && event.target;
 
-  const name            = document.getElementById('name').value.trim();
-  const idNumber        = document.getElementById('idNumber') ? document.getElementById('idNumber').value.trim() : '';
-  const department      = document.getElementById('department').value.trim();
-  const year            = document.getElementById('year').value.trim();
-  const contact         = document.getElementById('contact').value.trim();
-  const email           = document.getElementById('email').value.trim();
-  const password        = document.getElementById('password').value;
+  const roleSelect = document.getElementById('roleSelect');
+  const role = roleSelect ? roleSelect.value : 'Borrower';
+
+  if (!role) { showNotification('Please select your account type', 'error'); return; }
+
+  const name       = document.getElementById('name').value.trim();
+  const department = document.getElementById('department').value.trim();
+  const contact    = document.getElementById('contact').value.trim();
+  const email      = document.getElementById('email').value.trim();
+  const password   = document.getElementById('password').value;
   const confirmPassword = document.getElementById('confirmPassword').value;
 
-  const role = 'Borrower';
+  // Fields only for students
+  const idNumberEl = document.getElementById('idNumber');
+  const yearEl     = document.getElementById('year');
+  const idNumber   = idNumberEl ? idNumberEl.value.trim() : '';
+  const year       = yearEl     ? yearEl.value.trim()     : '';
+
+  const isStudent = role === 'Borrower';
+  const isCI      = role === 'CI Borrower';
 
   if (!name)       { showNotification('Please enter your full name', 'error'); return; }
-  if (!idNumber)   { showNotification('Please enter your school ID number', 'error'); return; }
+  if (isStudent && !idNumber) { showNotification('Please enter your school ID number', 'error'); return; }
   if (!department) { showNotification('Please enter your department/course', 'error'); return; }
-  if (!year)       { showNotification('Please enter your year level', 'error'); return; }
+  if (isStudent && !year) { showNotification('Please enter your year level', 'error'); return; }
   if (!contact)    { showNotification('Please enter your contact number', 'error'); return; }
-  if (!email)      { showNotification('Please enter your school email', 'error'); return; }
+  if (!email)      { showNotification('Please enter your email', 'error'); return; }
 
-  if (!email.toLowerCase().endsWith('@gbox.ncf.edu.ph')) {
+  // Email domain validation — only for students
+  if (isStudent && !email.toLowerCase().endsWith('@gbox.ncf.edu.ph')) {
     showNotification('Email must use @gbox.ncf.edu.ph', 'error');
     return;
   }
@@ -110,7 +121,8 @@ function login(button) {
       localStorage.setItem('userEmail', email);
       if (data.idNumber) localStorage.setItem('userIDNumber', data.idNumber);
       showNotification('Login successful! Redirecting...', 'success');
-      if (data.role === 'Borrower') {
+      // CI Borrower goes to borrower dashboard (they borrow too), but role tag shows CI
+      if (data.role === 'Borrower' || data.role === 'CI Borrower') {
         setTimeout(() => window.location = 'dashboard_borrower.html', 800);
       } else {
         setTimeout(() => window.location = 'dashboard_admin.html', 800);
