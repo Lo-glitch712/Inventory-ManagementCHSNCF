@@ -335,7 +335,7 @@
  <!-- TAB: Borrows -->
  <div id="borrowed-tab" class="tab-content">
  <div class="card">
- <h3> Borrow Tracking</h3>
+ <h3> Borrow Summary</h3>
  <div id="warningContainer"></div>
  <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;align-items:center;">
  <button class="filter-btn active" onclick="setFilter('all',this)">All Borrowers</button>
@@ -541,7 +541,7 @@ const ADMIN_TABS = [
  { id: 'inventory-tab', label: ' Inventory' },
  { id: 'addstock-tab', label: ' Add Stock' },
  { id: 'alerts-tab', label: ' Alerts' },
- { id: 'borrowed-tab', label: ' Borrows' },
+ { id: 'borrowed-tab', label: ' Summary' },
  { id: 'summary-tab', label: ' Monthly Summary' },
  { id: 'procedures-tab', label: ' Procedures' },
  { id: 'scanner-tab', label: ' Scanner' }
@@ -597,8 +597,8 @@ function updateAdminTabNav() {
  // Show counts in label
  const ab = document.getElementById('alertsCount');
  const bb = document.getElementById('borrowedCount');
- if (_adminTabIdx === 3 && ab && ab.textContent) label.textContent = ' Alerts (' + ab.textContent + ')';
- if (_adminTabIdx === 4 && bb && bb.textContent) label.textContent = ' Borrows (' + bb.textContent + ')';
+ if (_adminTabIdx === 2 && ab && ab.textContent) label.textContent = ' Alerts (' + ab.textContent + ')';
+ if (_adminTabIdx === 3 && bb && bb.textContent) label.textContent = ' Summary (' + bb.textContent + ')';
 }
 
 // backward compat
